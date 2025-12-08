@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #e5e7eb; /* mesma cor do header ou a que você quiser */
+}
+
+.cards-historico-grid {
+  margin-top: 24px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;              /* espaço entre os cards */
+  padding-left: 12px;     /* descola da borda esquerda */
+}
+
+
+.card-historico {
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.card-historico:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+  transform: translateY(-1px);
+}
+
