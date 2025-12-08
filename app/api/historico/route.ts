@@ -22,10 +22,10 @@ export async function GET() {
     return NextResponse.json({ itens });
   } catch (err: any) {
     console.error("ERRO /api/historico:", err);
+
     return NextResponse.json(
       {
         error: err?.message || String(err),
-        detalhe: err, // pra você ver no JSON
       },
       { status: 500 }
     );
