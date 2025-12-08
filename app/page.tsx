@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { entradaLabels } from "@/lib/entradaLabels";
 
 type FormState = {
   produto: string;
@@ -43,20 +44,19 @@ export default function Home() {
     { id: "F", label: "Receita adicional (R$)", placeholder: "Ex: 0,42" },
   ];
 
-  const situacao = result?.metas?.situacao as string | undefined;
+  const entrada = result?.entrada ?? {};
+
   const nomeProduto =
     (result as any)?.entrada?.produto_nome ??
     (result as any)?.entrada?.produto ??
     form.produto;
 
-  // Converte "1.234,56" -> 1234.56
   const parseBR = (valor: string): number => {
     if (!valor) return NaN;
     const limpo = valor.trim().replace(/\./g, "").replace(",", ".");
     return Number(limpo);
   };
 
-  // Formata 1234.56 -> "1.234,56"
   const formatBR = (valor: number | undefined): string => {
     if (valor === undefined || Number.isNaN(valor)) return "—";
     return valor.toLocaleString("pt-BR", {
@@ -135,7 +135,6 @@ export default function Home() {
         return;
       }
 
-      // sucesso → guarda resultado (abre modal)
       setResult(data as Resultado);
     } catch (e) {
       console.error(e);
@@ -146,9 +145,9 @@ export default function Home() {
   }
 
   function fecharModal() {
-    setResult(null);           // fecha modal
-    setError(null);            // limpa erro
-    setForm(initialForm);      // limpa formulário
+    setResult(null);
+    setError(null);
+    setForm(initialForm);
   }
 
   return (
@@ -276,7 +275,7 @@ export default function Home() {
                   {campo.label}
                 </label>
                 <input
-                  type="text" // aceita vírgula
+                  type="text"
                   placeholder={campo.placeholder}
                   value={form[campo.id]}
                   onChange={(e) =>
@@ -325,7 +324,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* MODAL DE RESULTADO – aparece se result !== null */}
+      {/* MODAL DE RESULTADO */}
       {result && (
         <div
           style={{
@@ -396,47 +395,9 @@ export default function Home() {
               >
                 {nomeProduto || "Produto não informado"}
               </p>
-
-              {situacao && (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "4px 10px",
-                    borderRadius: "10px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    border: "1px solid",
-                    borderColor:
-                      situacao === "ACIMA"
-                        ? "#6ee7b7"
-                        : situacao === "ABAIXO"
-                          ? "#fca5a5"
-                          : "#fcd34d",
-                    backgroundColor:
-                      situacao === "ACIMA"
-                        ? "#ecfdf3"
-                        : situacao === "ABAIXO"
-                          ? "#fef2f2"
-                          : "#fffbeb",
-                    color:
-                      situacao === "ACIMA"
-                        ? "#047857"
-                        : situacao === "ABAIXO"
-                          ? "#b91c1c"
-                          : "#92400e",
-                  }}
-                >
-                  {situacao === "ACIMA"
-                    ? " Promoção ACIMA do histórico"
-                    : situacao === "ABAIXO"
-                      ? " Promoção ABAIXO do histórico"
-                      : " Promoção IGUAL ao histórico"}
-                </span>
-              )}
             </div>
 
-            {/* Lucro diário histórico – apenas 1 card */}
+            {/* Lucro diário histórico */}
             <div
               style={{
                 display: "grid",
@@ -476,7 +437,6 @@ export default function Home() {
                 </p>
               </div>
             </div>
-
 
             {/* Metas */}
             <div
@@ -526,7 +486,7 @@ export default function Home() {
               <div
                 style={{
                   borderRadius: "12px",
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid#e5e7eb",
                   padding: "8px 10px",
                 }}
               >
@@ -558,6 +518,109 @@ export default function Home() {
                     unid
                   </span>
                 </p>
+              </div>
+            </div>
+
+            {/* Dados informados */}
+            <div
+              style={{
+                marginTop: "12px",
+                paddingTop: "10px",
+                borderTop: "1px solid #e5e7eb",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#111827",
+                  marginBottom: "6px",
+                }}
+              >
+                Dados informados na simulação
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: "10px",
+                    border: "1px solid #e5e7eb",
+                    padding: "6px 8px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: "#6b7280",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    Produto
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#111827",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {nomeProduto || "Produto não informado"}
+                  </p>
+                </div>
+
+                {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
+                  const raw = entrada[key];
+                  const label = entradaLabels[key] ?? key;
+                  const isNumero = typeof raw === "number";
+                  const valor =
+                    raw === undefined || raw === null
+                      ? "—"
+                      : isNumero
+                      ? key === "A" || key === "C"
+                        ? String(Math.round(raw))
+                        : formatBR(raw)
+                      : String(raw);
+
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        borderRadius: "10px",
+                        border: "1px solid #e5e7eb",
+                        padding: "6px 8px",
+                        backgroundColor: "#f9fafb",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        {label}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#111827",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {valor}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { entradaLabels } from "@/lib/entradaLabels";
 
 type Resultado = {
   entrada?: Record<string, any>;
@@ -52,10 +53,6 @@ export default function HistoricoPage() {
 
     carregar();
   }, []);
-
-  const situacaoSelecionado = selecionado?.resultado?.metas?.situacao as
-    | string
-    | undefined;
 
   const nomeProdutoSelecionado =
     (selecionado?.resultado as any)?.entrada?.produto_nome ??
@@ -124,14 +121,11 @@ export default function HistoricoPage() {
           </p>
         )}
 
-        {/* MINI CARDS */}
         {!loading && !erro && itens.length > 0 && (
           <div className="cards-historico-grid">
-
             {itens.map((item) => {
               const entrada = item.resultado?.entrada ?? {};
               const metas = item.resultado?.metas ?? {};
-              const situacao = metas?.situacao as string | undefined;
               const nomeProduto =
                 (entrada as any)?.produto_nome ??
                 (entrada as any)?.produto ??
@@ -156,37 +150,17 @@ export default function HistoricoPage() {
                   }}
                   className="card-historico relative flex flex-col gap-2 text-left focus:outline-none"
                 >
-
-                  {/* selo situação */}
-                  {situacao && (
-                    <span
-                      className={`absolute left-4 top-2 text-[10px] font-semibold ${situacao === "ACIMA"
-                          ? "text-emerald-700"
-                          : situacao === "ABAIXO"
-                            ? "text-red-700"
-                            : "text-amber-700"
-                        }`}
-                    >
-                      {situacao}
-                    </span>
-                  )}
-
-
-                  {/* data */}
                   <p className="text-[11px] text-slate-500 text-right">
                     {new Date(item.dataHora).toLocaleString("pt-BR")}
                   </p>
 
-                  {/* produto */}
                   <p className="text-xs font-semibold text-slate-900 line-clamp-2">
                     {nomeProduto || "Produto não informado"}
                   </p>
 
-                  {/* chips lucro/meta */}
                   <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600">
                     {lucroMedio !== undefined && !Number.isNaN(lucroMedio) && (
                       <span className="inline-flex items-center gap-1">
-
                         <span>
                           Lucro/dia:{" "}
                           <strong>
@@ -202,7 +176,6 @@ export default function HistoricoPage() {
 
                     {metaDia !== undefined && !Number.isNaN(metaDia) && (
                       <span className="inline-flex items-center gap-1">
-
                         <span>
                           Meta/dia: <strong>{metaDia}</strong>
                         </span>
@@ -210,8 +183,6 @@ export default function HistoricoPage() {
                     )}
                   </div>
 
-
-                  {/* seta */}
                   <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
                     ▸
                   </span>
@@ -292,44 +263,6 @@ export default function HistoricoPage() {
               >
                 {nomeProdutoSelecionado || "Produto não informado"}
               </p>
-
-              {situacaoSelecionado && (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "4px 10px",
-                    borderRadius: "9999px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    border: "1px solid",
-                    borderColor:
-                      situacaoSelecionado === "ACIMA"
-                        ? "#6ee7b7"
-                        : situacaoSelecionado === "ABAIXO"
-                          ? "#fca5a5"
-                          : "#fcd34d",
-                    backgroundColor:
-                      situacaoSelecionado === "ACIMA"
-                        ? "#ecfdf3"
-                        : situacaoSelecionado === "ABAIXO"
-                          ? "#fef2f2"
-                          : "#fffbeb",
-                    color:
-                      situacaoSelecionado === "ACIMA"
-                        ? "#047857"
-                        : situacaoSelecionado === "ABAIXO"
-                          ? "#b91c1c"
-                          : "#92400e",
-                  }}
-                >
-                  {situacaoSelecionado === "ACIMA"
-                    ? " Promoção ACIMA do histórico"
-                    : situacaoSelecionado === "ABAIXO"
-                      ? " Promoção ABAIXO do histórico"
-                      : " Promoção IGUAL ao histórico"}
-                </span>
-              )}
             </div>
 
             {(() => {
@@ -342,12 +275,16 @@ export default function HistoricoPage() {
                 ([chave, valor]) =>
                   valor !== undefined &&
                   valor !== null &&
-                  chave !== "lucro_diario_hist"
+                  chave !== "lucro_diario_hist" &&
+                  chave !== "produto_nome" &&
+                  chave !== "produto"
               );
+
+              const nomeProdutoEntrada =
+                (e as any).produto_nome ?? (e as any).produto ?? "";
 
               return (
                 <>
-                  {/* 3 CARDS PRINCIPAIS – TODOS NA MESMA LINHA E MESMO BACKGROUND */}
                   <div
                     style={{
                       display: "grid",
@@ -356,7 +293,6 @@ export default function HistoricoPage() {
                       marginBottom: "14px",
                     }}
                   >
-                    {/* Lucro diário histórico */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -386,7 +322,6 @@ export default function HistoricoPage() {
                       </p>
                     </div>
 
-                    {/* Meta de unidades por dia */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -425,7 +360,6 @@ export default function HistoricoPage() {
                       </p>
                     </div>
 
-                    {/* Meta de unidades no período */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -465,7 +399,6 @@ export default function HistoricoPage() {
                     </div>
                   </div>
 
-                  {/* DADOS DE ENTRADA – VALOR EM NEGRITO E MESMO BACKGROUND */}
                   {entradaEntries.length > 0 && (
                     <div
                       style={{
@@ -491,48 +424,88 @@ export default function HistoricoPage() {
                           gap: "6px",
                         }}
                       >
-                        {entradaEntries.map(([chave, valor]) => (
-                          <div
-                            key={chave}
+                        <div
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            padding: "6px 8px",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          <p
                             style={{
-                              borderRadius: "10px",
-                              border: "1px solid #e5e7eb",
-                              padding: "6px 8px",
-                              backgroundColor: "#f9fafb",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "2px",
                             }}
                           >
-                            <p
+                            Produto
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "13px",
+                              color: "#111827",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {nomeProdutoEntrada || "Produto não informado"}
+                          </p>
+                        </div>
+
+                        {entradaEntries.map(([chave, valor]) => {
+                          const label =
+                            entradaLabels[chave as keyof typeof entradaLabels] ??
+                            chave.replace(/_/g, " ");
+
+                          const isNumero = typeof valor === "number";
+                          const valorFormatado =
+                            valor === undefined || valor === null
+                              ? "—"
+                              : isNumero
+                              ? chave === "A" || chave === "C"
+                                ? String(Math.round(valor as number))
+                                : formatBR(Number(valor))
+                              : String(valor);
+
+                          return (
+                            <div
+                              key={chave}
                               style={{
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                color: "#6b7280",
-                                marginBottom: "2px",
-                                textTransform: "capitalize",
+                                borderRadius: "10px",
+                                border: "1px solid #e5e7eb",
+                                padding: "6px 8px",
+                                backgroundColor: "#f9fafb",
                               }}
                             >
-                              {chave.replace(/_/g, " ")}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "13px",
-                                color: "#111827",
-                                fontWeight: 700, // valor em negrito
-                              }}
-                            >
-                              {typeof valor === "number"
-                                ? formatBR(Number(valor))
-                                : String(valor)}
-                            </p>
-                          </div>
-                        ))}
+                              <p
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                  color: "#6b7280",
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                {label}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: "13px",
+                                  color: "#111827",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {valorFormatado}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                 </>
               );
             })()}
-
-
           </div>
         </div>
       )}
