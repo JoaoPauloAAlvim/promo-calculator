@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
-    const rows = await db("calculos_promocao")
-      .select("id", "created_at", "resultado_json")
-      .orderBy("created_at", "desc")
+    const rows = await db("historico")
+      .select("id", "dataHora", "resultado")
+      .orderBy("dataHora", "desc")
       .limit(100);
 
     const itens = rows.map((row: any) => ({
       id: row.id,
-      dataHora: new Date(row.created_at).toISOString(),
-      resultado: row.resultado_json,
+      dataHora: row.dataHora,
+      resultado:
+        typeof row.resultado === "string"
+          ? JSON.parse(row.resultado)
+          : row.resultado,
     }));
 
     return NextResponse.json({ itens });
-  } catch (e) {
-    console.error("Erro ao carregar histórico:", e);
+  } catch (err: any) {
+    console.error("ERRO /api/historico:", err);
     return NextResponse.json(
-      { error: "Erro ao carregar histórico." },
+      {
+        error: err?.message || String(err),
+        detalhe: err, // pra você ver no JSON
+      },
       { status: 500 }
     );
   }
