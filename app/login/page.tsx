@@ -1,18 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-const Spinner = ({ size = 24 }: { size?: number }) => (
-  <span
-    className="
-      inline-block animate-spin rounded-full
-      border-4 border-slate-300 border-t-indigo-500
-    "
-    style={{ width: size, height: size }}
-  />
-);
+import { Spinner } from "../components/Spinner";
+import { AppHeader } from "../components/AppHeader";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,7 +39,6 @@ export default function LoginPage() {
         return;
       }
 
-      // sucesso → leva sempre para a home do simulador
       router.push("/");
     } catch (e) {
       console.error(e);
@@ -58,30 +48,25 @@ export default function LoginPage() {
     }
   }
 
+  function fecharModalErro() {
+    setErro(null);
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* TOPO */}
-      <header
-        style={{
-          backgroundColor: "#e5e7eb",
-          padding: "16px 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "20px",
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
-          Simulador de Promoções – Login
-        </h1>
-
-      </header>
+      <AppHeader
+        title="Simulador de Promoções – Login"
+        rightSlot={
+          <span
+            style={{
+              fontSize: "11px",
+              color: "#6b7280",
+            }}
+          >
+            Acesso restrito – Faça login para entrar
+          </span>
+        }
+      />
 
       {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
@@ -104,12 +89,6 @@ export default function LoginPage() {
             Use o e-mail e senha cadastrados para entrar.
           </p>
 
-          {erro && (
-            <div className="mb-4 rounded-xl border border-red-400 bg-red-50 px-3 py-2 text-xs text-red-700">
-              ⚠ {erro}
-            </div>
-          )}
-
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "16px" }}>
               <label
@@ -127,7 +106,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite seu Email"
+                placeholder="Digite seu email"
                 style={{
                   width: "100%",
                   border: "1px solid #d1d5db",
@@ -237,6 +216,138 @@ export default function LoginPage() {
           </form>
         </section>
       </main>
+
+      {/* MODAL DE ERRO */}
+      {erro && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "16px",
+            zIndex: 60,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "14px",
+              maxWidth: "420px",
+              width: "100%",
+              padding: "18px 20px 16px",
+              border: "1px solid #fecaca",
+              boxShadow: "0 18px 40px rgba(15,23,42,0.35)",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={fecharModalErro}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                borderRadius: "999px",
+                border: "none",
+                padding: "3px 7px",
+                fontSize: "11px",
+                backgroundColor: "#fee2e2",
+                color: "#b91c1c",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "999px",
+                  backgroundColor: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "16px",
+                  color: "#b91c1c",
+                  flexShrink: 0,
+                }}
+              >
+                !
+              </div>
+              <div>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#991b1b",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Não foi possível fazer login
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#4b5563",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {erro}
+                </p>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={fecharModalErro}
+                    style={{
+                      fontSize: "12px",
+                      borderRadius: "999px",
+                      border: "none",
+                      padding: "6px 14px",
+                      backgroundColor: "#b91c1c",
+                      color: "#ffffff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    OK, entendi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de loading global (opcional – se quiser usar além do spinner do botão) */}
+      {false && loading && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15,23,42,0.45)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <Spinner size={40} />
+          <p
+            style={{
+              marginTop: "10px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#e5e7eb",
+            }}
+          >
+            Autenticando…
+          </p>
+        </div>
+      )}
     </div>
   );
 }

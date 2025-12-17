@@ -2,18 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { entradaLabels } from "@/lib/entradaLabels";
 import { useRouter } from "next/navigation";
-
-const Spinner = ({ size = 32 }: { size?: number }) => (
-  <span
-    className="
-      inline-block animate-spin rounded-full
-      border-4 border-slate-300 border-t-indigo-500
-    "
-    style={{ width: size, height: size }}
-  />
-);
+import { entradaLabels } from "@/lib/entradaLabels";
+import { Spinner } from "./components/Spinner";
+import { AppHeader } from "./components/AppHeader";
 
 type FormState = {
   produto: string;
@@ -47,7 +39,7 @@ const initialForm: FormState = {
 };
 
 export default function Home() {
-  const router = useRouter()
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<Resultado | null>(null);
   const [loading, setLoading] = useState(false);
@@ -120,6 +112,7 @@ export default function Home() {
       const { produto, categoria, comprador, marca } = form;
 
       if (!produto.trim()) {
+        setResult(null);
         setError("Informe o nome do produto.");
         return;
       }
@@ -134,11 +127,13 @@ export default function Home() {
       const valoresNumericos = [form.A, form.B, form.C, form.D, form.E, form.F];
       const algumVazio = valoresNumericos.some((v) => v.trim() === "");
       if (algumVazio) {
+        setResult(null);
         setError("Preencha todos os campos numéricos antes de calcular.");
         return;
       }
 
       if ([A, B, C, D, E, F].some((v) => Number.isNaN(v))) {
+        setResult(null);
         setError(
           "Todos os campos numéricos devem ser válidos. Use vírgula como separador decimal (ex: 4,79)."
         );
@@ -146,11 +141,13 @@ export default function Home() {
       }
 
       if (A <= 0) {
+        setResult(null);
         setError("O período histórico (dias) deve ser maior que zero.");
         return;
       }
 
       if (C <= 0) {
+        setResult(null);
         setError("A duração da promoção (dias) deve ser maior que zero.");
         return;
       }
@@ -183,11 +180,13 @@ export default function Home() {
         const msg =
           (data && (data.error || data.erro)) ||
           "Erro ao processar o cálculo na API.";
+        setResult(null);
         setError(msg);
         return;
       }
 
       if (data && (data.error || data.erro)) {
+        setResult(null);
         setError(data.error || data.erro);
         return;
       }
@@ -195,6 +194,7 @@ export default function Home() {
       setResult(data as Resultado);
     } catch (e) {
       console.error(e);
+      setResult(null);
       setError("Ocorreu um erro inesperado ao calcular. Tente novamente.");
     } finally {
       setLoading(false);
@@ -213,66 +213,48 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* TOPO */}
-      <header
-        style={{
-          backgroundColor: "#e5e7eb",
-          padding: "16px 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "24px",
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
-          Simulador de Promoções
-        </h1>
+      <AppHeader
+        title="Simulador de Promoções"
+        rightSlot={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link href="/historico" style={{ textDecoration: "none" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px 14px",
+                  borderRadius: "10px",
+                  backgroundColor: "#4f46e5",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                }}
+              >
+                Histórico
+              </span>
+            </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Link href="/historico" style={{ textDecoration: "none" }}>
-            <span
+            <button
+              type="button"
+              onClick={handleLogout}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
                 padding: "6px 14px",
-                borderRadius: "10px",
-                backgroundColor: "#4f46e5",
-                color: "#ffffff",
-                fontWeight: 600,
+                borderRadius: "999px",
+                border: "1px solid #d1d5db",
+                backgroundColor: "#f9fafb",
+                color: "#4b5563",
                 fontSize: "12px",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                fontWeight: 500,
+                cursor: "pointer",
               }}
             >
-              Histórico
-            </span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "999px",
-              border: "1px solid #d1d5db",
-              backgroundColor: "#f9fafb",
-              color: "#4b5563",
-              fontSize: "12px",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Sair
-          </button>
-        </div>
-
-      </header>
+              Sair
+            </button>
+          </div>
+        }
+      />
 
       {/* CONTEÚDO PRINCIPAL */}
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -870,10 +852,10 @@ export default function Home() {
                     raw === undefined || raw === null
                       ? "—"
                       : isNumero
-                        ? key === "A" || key === "C"
-                          ? String(Math.round(raw))
-                          : formatBR(raw)
-                        : String(raw);
+                      ? key === "A" || key === "C"
+                        ? String(Math.round(raw))
+                        : formatBR(raw)
+                      : String(raw);
 
                   return (
                     <div

@@ -2,20 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { entradaLabels } from "@/lib/entradaLabels";
 import { useRouter } from "next/navigation";
-
-
-
-const Spinner = ({ size = 32 }: { size?: number }) => (
-  <span
-    className="
-      inline-block animate-spin rounded-full
-      border-4 border-slate-300 border-t-indigo-500
-    "
-    style={{ width: size, height: size }}
-  />
-);
+import { Spinner } from "../components/Spinner";
+import { AppHeader } from "../components/AppHeader";
+import { entradaLabels } from "@/lib/entradaLabels";
 
 type Resultado = {
   entrada?: Record<string, any>;
@@ -38,29 +28,20 @@ const formatBR = (valor: number | undefined): string => {
 
 export default function HistoricoPage() {
   const router = useRouter();
+
   const [itens, setItens] = useState<HistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
 
-  // filtros (backend)
+  // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  async function handleLogout() {
-    try {
-      await fetch("/api/logout", { method: "POST" });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      router.push("/login");
-    }
-  }
-
-  // carrega histórico do backend sempre que filtros mudarem
+  // carregar histórico sempre que filtros mudam
   useEffect(() => {
     async function carregar() {
       try {
@@ -96,7 +77,7 @@ export default function HistoricoPage() {
     carregar();
   }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador]);
 
-  // opções para selects (baseadas nos itens atuais)
+  // selects – opções derivadas
   const opcoesMarca = Array.from(
     new Set(
       itens
@@ -157,6 +138,16 @@ export default function HistoricoPage() {
     }
   }
 
+  async function handleLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      router.push("/login");
+    }
+  }
+
   const nomeProdutoSelecionado =
     (selecionado?.resultado as any)?.entrada?.produto_nome ??
     (selecionado?.resultado as any)?.entrada?.produto ??
@@ -164,68 +155,50 @@ export default function HistoricoPage() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* TOPO */}
-      <header
-        style={{
-          backgroundColor: "#e5e7eb",
-          padding: "16px 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "24px",
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
-          Histórico de Simulações
-        </h1>
+      <AppHeader
+        title="Histórico de Simulações"
+        rightSlot={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link href="/" style={{ textDecoration: "none" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px 14px",
+                  borderRadius: "10px",
+                  backgroundColor: "#4f46e5",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                }}
+              >
+                Simulador
+              </span>
+            </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Link href="/" style={{ textDecoration: "none" }}>
-            <span
+            <button
+              type="button"
+              onClick={handleLogout}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
                 padding: "6px 14px",
-                borderRadius: "10px",
-                backgroundColor: "#4f46e5",
-                color: "#ffffff",
-                fontWeight: 600,
+                borderRadius: "999px",
+                border: "1px solid #d1d5db",
+                backgroundColor: "#f9fafb",
+                color: "#4b5563",
                 fontSize: "12px",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                fontWeight: 500,
+                cursor: "pointer",
               }}
             >
-              Simulador
-            </span>
-          </Link>
+              Sair
+            </button>
+          </div>
+        }
+      />
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            style={{
-              padding: "6px 14px",
-              borderRadius: "999px",
-              border: "1px solid #d1d5db",
-              backgroundColor: "#f9fafb",
-              color: "#4b5563",
-              fontSize: "12px",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Sair
-          </button>
-        </div>
-
-      </header>
-
-      {/* CONTEÚDO PRINCIPAL – só renderiza quando NÃO estiver carregando */}
+      {/* CONTEÚDO PRINCIPAL – só renderiza quando não estiver carregando */}
       {!loading && (
         <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
           {erro && (
@@ -313,7 +286,7 @@ export default function HistoricoPage() {
                   type="text"
                   value={filtroProduto}
                   onChange={(e) => setFiltroProduto(e.target.value)}
-                  placeholder="Ex: CREME DENTAL"
+                  placeholder="Ex: creme dental"
                   style={{
                     width: "100%",
                     borderRadius: "999px",
@@ -931,7 +904,7 @@ export default function HistoricoPage() {
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
-                          chave as keyof typeof entradaLabels
+                            chave as keyof typeof entradaLabels
                           ] ?? chave.replace(/_/g, " ");
 
                         const isNumero = typeof valor === "number";
@@ -939,10 +912,10 @@ export default function HistoricoPage() {
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                              ? chave === "A" || chave === "C"
-                                ? String(Math.round(valor as number))
-                                : formatBR(Number(valor))
-                              : String(valor);
+                            ? chave === "A" || chave === "C"
+                              ? String(Math.round(valor as number))
+                              : formatBR(Number(valor))
+                            : String(valor);
 
                         return (
                           <div
