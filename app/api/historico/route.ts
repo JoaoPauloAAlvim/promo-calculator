@@ -12,12 +12,19 @@ export async function GET(req: Request) {
     const categoria = searchParams.get("categoria")?.trim();
     const comprador = searchParams.get("comprador")?.trim();
 
+    const page = Math.max(
+      parseInt(searchParams.get("page") || "1", 10) || 1,
+      1
+    );
+    const pageSize = Math.min(
+      Math.max(parseInt(searchParams.get("pageSize") || "20", 10) || 20, 1),
+      100
+    );
+
     const query = db("historico")
       .select("id", "dataHora", "resultado")
-      .orderBy("dataHora", "desc")
-      .limit(200);
+      .orderBy("dataHora", "desc");
 
-    // filtro por produto (nome)
     if (produto) {
       const like = `%${produto.toLowerCase()}%`;
       query.whereRaw(
@@ -29,33 +36,27 @@ export async function GET(req: Request) {
       );
     }
 
-    // filtro por marca (igual exato da opção)
     if (marca) {
-      query.whereRaw(
-        "resultado->'entrada'->>'marca' = ?",
-        [marca]
-      );
+      query.whereRaw("resultado->'entrada'->>'marca' = ?", [marca]);
     }
 
-    // filtro por categoria
     if (categoria) {
-      query.whereRaw(
-        "resultado->'entrada'->>'categoria' = ?",
-        [categoria]
-      );
+      query.whereRaw("resultado->'entrada'->>'categoria' = ?", [categoria]);
     }
 
-    // filtro por comprador
     if (comprador) {
-      query.whereRaw(
-        "resultado->'entrada'->>'comprador' = ?",
-        [comprador]
-      );
+      query.whereRaw("resultado->'entrada'->>'comprador' = ?", [comprador]);
     }
 
-    const rows = await query;
+    const offset = (page - 1) * pageSize;
 
-    const itens = rows.map((row: any) => ({
+    // busca pageSize + 1 só pra saber se existe próxima página
+    const rows = await query.clone().offset(offset).limit(pageSize + 1);
+
+    const hasMore = rows.length > pageSize;
+    const sliced = hasMore ? rows.slice(0, pageSize) : rows;
+
+    const itens = sliced.map((row: any) => ({
       id: row.id,
       dataHora: row.dataHora,
       resultado:
@@ -64,7 +65,12 @@ export async function GET(req: Request) {
           : row.resultado,
     }));
 
-    return NextResponse.json({ itens });
+    return NextResponse.json({
+      itens,
+      page,
+      pageSize,
+      hasMore,
+    });
   } catch (err: any) {
     console.error("ERRO /api/historico GET:", err);
     return NextResponse.json(

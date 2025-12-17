@@ -41,7 +41,12 @@ export default function HistoricoPage() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  // carregar histórico sempre que filtros mudam
+  // paginação
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const pageSize = 20;
+
+  // carregar histórico sempre que filtros ou página mudarem
   useEffect(() => {
     async function carregar() {
       try {
@@ -53,29 +58,33 @@ export default function HistoricoPage() {
         if (filtroMarca) params.set("marca", filtroMarca);
         if (filtroCategoria) params.set("categoria", filtroCategoria);
         if (filtroComprador) params.set("comprador", filtroComprador);
+        params.set("page", String(page));
+        params.set("pageSize", String(pageSize));
 
-        const qs = params.toString();
-        const url = qs ? `/api/historico?${qs}` : "/api/historico";
+        const url = `/api/historico?${params.toString()}`;
 
         const res = await fetch(url);
         const data = await res.json();
         if (!res.ok) {
           setErro(data?.error || "Erro ao carregar histórico no servidor.");
           setItens([]);
+          setHasMore(false);
           return;
         }
         setItens(Array.isArray(data.itens) ? data.itens : []);
+        setHasMore(Boolean(data.hasMore));
       } catch (e) {
         console.error(e);
         setErro("Erro ao buscar histórico. Verifique a conexão.");
         setItens([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     }
 
     carregar();
-  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador]);
+  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page]);
 
   // selects – opções derivadas
   const opcoesMarca = Array.from(
@@ -198,7 +207,7 @@ export default function HistoricoPage() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL – só renderiza quando não estiver carregando */}
+      {/* CONTEÚDO PRINCIPAL – só aparece quando NÃO está carregando */}
       {!loading && (
         <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
           {erro && (
@@ -245,6 +254,7 @@ export default function HistoricoPage() {
                   setFiltroMarca("");
                   setFiltroCategoria("");
                   setFiltroComprador("");
+                  setPage(1);
                 }}
                 style={{
                   fontSize: "11px",
@@ -285,7 +295,10 @@ export default function HistoricoPage() {
                 <input
                   type="text"
                   value={filtroProduto}
-                  onChange={(e) => setFiltroProduto(e.target.value)}
+                  onChange={(e) => {
+                    setFiltroProduto(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Ex: creme dental"
                   style={{
                     width: "100%",
@@ -313,7 +326,10 @@ export default function HistoricoPage() {
                 </label>
                 <select
                   value={filtroMarca}
-                  onChange={(e) => setFiltroMarca(e.target.value)}
+                  onChange={(e) => {
+                    setFiltroMarca(e.target.value);
+                    setPage(1);
+                  }}
                   style={{
                     width: "100%",
                     borderRadius: "999px",
@@ -347,7 +363,10 @@ export default function HistoricoPage() {
                 </label>
                 <select
                   value={filtroCategoria}
-                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  onChange={(e) => {
+                    setFiltroCategoria(e.target.value);
+                    setPage(1);
+                  }}
                   style={{
                     width: "100%",
                     borderRadius: "999px",
@@ -381,7 +400,10 @@ export default function HistoricoPage() {
                 </label>
                 <select
                   value={filtroComprador}
-                  onChange={(e) => setFiltroComprador(e.target.value)}
+                  onChange={(e) => {
+                    setFiltroComprador(e.target.value);
+                    setPage(1);
+                  }}
                   style={{
                     width: "100%",
                     borderRadius: "999px",
@@ -402,108 +424,175 @@ export default function HistoricoPage() {
             </div>
           </section>
 
+          {/* Lista */}
           {!erro && itens.length === 0 && (
             <p className="text-sm text-slate-600">
               Nenhuma simulação encontrada.
             </p>
           )}
 
-          {/* MINI CARDS */}
           {!erro && itens.length > 0 && (
-            <div className="cards-historico-grid">
-              {itens.map((item) => {
-                const entrada = item.resultado?.entrada ?? {};
-                const metas = item.resultado?.metas ?? {};
-                const nomeProduto =
-                  (entrada as any)?.produto_nome ??
-                  (entrada as any)?.produto ??
-                  "";
-                const lucroMedio =
-                  metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
-                const metaDia = metas?.meta_unid_dia;
+            <>
+              <div className="cards-historico-grid">
+                {itens.map((item) => {
+                  const entrada = item.resultado?.entrada ?? {};
+                  const metas = item.resultado?.metas ?? {};
+                  const nomeProduto =
+                    (entrada as any)?.produto_nome ??
+                    (entrada as any)?.produto ??
+                    "";
+                  const lucroMedio =
+                    metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
+                  const metaDia = metas?.meta_unid_dia;
 
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelecionado(item)}
-                    style={{
-                      borderRadius: 18,
-                      width: 260,
-                      border: "1px solid #d1d5db",
-                      backgroundColor: "#ffffff",
-                      padding: "16px",
-                      boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
-                      cursor: "pointer",
-                      position: "relative",
-                    }}
-                    className="card-historico flex flex-col gap-2 text-left focus:outline-none"
-                  >
-                    {/* X vermelho */}
+                  return (
                     <button
+                      key={item.id}
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        excluirItem(item.id);
-                      }}
+                      onClick={() => setSelecionado(item)}
                       style={{
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        border: "none",
-                        background: "transparent",
+                        borderRadius: 18,
+                        width: 260,
+                        border: "1px solid #d1d5db",
+                        backgroundColor: "#ffffff",
+                        padding: "16px",
+                        boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
                         cursor: "pointer",
-                        fontSize: "12px",
-                        color: "#dc2626",
-                        fontWeight: 700,
+                        position: "relative",
                       }}
+                      className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                     >
-                      {excluindoId === item.id ? "…" : "✕"}
+                      {/* X vermelho */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          excluirItem(item.id);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          color: "#dc2626",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {excluindoId === item.id ? "…" : "✕"}
+                      </button>
+
+                      {/* topo: produto + data */}
+                      <div className="flex items-start justify-between gap-2 pr-5">
+                        <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
+                          {nomeProduto || "Produto não informado"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 whitespace-nowrap text-right">
+                          {new Date(item.dataHora).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+
+                      {/* lucro/meta */}
+                      <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
+                        {lucroMedio !== undefined &&
+                          !Number.isNaN(lucroMedio) && (
+                            <span className="inline-flex items-center gap-1">
+                              <span>
+                                Lucro/dia:{" "}
+                                <strong>
+                                  R{" "}
+                                  {Number(lucroMedio).toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </span>
+                            </span>
+                          )}
+
+                        {metaDia !== undefined && !Number.isNaN(metaDia) && (
+                          <span className="inline-flex items-center gap-1">
+                            <span>
+                              Meta/dia: <strong>{metaDia}</strong>
+                            </span>
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
+                        ▸
+                      </span>
                     </button>
+                  );
+                })}
+              </div>
 
-                    {/* topo: produto + data */}
-                    <div className="flex items-start justify-between gap-2 pr-5">
-                      <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
-                        {nomeProduto || "Produto não informado"}
-                      </p>
-                      <p className="text-[11px] text-slate-500 whitespace-nowrap text-right">
-                        {new Date(item.dataHora).toLocaleString("pt-BR")}
-                      </p>
-                    </div>
+              {/* Paginação */}
+              <div
+                style={{
+                  marginTop: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#6b7280",
+                  }}
+                >
+                  Página {page}
+                  {!hasMore && itens.length < pageSize
+                    ? " (última página)"
+                    : ""}
+                </span>
 
-                    {/* lucro/meta */}
-                    <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
-                      {lucroMedio !== undefined && !Number.isNaN(lucroMedio) && (
-                        <span className="inline-flex items-center gap-1">
-                          <span>
-                            Lucro/dia:{" "}
-                            <strong>
-                              R{" "}
-                              {Number(lucroMedio).toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </strong>
-                          </span>
-                        </span>
-                      )}
-
-                      {metaDia !== undefined && !Number.isNaN(metaDia) && (
-                        <span className="inline-flex items-center gap-1">
-                          <span>
-                            Meta/dia: <strong>{metaDia}</strong>
-                          </span>
-                        </span>
-                      )}
-                    </div>
-
-                    <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
-                      ▸
-                    </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    style={{
+                      fontSize: "12px",
+                      borderRadius: "999px",
+                      border: "1px solid #d1d5db",
+                      padding: "4px 10px",
+                      backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
+                      color: page === 1 ? "#9ca3af" : "#4b5563",
+                      cursor: page === 1 ? "default" : "pointer",
+                    }}
+                  >
+                    ◀ Anterior
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={!hasMore}
+                    style={{
+                      fontSize: "12px",
+                      borderRadius: "999px",
+                      border: "1px solid #d1d5db",
+                      padding: "4px 10px",
+                      backgroundColor: !hasMore ? "#f3f4f6" : "#ffffff",
+                      color: !hasMore ? "#9ca3af" : "#4b5563",
+                      cursor: !hasMore ? "default" : "pointer",
+                    }}
+                  >
+                    Próxima ▶
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </main>
       )}
