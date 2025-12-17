@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { isServer }) => {
-    // no client, não precisamos de fs (usado por libs de backend)
+    // no client, não precisamos de fs
     if (!isServer) {
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
@@ -9,7 +9,7 @@ const nextConfig = {
       };
     }
 
-    // dizer ao webpack para NÃO tentar resolver drivers opcionais do knex
+    // ignorar drivers/dialetos opcionais do knex
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       oracledb: false,
@@ -19,9 +19,10 @@ const nextConfig = {
       "better-sqlite3": false,
       sqlite3: false,
       tedious: false,
+      "pg-query-stream": false, // <– adiciona este
     };
 
-    // ignorar o warning de migrations/import-file do knex
+    // ignorar warning chato de migrations/import-file
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
       {
