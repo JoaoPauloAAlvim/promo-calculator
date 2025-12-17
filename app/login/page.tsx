@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Spinner = ({ size = 24 }: { size?: number }) => (
   <span
@@ -15,8 +16,6 @@ const Spinner = ({ size = 24 }: { size?: number }) => (
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const from = searchParams.get("from") || "/";
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -49,8 +48,8 @@ export default function LoginPage() {
         return;
       }
 
-      // sucesso → redireciona para a página original ou home
-      router.push(from || "/");
+      // sucesso → leva sempre para a home do simulador
+      router.push("/");
     } catch (e) {
       console.error(e);
       setErro("Erro inesperado ao tentar fazer login. Tente novamente.");
@@ -81,6 +80,16 @@ export default function LoginPage() {
         >
           Simulador de Promoções – Login
         </h1>
+
+        {/* apenas um texto informativo, sem atalho pra / */}
+        <span
+          style={{
+            fontSize: "11px",
+            color: "#6b7280",
+          }}
+        >
+          Acesso restrito – faça login para entrar
+        </span>
       </header>
 
       {/* CONTEÚDO PRINCIPAL */}
@@ -127,7 +136,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite seu Email"
+                placeholder="Ex: compras@levate.com.br"
                 style={{
                   width: "100%",
                   border: "1px solid #d1d5db",
