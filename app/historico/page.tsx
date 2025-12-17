@@ -40,13 +40,13 @@ export default function HistoricoPage() {
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
 
-  // filtros (enviados para backend)
+  // filtros (backend)
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  // carregar histórico do backend sempre que filtros mudarem
+  // carrega histórico do backend sempre que filtros mudarem
   useEffect(() => {
     async function carregar() {
       try {
@@ -82,7 +82,7 @@ export default function HistoricoPage() {
     carregar();
   }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador]);
 
-  // opções para selects (derivadas do resultado atual)
+  // opções para selects (baseadas nos itens atuais)
   const opcoesMarca = Array.from(
     new Set(
       itens
@@ -191,313 +191,315 @@ export default function HistoricoPage() {
         </Link>
       </header>
 
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
-        {!loading && erro && (
-          <div className="rounded-xl border border-red-400 bg-red-50 px-4 py-3 text-sm text-red-700">
-            ⚠ {erro}
-          </div>
-        )}
+      {/* CONTEÚDO PRINCIPAL – só renderiza quando NÃO estiver carregando */}
+      {!loading && (
+        <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
+          {erro && (
+            <div className="rounded-xl border border-red-400 bg-red-50 px-4 py-3 text-sm text-red-700">
+              ⚠ {erro}
+            </div>
+          )}
 
-        {/* FILTROS */}
-        <section
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            padding: "10px 16px",
-            boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-          }}
-        >
-          <div
+          {/* FILTROS */}
+          <section
             style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "10px",
+              border: "1px solid #e5e7eb",
+              padding: "10px 16px",
+              boxShadow: "0 6px 18px rgba(15,23,42,0.08)",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px",
+              flexDirection: "column",
+              gap: "10px",
             }}
           >
-            <p
+            <div
               style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#111827",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
               }}
             >
-              Filtros do histórico
-            </p>
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#111827",
+                }}
+              >
+                Filtros do histórico
+              </p>
 
-            <button
-              type="button"
-              onClick={() => {
-                setFiltroProduto("");
-                setFiltroMarca("");
-                setFiltroCategoria("");
-                setFiltroComprador("");
-              }}
+              <button
+                type="button"
+                onClick={() => {
+                  setFiltroProduto("");
+                  setFiltroMarca("");
+                  setFiltroCategoria("");
+                  setFiltroComprador("");
+                }}
+                style={{
+                  fontSize: "11px",
+                  borderRadius: "999px",
+                  border: "1px solid #e5e7eb",
+                  padding: "3px 10px",
+                  backgroundColor: "#f9fafb",
+                  color: "#4b5563",
+                  cursor: "pointer",
+                }}
+              >
+                Limpar filtros
+              </button>
+            </div>
+
+            <div
               style={{
-                fontSize: "11px",
-                borderRadius: "10px",
-                border: "1px solid #e5e7eb",
-                padding: "3px 10px",
-                backgroundColor: "#f9fafb",
-                color: "#4b5563",
-                cursor: "pointer",
+                display: "grid",
+                gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
+                columnGap: 24,
+                rowGap: 8,
+                alignItems: "end",
               }}
             >
-              Limpar filtros
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
-              columnGap: 24,
-              rowGap: 8,
-              alignItems: "end",
-            }}
-          >
-            {/* Produto */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                }}
-              >
-                Produto
-              </label>
-              <input
-                type="text"
-                value={filtroProduto}
-                onChange={(e) => setFiltroProduto(e.target.value)}
-                placeholder="Ex: creme dental"
-                style={{
-                  width: "100%",
-                  borderRadius: "10px",
-                  border: "1px solid #d1d5db",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  backgroundColor: "#f9fafb",
-                }}
-              />
-            </div>
-
-            {/* Marca */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                }}
-              >
-                Marca
-              </label>
-              <select
-                value={filtroMarca}
-                onChange={(e) => setFiltroMarca(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "10px",
-                  border: "1px solid #d1d5db",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  backgroundColor: "#f9fafb",
-                }}
-              >
-                <option value="">Todas</option>
-                {opcoesMarca.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Categoria */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                }}
-              >
-                Categoria
-              </label>
-              <select
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "10px",
-                  border: "1px solid #d1d5db",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  backgroundColor: "#f9fafb",
-                }}
-              >
-                <option value="">Todas</option>
-                {opcoesCategoria.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Comprador */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                }}
-              >
-                Comprador
-              </label>
-              <select
-                value={filtroComprador}
-                onChange={(e) => setFiltroComprador(e.target.value)}
-                style={{
-                  width: "100%",
-                  borderRadius: "10px",
-                  border: "1px solid #d1d5db",
-                  padding: "6px 10px",
-                  fontSize: "12px",
-                  backgroundColor: "#f9fafb",
-                }}
-              >
-                <option value="">Todos</option>
-                {opcoesComprador.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {!loading && !erro && itens.length === 0 && (
-          <p className="text-sm text-slate-600">
-            Nenhuma simulação encontrada.
-          </p>
-        )}
-
-        {/* MINI CARDS */}
-        {!loading && !erro && itens.length > 0 && (
-          <div className="cards-historico-grid">
-            {itens.map((item) => {
-              const entrada = item.resultado?.entrada ?? {};
-              const metas = item.resultado?.metas ?? {};
-              const nomeProduto =
-                (entrada as any)?.produto_nome ??
-                (entrada as any)?.produto ??
-                "";
-              const lucroMedio =
-                metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
-              const metaDia = metas?.meta_unid_dia;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelecionado(item)}
+              {/* Produto */}
+              <div>
+                <label
                   style={{
-                    borderRadius: 18,
-                    width: 260,
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#ffffff",
-                    padding: "16px",
-                    boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
-                    cursor: "pointer",
-                    position: "relative",
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    marginBottom: "4px",
                   }}
-                  className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                 >
-                  {/* X vermelho */}
+                  Produto
+                </label>
+                <input
+                  type="text"
+                  value={filtroProduto}
+                  onChange={(e) => setFiltroProduto(e.target.value)}
+                  placeholder="Ex: creme dental"
+                  style={{
+                    width: "100%",
+                    borderRadius: "999px",
+                    border: "1px solid #d1d5db",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                />
+              </div>
+
+              {/* Marca */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Marca
+                </label>
+                <select
+                  value={filtroMarca}
+                  onChange={(e) => setFiltroMarca(e.target.value)}
+                  style={{
+                    width: "100%",
+                    borderRadius: "999px",
+                    border: "1px solid #d1d5db",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                >
+                  <option value="">Todas</option>
+                  {opcoesMarca.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Categoria
+                </label>
+                <select
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  style={{
+                    width: "100%",
+                    borderRadius: "999px",
+                    border: "1px solid #d1d5db",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                >
+                  <option value="">Todas</option>
+                  {opcoesCategoria.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Comprador */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "#6b7280",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Comprador
+                </label>
+                <select
+                  value={filtroComprador}
+                  onChange={(e) => setFiltroComprador(e.target.value)}
+                  style={{
+                    width: "100%",
+                    borderRadius: "999px",
+                    border: "1px solid #d1d5db",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                >
+                  <option value="">Todos</option>
+                  {opcoesComprador.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {!erro && itens.length === 0 && (
+            <p className="text-sm text-slate-600">
+              Nenhuma simulação encontrada.
+            </p>
+          )}
+
+          {/* MINI CARDS */}
+          {!erro && itens.length > 0 && (
+            <div className="cards-historico-grid">
+              {itens.map((item) => {
+                const entrada = item.resultado?.entrada ?? {};
+                const metas = item.resultado?.metas ?? {};
+                const nomeProduto =
+                  (entrada as any)?.produto_nome ??
+                  (entrada as any)?.produto ??
+                  "";
+                const lucroMedio =
+                  metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
+                const metaDia = metas?.meta_unid_dia;
+
+                return (
                   <button
+                    key={item.id}
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      excluirItem(item.id);
-                    }}
+                    onClick={() => setSelecionado(item)}
                     style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      border: "none",
-                      background: "transparent",
+                      borderRadius: 18,
+                      width: 260,
+                      border: "1px solid #d1d5db",
+                      backgroundColor: "#ffffff",
+                      padding: "16px",
+                      boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
                       cursor: "pointer",
-                      fontSize: "12px",
-                      color: "#dc2626",
-                      fontWeight: 700,
+                      position: "relative",
                     }}
+                    className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                   >
-                    {excluindoId === item.id ? "…" : "✕"}
+                    {/* X vermelho */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        excluirItem(item.id);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        color: "#dc2626",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {excluindoId === item.id ? "…" : "✕"}
+                    </button>
+
+                    {/* topo: produto + data */}
+                    <div className="flex items-start justify-between gap-2 pr-5">
+                      <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
+                        {nomeProduto || "Produto não informado"}
+                      </p>
+                      <p className="text-[11px] text-slate-500 whitespace-nowrap text-right">
+                        {new Date(item.dataHora).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+
+                    {/* lucro/meta */}
+                    <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
+                      {lucroMedio !== undefined && !Number.isNaN(lucroMedio) && (
+                        <span className="inline-flex items-center gap-1">
+                          <span>
+                            Lucro/dia:{" "}
+                            <strong>
+                              R{" "}
+                              {Number(lucroMedio).toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </strong>
+                          </span>
+                        </span>
+                      )}
+
+                      {metaDia !== undefined && !Number.isNaN(metaDia) && (
+                        <span className="inline-flex items-center gap-1">
+                          <span>
+                            Meta/dia: <strong>{metaDia}</strong>
+                          </span>
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
+                      ▸
+                    </span>
                   </button>
-
-                  {/* topo: produto + data */}
-                  <div className="flex items-start justify-between gap-2 pr-5">
-                    <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
-                      {nomeProduto || "Produto não informado"}
-                    </p>
-                    <p className="text-[11px] text-slate-500 whitespace-nowrap text-right">
-                      {new Date(item.dataHora).toLocaleString("pt-BR")}
-                    </p>
-                  </div>
-
-                  {/* lucro/meta */}
-                  <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
-                    {lucroMedio !== undefined && !Number.isNaN(lucroMedio) && (
-                      <span className="inline-flex items-center gap-1">
-                        <span>
-                          Lucro/dia:{" "}
-                          <strong>
-                            R{" "}
-                            {Number(lucroMedio).toLocaleString("pt-BR", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </strong>
-                        </span>
-                      </span>
-                    )}
-
-                    {metaDia !== undefined && !Number.isNaN(metaDia) && (
-                      <span className="inline-flex items-center gap-1">
-                        <span>
-                          Meta/dia: <strong>{metaDia}</strong>
-                        </span>
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
-                    ▸
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </main>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      )}
 
       {/* MODAL DE DETALHES */}
       {selecionado && (
@@ -533,7 +535,7 @@ export default function HistoricoPage() {
                 position: "absolute",
                 top: "8px",
                 right: "8px",
-                borderRadius: "10px",
+                borderRadius: "999px",
                 border: "none",
                 padding: "4px 8px",
                 fontSize: "12px",
