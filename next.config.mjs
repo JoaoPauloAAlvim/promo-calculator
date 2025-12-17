@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { isServer }) => {
-    // Evita tentar resolver 'fs' no client (libs de backend como knex)
+    // no client, não precisamos de fs (usado por libs de backend)
     if (!isServer) {
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
@@ -9,7 +9,19 @@ const nextConfig = {
       };
     }
 
-    // Ignora especificamente o warning do util/import-file das migrações do knex
+    // dizer ao webpack para NÃO tentar resolver drivers opcionais do knex
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      oracledb: false,
+      "pg-native": false,
+      mysql2: false,
+      mysql: false,
+      "better-sqlite3": false,
+      sqlite3: false,
+      tedious: false,
+    };
+
+    // ignorar o warning de migrations/import-file do knex
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
       {
