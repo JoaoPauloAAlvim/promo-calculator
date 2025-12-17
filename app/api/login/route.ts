@@ -1,4 +1,3 @@
-// app/api/login/route.ts
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -32,13 +31,12 @@ export async function POST(req: Request) {
 
     const res = NextResponse.json({ ok: true });
 
-    // cookie de sessão (somente indica que está logado, mesmo histórico pra todos)
     res.cookies.set("simulador_auth", "ok", {
       httpOnly: true,
       path: "/",
       secure: true,
       sameSite: "lax",
-      maxAge: lembrar ? 60 * 60 * 24 * 30 : 60 * 60 * 1, // 30 dias ou 1 hora
+      maxAge: lembrar ? 60 * 60 * 24 * 30 : 60 * 60 * 1,
     });
 
     return res;

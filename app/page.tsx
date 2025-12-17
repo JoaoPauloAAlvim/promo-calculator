@@ -256,7 +256,6 @@ export default function Home() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <section
           className="bg-white shadow-md p-6 md:p-7"
@@ -280,7 +279,6 @@ export default function Home() {
               margin: "0 auto",
             }}
           >
-            {/* Nome do produto */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -312,7 +310,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Categoria */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -344,7 +341,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Comprador */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -376,7 +372,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Marca */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -408,7 +403,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Campos numéricos A–F */}
             {campos.map((campo) => (
               <div key={campo.id} style={{ marginBottom: "16px" }}>
                 <label
@@ -446,7 +440,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Botão Calcular */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <button
               type="button"
@@ -472,7 +465,6 @@ export default function Home() {
         </section>
       </main>
 
-      {/* MODAL DE RESULTADO */}
       {result && (
         <div
           style={{
@@ -518,7 +510,6 @@ export default function Home() {
               ✕
             </button>
 
-            {/* Cabeçalho */}
             <div style={{ marginBottom: "12px" }}>
               <p
                 style={{
@@ -544,7 +535,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Lucro diário + lucro unitário */}
             <div
               style={{
                 display: "grid",
@@ -614,7 +604,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Metas */}
             <div
               style={{
                 display: "grid",
@@ -697,7 +686,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Dados informados */}
             <div
               style={{
                 marginTop: "12px",
@@ -723,7 +711,6 @@ export default function Home() {
                   gap: "6px",
                 }}
               >
-                {/* Produto */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -753,7 +740,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Categoria */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -783,7 +769,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Comprador */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -813,7 +798,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Marca */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -843,7 +827,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Campos A–F */}
                 {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
                   const raw = entrada[key];
                   const label = entradaLabels[key] ?? key;
@@ -895,7 +878,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DE ERRO */}
       {error && !result && (
         <div
           style={{
@@ -999,7 +981,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* OVERLAY DE LOADING */}
       {loading && (
         <div
           style={{

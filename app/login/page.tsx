@@ -68,7 +68,6 @@ export default function LoginPage() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <section
           className="bg-white shadow-md p-6 md:p-7"
@@ -217,7 +216,6 @@ export default function LoginPage() {
         </section>
       </main>
 
-      {/* MODAL DE ERRO */}
       {erro && (
         <div
           style={{
@@ -321,7 +319,6 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* Overlay de loading global (opcional – se quiser usar além do spinner do botão) */}
       {false && loading && (
         <div
           style={{

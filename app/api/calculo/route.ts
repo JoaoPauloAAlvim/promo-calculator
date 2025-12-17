@@ -1,4 +1,3 @@
-// app/api/calculo/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
 
@@ -8,7 +7,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // desestrutura com defaults seguros
     let {
       produto,
       categoria,
@@ -22,13 +20,11 @@ export async function POST(req: Request) {
       F,
     } = body ?? {};
 
-    // normalizar textos
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     comprador = typeof comprador === "string" ? comprador.trim() : "";
     marca = typeof marca === "string" ? marca.trim() : "";
 
-    // validação básica de produto
     if (!produto) {
       return NextResponse.json(
         { error: "Informe o nome do produto." },
@@ -36,7 +32,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ajuda a evitar textos absurdos gravados
     if (produto.length > 200) {
       return NextResponse.json(
         { error: "O nome do produto é muito longo. Resuma a descrição." },
@@ -78,7 +73,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // regras de negócio / faixas mínimas
     if (periodoHistorico <= 0) {
       return NextResponse.json(
         {
@@ -139,7 +133,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // aqui assumimos reembolso/receita adicional como >= 0
     if (receitaAdicional < 0) {
       return NextResponse.json(
         {
@@ -150,13 +143,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- CÁLCULOS ---
     const lucroDiarioHist = lucroTotalHistorico / periodoHistorico;
 
-    // lucro unitário da promoção = preço promocional + reembolso - custo
     const lucroUnitarioPromo = precoPromo + receitaAdicional - custoUnit;
 
-    // se lucro unitário <= 0, a promoção não faz sentido
     if (!Number.isFinite(lucroUnitarioPromo) || lucroUnitarioPromo <= 0) {
       return NextResponse.json(
         {
@@ -192,7 +182,6 @@ export async function POST(req: Request) {
 
     const resultado = { entrada, metas };
 
-    // grava no histórico
     await db("historico").insert({
       resultado: JSON.stringify(resultado),
     });

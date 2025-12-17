@@ -35,18 +35,15 @@ export default function HistoricoPage() {
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
 
-  // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  // paginação
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 20;
 
-  // carregar histórico sempre que filtros ou página mudarem
   useEffect(() => {
     async function carregar() {
       try {
@@ -86,7 +83,6 @@ export default function HistoricoPage() {
     carregar();
   }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page]);
 
-  // selects – opções derivadas
   const opcoesMarca = Array.from(
     new Set(
       itens
@@ -207,7 +203,6 @@ export default function HistoricoPage() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL – só aparece quando NÃO está carregando */}
       {!loading && (
         <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
           {erro && (
@@ -216,7 +211,6 @@ export default function HistoricoPage() {
             </div>
           )}
 
-          {/* FILTROS */}
           <section
             style={{
               backgroundColor: "#ffffff",
@@ -279,7 +273,6 @@ export default function HistoricoPage() {
                 alignItems: "end",
               }}
             >
-              {/* Produto */}
               <div>
                 <label
                   style={{
@@ -311,7 +304,6 @@ export default function HistoricoPage() {
                 />
               </div>
 
-              {/* Marca */}
               <div>
                 <label
                   style={{
@@ -348,7 +340,6 @@ export default function HistoricoPage() {
                 </select>
               </div>
 
-              {/* Categoria */}
               <div>
                 <label
                   style={{
@@ -385,7 +376,6 @@ export default function HistoricoPage() {
                 </select>
               </div>
 
-              {/* Comprador */}
               <div>
                 <label
                   style={{
@@ -424,7 +414,6 @@ export default function HistoricoPage() {
             </div>
           </section>
 
-          {/* Lista */}
           {!erro && itens.length === 0 && (
             <p className="text-sm text-slate-600">
               Nenhuma simulação encontrada.
@@ -462,7 +451,6 @@ export default function HistoricoPage() {
                       }}
                       className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                     >
-                      {/* X vermelho */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -484,7 +472,6 @@ export default function HistoricoPage() {
                         {excluindoId === item.id ? "…" : "✕"}
                       </button>
 
-                      {/* topo: produto + data */}
                       <div className="flex items-start justify-between gap-2 pr-5">
                         <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
                           {nomeProduto || "Produto não informado"}
@@ -494,7 +481,6 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* lucro/meta */}
                       <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
                         {lucroMedio !== undefined &&
                           !Number.isNaN(lucroMedio) && (
@@ -529,7 +515,6 @@ export default function HistoricoPage() {
                 })}
               </div>
 
-              {/* Paginação */}
               <div
                 style={{
                   marginTop: "8px",
@@ -597,7 +582,6 @@ export default function HistoricoPage() {
         </main>
       )}
 
-      {/* MODAL DE DETALHES */}
       {selecionado && (
         <div
           style={{
@@ -697,7 +681,6 @@ export default function HistoricoPage() {
 
               return (
                 <>
-                  {/* cards principais */}
                   <div
                     style={{
                       display: "grid",
@@ -843,7 +826,6 @@ export default function HistoricoPage() {
                     </div>
                   </div>
 
-                  {/* dados de entrada */}
                   <div
                     style={{
                       marginTop: "6px",
@@ -869,7 +851,6 @@ export default function HistoricoPage() {
                         gap: "6px",
                       }}
                     >
-                      {/* Produto */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -899,7 +880,6 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* Categoria */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -929,7 +909,6 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* Comprador */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -959,7 +938,6 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* Marca */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -989,7 +967,6 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* Demais campos A–F */}
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
@@ -1047,7 +1024,6 @@ export default function HistoricoPage() {
         </div>
       )}
 
-      {/* OVERLAY DE LOADING */}
       {loading && (
         <div
           style={{

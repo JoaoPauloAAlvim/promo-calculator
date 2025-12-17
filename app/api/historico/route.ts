@@ -50,7 +50,6 @@ export async function GET(req: Request) {
 
     const offset = (page - 1) * pageSize;
 
-    // busca pageSize + 1 só pra saber se existe próxima página
     const rows = await query.clone().offset(offset).limit(pageSize + 1);
 
     const hasMore = rows.length > pageSize;
