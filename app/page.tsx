@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { entradaLabels } from "@/lib/entradaLabels";
+import { useRouter } from "next/navigation";
 
 const Spinner = ({ size = 32 }: { size?: number }) => (
   <span
@@ -46,6 +47,7 @@ const initialForm: FormState = {
 };
 
 export default function Home() {
+  const router = useRouter()
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<Resultado | null>(null);
   const [loading, setLoading] = useState(false);
@@ -98,6 +100,16 @@ export default function Home() {
       maximumFractionDigits: 2,
     });
   };
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      router.push("/login");
+    }
+  }
 
   async function calcular() {
     setLoading(true);
@@ -222,24 +234,44 @@ export default function Home() {
           Simulador de Promoções
         </h1>
 
-        <Link href="/historico" style={{ textDecoration: "none" }}>
-          <span
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Link href="/historico" style={{ textDecoration: "none" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 14px",
+                borderRadius: "10px",
+                backgroundColor: "#4f46e5",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "12px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              }}
+            >
+              Histórico
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "8px 16px",
-              borderRadius: "10px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              fontWeight: 600,
-              fontSize: "14px",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#f9fafb",
+              color: "#4b5563",
+              fontSize: "12px",
+              fontWeight: 500,
+              cursor: "pointer",
             }}
           >
-            Ver histórico
-          </span>
-        </Link>
+            Sair
+          </button>
+        </div>
+
       </header>
 
       {/* CONTEÚDO PRINCIPAL */}
@@ -259,7 +291,7 @@ export default function Home() {
           <h2 className="text-xl md:text-2xl font-semibold text-slate-800 mb-2 text-center">
             Informe os dados da promoção
           </h2>
-          
+
           <div
             style={{
               maxWidth: "260px",

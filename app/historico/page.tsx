@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { entradaLabels } from "@/lib/entradaLabels";
+import { useRouter } from "next/navigation";
+
+
 
 const Spinner = ({ size = 32 }: { size?: number }) => (
   <span
@@ -34,6 +37,7 @@ const formatBR = (valor: number | undefined): string => {
 };
 
 export default function HistoricoPage() {
+  const router = useRouter();
   const [itens, setItens] = useState<HistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -45,6 +49,16 @@ export default function HistoricoPage() {
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      router.push("/login");
+    }
+  }
 
   // carrega histórico do backend sempre que filtros mudarem
   useEffect(() => {
@@ -171,24 +185,44 @@ export default function HistoricoPage() {
           Histórico de Simulações
         </h1>
 
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <span
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 14px",
+                borderRadius: "10px",
+                backgroundColor: "#4f46e5",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "12px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              }}
+            >
+              Simulador
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "8px 16px",
-              borderRadius: "10px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              fontWeight: 600,
-              fontSize: "14px",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              border: "1px solid #d1d5db",
+              backgroundColor: "#f9fafb",
+              color: "#4b5563",
+              fontSize: "12px",
+              fontWeight: 500,
+              cursor: "pointer",
             }}
           >
-            ⬅ Voltar ao simulador
-          </span>
-        </Link>
+            Sair
+          </button>
+        </div>
+
       </header>
 
       {/* CONTEÚDO PRINCIPAL – só renderiza quando NÃO estiver carregando */}
@@ -279,7 +313,7 @@ export default function HistoricoPage() {
                   type="text"
                   value={filtroProduto}
                   onChange={(e) => setFiltroProduto(e.target.value)}
-                  placeholder="Ex: creme dental"
+                  placeholder="Ex: CREME DENTAL"
                   style={{
                     width: "100%",
                     borderRadius: "999px",
@@ -897,7 +931,7 @@ export default function HistoricoPage() {
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
-                            chave as keyof typeof entradaLabels
+                          chave as keyof typeof entradaLabels
                           ] ?? chave.replace(/_/g, " ");
 
                         const isNumero = typeof valor === "number";
@@ -905,10 +939,10 @@ export default function HistoricoPage() {
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                            ? chave === "A" || chave === "C"
-                              ? String(Math.round(valor as number))
-                              : formatBR(Number(valor))
-                            : String(valor);
+                              ? chave === "A" || chave === "C"
+                                ? String(Math.round(valor as number))
+                                : formatBR(Number(valor))
+                              : String(valor);
 
                         return (
                           <div
