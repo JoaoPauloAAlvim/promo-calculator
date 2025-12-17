@@ -81,15 +81,6 @@ export default function LoginPage() {
           Simulador de Promoções – Login
         </h1>
 
-        {/* apenas um texto informativo, sem atalho pra / */}
-        <span
-          style={{
-            fontSize: "11px",
-            color: "#6b7280",
-          }}
-        >
-          Acesso restrito – faça login para entrar
-        </span>
       </header>
 
       {/* CONTEÚDO PRINCIPAL */}
@@ -136,7 +127,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Ex: compras@levate.com.br"
+                placeholder="Digite seu Email"
                 style={{
                   width: "100%",
                   border: "1px solid #d1d5db",
