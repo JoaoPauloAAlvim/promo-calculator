@@ -21,13 +21,12 @@ export async function GET(req: Request) {
       100
     );
 
-    const query = db("historico")
-      .select("id", "dataHora", "resultado")
-      .orderBy("dataHora", "desc");
+    // base query com filtros
+    const baseQuery = db("historico");
 
     if (produto) {
       const like = `%${produto.toLowerCase()}%`;
-      query.whereRaw(
+      baseQuery.whereRaw(
         `(
           lower(resultado->'entrada'->>'produto_nome') like ?
           OR lower(resultado->'entrada'->>'produto') like ?
@@ -37,20 +36,44 @@ export async function GET(req: Request) {
     }
 
     if (marca) {
-      query.whereRaw("resultado->'entrada'->>'marca' = ?", [marca]);
+      baseQuery.whereRaw("resultado->'entrada'->>'marca' = ?", [marca]);
     }
 
     if (categoria) {
-      query.whereRaw("resultado->'entrada'->>'categoria' = ?", [categoria]);
+      baseQuery.whereRaw(
+        "resultado->'entrada'->>'categoria' = ?",
+        [categoria]
+      );
     }
 
     if (comprador) {
-      query.whereRaw("resultado->'entrada'->>'comprador' = ?", [comprador]);
+      baseQuery.whereRaw(
+        "resultado->'entrada'->>'comprador' = ?",
+        [comprador]
+      );
     }
+
+    // total de registros para esses filtros
+    const countRow = await baseQuery
+      .clone()
+      .count<{ total: string | number }>({ total: "*" })
+      .first();
+
+    const totalCount = countRow
+      ? typeof countRow.total === "string"
+        ? parseInt(countRow.total, 10) || 0
+        : Number(countRow.total) || 0
+      : 0;
 
     const offset = (page - 1) * pageSize;
 
-    const rows = await query.clone().offset(offset).limit(pageSize + 1);
+    // busca da página – +1 pra saber se tem próxima
+    const rows = await baseQuery
+      .clone()
+      .select("id", "dataHora", "resultado")
+      .orderBy("dataHora", "desc")
+      .offset(offset)
+      .limit(pageSize + 1);
 
     const hasMore = rows.length > pageSize;
     const sliced = hasMore ? rows.slice(0, pageSize) : rows;
@@ -69,6 +92,7 @@ export async function GET(req: Request) {
       page,
       pageSize,
       hasMore,
+      totalCount,
     });
   } catch (err: any) {
     console.error("ERRO /api/historico GET:", err);
@@ -80,7 +104,6 @@ export async function GET(req: Request) {
 }
 
 
-// DELETE permanece igual ao que já fizemos
 export async function DELETE(req: Request) {
   try {
     const body = await req.json();

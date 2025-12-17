@@ -40,6 +40,7 @@ export default function HistoricoPage() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
+  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 20;
@@ -70,6 +71,8 @@ export default function HistoricoPage() {
         }
         setItens(Array.isArray(data.itens) ? data.itens : []);
         setHasMore(Boolean(data.hasMore));
+        setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
+
       } catch (e) {
         console.error(e);
         setErro("Erro ao buscar histórico. Verifique a conexão.");
@@ -530,10 +533,16 @@ export default function HistoricoPage() {
                     color: "#6b7280",
                   }}
                 >
-                  Página {page}
-                  {!hasMore && itens.length < pageSize
-                    ? " (última página)"
-                    : ""}
+                  {totalCount > 0 ? (
+                    <>
+                      Página {page} de{" "}
+                      {Math.max(1, Math.ceil(totalCount / pageSize))} – exibindo{" "}
+                      {itens.length} de {totalCount} registro
+                      {totalCount === 1 ? "" : "s"}
+                    </>
+                  ) : (
+                    "Nenhuma simulação encontrada."
+                  )}
                 </span>
 
                 <div
@@ -970,7 +979,7 @@ export default function HistoricoPage() {
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
-                            chave as keyof typeof entradaLabels
+                          chave as keyof typeof entradaLabels
                           ] ?? chave.replace(/_/g, " ");
 
                         const isNumero = typeof valor === "number";
@@ -978,10 +987,10 @@ export default function HistoricoPage() {
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                            ? chave === "A" || chave === "C"
-                              ? String(Math.round(valor as number))
-                              : formatBR(Number(valor))
-                            : String(valor);
+                              ? chave === "A" || chave === "C"
+                                ? String(Math.round(valor as number))
+                                : formatBR(Number(valor))
+                              : String(valor);
 
                         return (
                           <div
