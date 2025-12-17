@@ -1,7 +1,27 @@
 /** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  webpack: (config, { isServer }) => {
+    // evita tentar resolver 'fs' no client, já ajuda com libs de backend
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        fs: false,
+      };
+    }
 
+    // ignora especificamente o warning do knex/migrations/import-file
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      {
+        module: /knex[\\/]lib[\\/]migrations[\\/]util[\\/]import-file/,
+      },
+    ];
+
+    return config;
+  },
+  
   webpack: (config, { isServer, webpack }) => {
     // 1) Ignorar drivers opcionais do Knex que você não usa
     const ignoreModules = [

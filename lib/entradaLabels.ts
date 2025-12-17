@@ -5,4 +5,7 @@ export const entradaLabels: Record<string, string> = {
   D: "Preço promocional (R$)",
   E: "Custo unitário (R$)",
   F: "Receita adicional (R$)",
+  categoria: "Categoria do produto",
+  comprador: "Comprador",
+  marca: "Marca",
 };
