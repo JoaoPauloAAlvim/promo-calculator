@@ -240,7 +240,7 @@ export default function HistoricoPage() {
               }}
               style={{
                 fontSize: "11px",
-                borderRadius: "999px",
+                borderRadius: "10px",
                 border: "1px solid #e5e7eb",
                 padding: "3px 10px",
                 backgroundColor: "#f9fafb",
@@ -281,7 +281,7 @@ export default function HistoricoPage() {
                 placeholder="Ex: creme dental"
                 style={{
                   width: "100%",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #d1d5db",
                   padding: "6px 10px",
                   fontSize: "12px",
@@ -308,7 +308,7 @@ export default function HistoricoPage() {
                 onChange={(e) => setFiltroMarca(e.target.value)}
                 style={{
                   width: "100%",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #d1d5db",
                   padding: "6px 10px",
                   fontSize: "12px",
@@ -342,7 +342,7 @@ export default function HistoricoPage() {
                 onChange={(e) => setFiltroCategoria(e.target.value)}
                 style={{
                   width: "100%",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #d1d5db",
                   padding: "6px 10px",
                   fontSize: "12px",
@@ -376,7 +376,7 @@ export default function HistoricoPage() {
                 onChange={(e) => setFiltroComprador(e.target.value)}
                 style={{
                   width: "100%",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #d1d5db",
                   padding: "6px 10px",
                   fontSize: "12px",
@@ -533,7 +533,7 @@ export default function HistoricoPage() {
                 position: "absolute",
                 top: "8px",
                 right: "8px",
-                borderRadius: "999px",
+                borderRadius: "10px",
                 border: "none",
                 padding: "4px 8px",
                 fontSize: "12px",

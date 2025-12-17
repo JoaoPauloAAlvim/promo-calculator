@@ -259,10 +259,7 @@ export default function Home() {
           <h2 className="text-xl md:text-2xl font-semibold text-slate-800 mb-2 text-center">
             Informe os dados da promoção
           </h2>
-          <p className="text-xs md:text-sm text-slate-500 mb-4 text-center">
-            Use vírgula como separador decimal (ex: 4,79).
-          </p>
-
+          
           <div
             style={{
               maxWidth: "260px",
