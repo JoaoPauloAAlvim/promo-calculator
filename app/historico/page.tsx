@@ -302,10 +302,10 @@ export default function HistoricoPage() {
               onClick={handleLogout}
               style={{
                 padding: "6px 14px",
-                borderRadius: "999px",
+                borderRadius: "10px",
                 border: "1px solid #d1d5db",
-                backgroundColor: "#f9fafb",
-                color: "#4b5563",
+                backgroundColor: "#ff0000ff",
+                color: "#ffffffff",
                 fontSize: "12px",
                 fontWeight: 500,
                 cursor: "pointer",
@@ -370,7 +370,7 @@ export default function HistoricoPage() {
                 }}
                 style={{
                   fontSize: "11px",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #e5e7eb",
                   padding: "3px 10px",
                   backgroundColor: "#f9fafb",
@@ -414,7 +414,7 @@ export default function HistoricoPage() {
                   placeholder="Ex: creme dental"
                   style={{
                     width: "100%",
-                    borderRadius: "999px",
+                    borderRadius: "10px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -444,7 +444,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "999px",
+                    borderRadius: "10px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -481,7 +481,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "999px",
+                    borderRadius: "10px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -518,7 +518,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "999px",
+                    borderRadius: "10px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -682,7 +682,7 @@ export default function HistoricoPage() {
                     disabled={page === 1}
                     style={{
                       fontSize: "12px",
-                      borderRadius: "999px",
+                      borderRadius: "10px",
                       border: "1px solid #d1d5db",
                       padding: "4px 10px",
                       backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
@@ -698,7 +698,7 @@ export default function HistoricoPage() {
                     disabled={!hasMore}
                     style={{
                       fontSize: "12px",
-                      borderRadius: "999px",
+                      borderRadius: "10px",
                       border: "1px solid #d1d5db",
                       padding: "4px 10px",
                       backgroundColor: !hasMore ? "#f3f4f6" : "#ffffff",
@@ -749,7 +749,7 @@ export default function HistoricoPage() {
                 position: "absolute",
                 top: "8px",
                 right: "8px",
-                borderRadius: "999px",
+                borderRadius: "10px",
                 border: "none",
                 padding: "4px 8px",
                 fontSize: "12px",
@@ -1225,7 +1225,7 @@ export default function HistoricoPage() {
                         onClick={avaliarResultado}
                         style={{
                           padding: "6px 14px",
-                          borderRadius: "999px",
+                          borderRadius: "10px",
                           border: "none",
                           backgroundColor: "#4f46e5",
                           color: "#ffffff",

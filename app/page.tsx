@@ -462,10 +462,10 @@ export default function Home() {
               onClick={handleLogout}
               style={{
                 padding: "6px 14px",
-                borderRadius: "999px",
+                borderRadius: "10px",
                 border: "1px solid #d1d5db",
-                backgroundColor: "#f9fafb",
-                color: "#4b5563",
+                backgroundColor: "#ff0303ff",
+                color: "#ffffffff",
                 fontSize: "12px",
                 fontWeight: 500,
                 cursor: "pointer",
@@ -1327,7 +1327,7 @@ export default function Home() {
                     justifyContent: "center",
                     padding: "6px 14px",
                     borderRadius: "10px",
-                    backgroundColor: "#4f46e5", // mesmo estilo de antes
+                    backgroundColor: "#0f766e", // mesmo estilo de antes
                     color: "#ffffff",
                     fontWeight: 600,
                     fontSize: "12px",
