@@ -63,10 +63,11 @@ export default function LoginPage() {
               color: "#6b7280",
             }}
           >
-            Acesso restrito – Faça login para entrar
+            Acesso restrito – faça login para entrar
           </span>
         }
       />
+
 
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <section

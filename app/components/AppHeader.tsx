@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 type AppHeaderProps = {
@@ -27,27 +26,7 @@ export function AppHeader({ title, rightSlot }: AppHeaderProps) {
       >
         {title}
       </h1>
-
-      {rightSlot ?? (
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "8px 16px",
-              borderRadius: "10px",
-              backgroundColor: "#4f46e5",
-              color: "#ffffff",
-              fontWeight: 600,
-              fontSize: "14px",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-            }}
-          >
-            Início
-          </span>
-        </Link>
-      )}
+      {rightSlot && rightSlot}
     </header>
   );
 }

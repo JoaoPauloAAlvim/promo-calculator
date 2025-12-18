@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import * as XLSX from "xlsx";
 import { entradaLabels } from "@/lib/entradaLabels";
 import { Spinner } from "./components/Spinner";
 import { AppHeader } from "./components/AppHeader";
@@ -25,6 +26,27 @@ type Resultado = {
   metas: Record<string, any>;
 };
 
+type ImportRow = {
+  Produto?: string;
+  Categoria?: string;
+  Comprador?: string;
+  Marca?: string;
+  PeriodoHistorico?: number | string;
+  LucroTotalHistorico?: number | string;
+  DuracaoPromocao?: number | string;
+  PrecoPromocional?: number | string;
+  CustoUnitario?: number | string;
+  ReceitaAdicional?: number | string;
+};
+
+type ResultadoLote = {
+  linha: number;
+  produto: string;
+  ok: boolean;
+  erro?: string;
+  resultado?: Resultado;
+};
+
 const initialForm: FormState = {
   produto: "",
   categoria: "",
@@ -38,12 +60,27 @@ const initialForm: FormState = {
   F: "",
 };
 
+const formatBR = (valor: number | undefined): string => {
+  if (valor === undefined || Number.isNaN(valor)) return "—";
+  return valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 export default function Home() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<Resultado | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // loading da simulação única
   const [error, setError] = useState<string | null>(null);
+
+  // estado do modal de importação
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResults, setImportResults] = useState<ResultadoLote[]>([]);
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] =
     [
@@ -83,14 +120,6 @@ export default function Home() {
     if (!valor) return NaN;
     const limpo = valor.trim().replace(/\./g, "").replace(",", ".");
     return Number(limpo);
-  };
-
-  const formatBR = (valor: number | undefined): string => {
-    if (valor === undefined || Number.isNaN(valor)) return "—";
-    return valor.toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
   };
 
   async function handleLogout() {
@@ -211,6 +240,180 @@ export default function Home() {
     setError(null);
   }
 
+  function abrirModalImportacao() {
+    setShowImportModal(true);
+    setImportFileName(null);
+    setImportError(null);
+    setImportResults([]);
+  }
+
+  function fecharModalImportacao() {
+    setShowImportModal(false);
+    setImportFileName(null);
+    setImportError(null);
+    setImportResults([]);
+  }
+
+  function gerarPlanilhaModelo() {
+    const header = [
+      "Produto",
+      "Categoria",
+      "Comprador",
+      "Marca",
+      "PeriodoHistorico",
+      "LucroTotalHistorico",
+      "DuracaoPromocao",
+      "PrecoPromocional",
+      "CustoUnitario",
+      "ReceitaAdicional",
+    ];
+
+    const exemplo = [
+      "CREME DENTAL COLGATE 120G",
+      "HIGIENE ORAL",
+      "FLÁVIA",
+      "COLGATE",
+      30,
+      12450,
+      7,
+      4.79,
+      4.45,
+      0.42,
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([header, exemplo]);
+    XLSX.utils.book_append_sheet(wb, ws, "PROMOCOES");
+    XLSX.writeFile(wb, "modelo_promocoes.xlsx");
+  }
+
+  async function handleImportFileChange(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    setImportResults([]);
+    setImportError(null);
+
+    if (!file) {
+      setImportFileName(null);
+      return;
+    }
+
+    setImportFileName(file.name);
+    setImportLoading(true);
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      const json: ImportRow[] = XLSX.utils.sheet_to_json(sheet, {
+        defval: "",
+      });
+
+      if (!json.length) {
+        setImportError(
+          "A planilha está vazia ou a primeira aba não contém dados para importar."
+        );
+        return;
+      }
+
+      const resultadosTemp: ResultadoLote[] = [];
+
+      const toNumericString = (v: any): string => {
+        if (typeof v === "number") return String(v);
+        if (typeof v === "string") return v;
+        return "";
+      };
+
+      for (let i = 0; i < json.length; i++) {
+        const linha = i + 2;
+        const row = json[i];
+
+        const produto = String(row.Produto || "").trim();
+        const categoria = String(row.Categoria || "").trim();
+        const comprador = String(row.Comprador || "").trim();
+        const marca = String(row.Marca || "").trim();
+
+        if (!produto) {
+          resultadosTemp.push({
+            linha,
+            produto: "",
+            ok: false,
+            erro: "Produto em branco.",
+          });
+          continue;
+        }
+
+        const A = toNumericString(row.PeriodoHistorico);
+        const B = toNumericString(row.LucroTotalHistorico);
+        const C = toNumericString(row.DuracaoPromocao);
+        const D = toNumericString(row.PrecoPromocional);
+        const E = toNumericString(row.CustoUnitario);
+        const F = toNumericString(row.ReceitaAdicional);
+
+        try {
+          const res = await fetch("/api/calculo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              produto,
+              categoria,
+              comprador,
+              marca,
+              A,
+              B,
+              C,
+              D,
+              E,
+              F,
+            }),
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok || data?.error || data?.erro) {
+            resultadosTemp.push({
+              linha,
+              produto,
+              ok: false,
+              erro:
+                data?.error ||
+                data?.erro ||
+                "Erro ao calcular para esta linha.",
+            });
+            continue;
+          }
+
+          resultadosTemp.push({
+            linha,
+            produto,
+            ok: true,
+            resultado: data as Resultado,
+          });
+        } catch (err: any) {
+          console.error(err);
+          resultadosTemp.push({
+            linha,
+            produto,
+            ok: false,
+            erro: "Falha inesperada ao chamar a API.",
+          });
+        }
+      }
+
+      setImportResults(resultadosTemp);
+    } catch (err: any) {
+      console.error(err);
+      setImportError(
+        "Erro ao ler a planilha. Verifique se o arquivo é um .xlsx válido."
+      );
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       <AppHeader
@@ -238,6 +441,24 @@ export default function Home() {
 
             <button
               type="button"
+              onClick={abrirModalImportacao}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: "#0f766e",
+                color: "#ffffff",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              }}
+            >
+              Importar planilha
+            </button>
+
+            <button
+              type="button"
               onClick={handleLogout}
               style={{
                 padding: "6px 14px",
@@ -256,6 +477,7 @@ export default function Home() {
         }
       />
 
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <section
           className="bg-white shadow-md p-6 md:p-7"
@@ -279,6 +501,7 @@ export default function Home() {
               margin: "0 auto",
             }}
           >
+            {/* Nome do produto */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -310,6 +533,7 @@ export default function Home() {
               />
             </div>
 
+            {/* Categoria */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -341,6 +565,7 @@ export default function Home() {
               />
             </div>
 
+            {/* Comprador */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -372,6 +597,7 @@ export default function Home() {
               />
             </div>
 
+            {/* Marca */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -403,6 +629,7 @@ export default function Home() {
               />
             </div>
 
+            {/* Campos numéricos A–F */}
             {campos.map((campo) => (
               <div key={campo.id} style={{ marginBottom: "16px" }}>
                 <label
@@ -440,6 +667,7 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Botão Calcular */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <button
               type="button"
@@ -465,6 +693,7 @@ export default function Home() {
         </section>
       </main>
 
+      {/* MODAL DE RESULTADO */}
       {result && (
         <div
           style={{
@@ -510,6 +739,7 @@ export default function Home() {
               ✕
             </button>
 
+            {/* Cabeçalho */}
             <div style={{ marginBottom: "12px" }}>
               <p
                 style={{
@@ -535,6 +765,7 @@ export default function Home() {
               </p>
             </div>
 
+            {/* Lucro diário + lucro unitário */}
             <div
               style={{
                 display: "grid",
@@ -604,6 +835,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Metas */}
             <div
               style={{
                 display: "grid",
@@ -686,6 +918,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Dados informados */}
             <div
               style={{
                 marginTop: "12px",
@@ -711,6 +944,7 @@ export default function Home() {
                   gap: "6px",
                 }}
               >
+                {/* Produto */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -740,6 +974,7 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Categoria */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -769,6 +1004,7 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Comprador */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -798,6 +1034,7 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Marca */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -827,6 +1064,7 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Campos A–F */}
                 {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
                   const raw = entrada[key];
                   const label = entradaLabels[key] ?? key;
@@ -835,10 +1073,10 @@ export default function Home() {
                     raw === undefined || raw === null
                       ? "—"
                       : isNumero
-                      ? key === "A" || key === "C"
-                        ? String(Math.round(raw))
-                        : formatBR(raw)
-                      : String(raw);
+                        ? key === "A" || key === "C"
+                          ? String(Math.round(raw))
+                          : formatBR(raw)
+                        : String(raw);
 
                   return (
                     <div
@@ -878,6 +1116,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* MODAL DE ERRO */}
       {error && !result && (
         <div
           style={{
@@ -981,6 +1220,369 @@ export default function Home() {
         </div>
       )}
 
+      {/* MODAL DE IMPORTAÇÃO */}
+      {showImportModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "16px",
+            zIndex: 80,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              maxWidth: "720px",
+              width: "100%",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              padding: "20px",
+              position: "relative",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+            }}
+          >
+            <button
+              onClick={fecharModalImportacao}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                borderRadius: "999px",
+                border: "none",
+                padding: "4px 8px",
+                fontSize: "12px",
+                backgroundColor: "#f3f4f6",
+                color: "#4b5563",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: "6px",
+              }}
+            >
+              Importar planilha Excel
+            </h3>
+
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#6b7280",
+                marginBottom: "8px",
+              }}
+            >
+              Formato esperado: primeira aba com colunas{" "}
+              <strong>
+                Produto, Categoria, Comprador, Marca, PeriodoHistorico, LucroTotalHistorico,
+                DuracaoPromocao, PrecoPromocional, CustoUnitario, ReceitaAdicional
+              </strong>
+              .
+            </p>
+
+            {/* Linha com Escolher arquivo (esquerda) e Baixar modelo (direita) */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+                marginBottom: "10px",
+              }}
+            >
+              {/* Lado esquerdo: botão Escolher arquivo + nome do arquivo */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  flex: "1 1 0",
+                }}
+              >
+                <input
+                  id="file-input-excel"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportFileChange}
+                  style={{ display: "none" }}
+                />
+
+                <label
+                  htmlFor="file-input-excel"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "6px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#4f46e5", // mesmo estilo de antes
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                    border: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Escolher arquivo
+                </label>
+
+                {importFileName && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#6b7280",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "260px",
+                    }}
+                  >
+                    {importFileName}
+                  </span>
+                )}
+              </div>
+
+              {/* Lado direito: botão Baixar modelo */}
+              <div
+                style={{
+                  flex: "0 0 auto",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={gerarPlanilhaModelo}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "6px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: "#0f766e", // mesmo estilo de antes
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                    border: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Baixar modelo (.xlsx)
+                </button>
+              </div>
+            </div>
+
+
+
+            {/* Botão para escolher arquivo */}
+            <div
+              style={{
+                marginBottom: "10px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <input
+                id="file-input-excel"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFileChange}
+                style={{ display: "none" }}
+              />
+
+              
+
+              {importFileName && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#6b7280",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: "260px",
+                  }}
+                >
+                  {importFileName}
+                </span>
+              )}
+            </div>
+
+            {importError && (
+              <div
+                style={{
+                  marginTop: "4px",
+                  marginBottom: "8px",
+                  borderRadius: "10px",
+                  border: "1px solid #fecaca",
+                  backgroundColor: "#fee2e2",
+                  padding: "8px 10px",
+                  fontSize: "12px",
+                  color: "#b91c1c",
+                }}
+              >
+                ⚠ {importError}
+              </div>
+            )}
+
+            {importResults.length > 0 && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  borderTop: "1px solid #e5e7eb",
+                  paddingTop: "10px",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "#111827",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Resultados da simulação em lote
+                </p>
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#6b7280",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Linhas OK foram salvas no histórico normalmente via API de
+                  cálculo.
+                </p>
+
+                <div style={{ maxHeight: "260px", overflowY: "auto" }}>
+                  <table className="min-w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="border px-2 py-1 text-left">Linha</th>
+                        <th className="border px-2 py-1 text-left">Produto</th>
+                        <th className="border px-2 py-1 text-left">Status</th>
+                        <th className="border px-2 py-1 text-left">
+                          Lucro diário hist.
+                        </th>
+                        <th className="border px-2 py-1 text-left">
+                          Lucro unit. promo
+                        </th>
+                        <th className="border px-2 py-1 text-left">
+                          Meta unid/dia
+                        </th>
+                        <th className="border px-2 py-1 text-left">
+                          Meta unid/período
+                        </th>
+                        <th className="border px-2 py-1 text-left">Erro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importResults.map((r) => {
+                        const entrada = r.resultado?.entrada ?? {};
+                        const metas = r.resultado?.metas ?? {};
+
+                        return (
+                          <tr key={r.linha}>
+                            <td className="border px-2 py-1">{r.linha}</td>
+                            <td className="border px-2 py-1">
+                              {r.produto || "—"}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {r.ok ? (
+                                <span className="text-emerald-700 font-semibold">
+                                  OK
+                                </span>
+                              ) : (
+                                <span className="text-red-700 font-semibold">
+                                  FALHA
+                                </span>
+                              )}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {r.ok
+                                ? `R$ ${formatBR(
+                                  Number(entrada.lucro_diario_hist)
+                                )}`
+                                : "—"}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {r.ok &&
+                                metas?.lucro_unitario_promo !== undefined
+                                ? `R$ ${formatBR(
+                                  Number(metas.lucro_unitario_promo)
+                                )}`
+                                : "—"}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {r.ok && metas?.meta_unid_dia !== undefined
+                                ? metas.meta_unid_dia
+                                : "—"}
+                            </td>
+                            <td className="border px-2 py-1">
+                              {r.ok && metas?.meta_unid_total !== undefined
+                                ? metas.meta_unid_total
+                                : "—"}
+                            </td>
+                            <td className="border px-2 py-1 text-red-600">
+                              {!r.ok ? r.erro : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {importLoading && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(255,255,255,0.7)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "16px",
+                }}
+              >
+                <Spinner size={32} />
+                <p
+                  style={{
+                    marginTop: "8px",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "#4b5563",
+                  }}
+                >
+                  Processando planilha…
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY DE LOADING da simulação única */}
       {loading && (
         <div
           style={{

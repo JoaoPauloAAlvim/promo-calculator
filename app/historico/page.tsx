@@ -35,16 +35,28 @@ export default function HistoricoPage() {
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
 
+  // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  const [totalCount, setTotalCount] = useState(0);
+  // paginação
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const pageSize = 20;
 
+  // campos para análise da promoção encerrada
+  const [qtdVendida, setQtdVendida] = useState<string>("");
+  const [analisePromo, setAnalisePromo] = useState<{
+    lucroHistPeriodo: number;
+    lucroRealPromo: number;
+    diff: number;
+    situacao: "ACIMA" | "ABAIXO" | "IGUAL";
+  } | null>(null);
+
+  // carregar histórico sempre que filtros ou página mudarem
   useEffect(() => {
     async function carregar() {
       try {
@@ -67,17 +79,18 @@ export default function HistoricoPage() {
           setErro(data?.error || "Erro ao carregar histórico no servidor.");
           setItens([]);
           setHasMore(false);
+          setTotalCount(0);
           return;
         }
         setItens(Array.isArray(data.itens) ? data.itens : []);
         setHasMore(Boolean(data.hasMore));
         setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
-
       } catch (e) {
         console.error(e);
         setErro("Erro ao buscar histórico. Verifique a conexão.");
         setItens([]);
         setHasMore(false);
+        setTotalCount(0);
       } finally {
         setLoading(false);
       }
@@ -86,6 +99,7 @@ export default function HistoricoPage() {
     carregar();
   }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page]);
 
+  // selects – opções derivadas
   const opcoesMarca = Array.from(
     new Set(
       itens
@@ -161,12 +175,106 @@ export default function HistoricoPage() {
     (selecionado?.resultado as any)?.entrada?.produto ??
     "";
 
+  // Função para avaliar se a promoção deu certo ou não
+  async function avaliarResultado() {
+    if (!selecionado) return;
+
+    const e = selecionado.resultado.entrada || {};
+    const m = selecionado.resultado.metas || {};
+
+    const qtd = Number(
+      qtdVendida.trim().replace(/\./g, "").replace(",", ".")
+    );
+    if (!qtd || Number.isNaN(qtd) || qtd <= 0) {
+      alert("Informe uma quantidade total vendida válida (maior que zero).");
+      return;
+    }
+
+    const lucroDiarioHist = Number(e.lucro_diario_hist);
+    const diasPromo = Number(e.C ?? e.c);
+    const lucroUnitPromo = Number(m.lucro_unitario_promo);
+
+    if (
+      !Number.isFinite(lucroDiarioHist) ||
+      !Number.isFinite(diasPromo) ||
+      !Number.isFinite(lucroUnitPromo)
+    ) {
+      alert(
+        "Não foi possível calcular a análise para esta simulação. Verifique se A, C e o lucro unitário foram calculados corretamente."
+      );
+      return;
+    }
+
+    const lucroHistPeriodo = lucroDiarioHist * diasPromo;
+    const lucroRealPromo = lucroUnitPromo * qtd;
+    const diff = lucroRealPromo - lucroHistPeriodo;
+
+    const EPS = 0.01;
+    let situacao: "ACIMA" | "ABAIXO" | "IGUAL";
+    if (diff > EPS) situacao = "ACIMA";
+    else if (diff < -EPS) situacao = "ABAIXO";
+    else situacao = "IGUAL";
+
+    // Atualiza no estado (pra ver na hora)
+    setAnalisePromo({ lucroHistPeriodo, lucroRealPromo, diff, situacao });
+
+    // Salva no banco
+    try {
+      await fetch(`/api/historico/${selecionado.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qtdVendida: qtd,
+          lucroHistPeriodo,
+          lucroRealPromo,
+          diff,
+          situacao,
+        }),
+      });
+      // se quiser, você pode opcionalmente atualizar 'selecionado.resultado.metas.venda_real' aqui
+    } catch (err) {
+      console.error(err);
+      alert("A análise foi calculada, mas não foi possível salvar no banco.");
+    }
+  }
+
+
+  function abrirModal(item: HistoricoItem) {
+    setSelecionado(item);
+
+    const vendaReal = item.resultado?.metas?.venda_real as
+      | {
+        qtd_vendida?: number;
+        lucro_hist_periodo?: number;
+        lucro_real_promo?: number;
+        diff?: number;
+        situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
+      }
+      | undefined;
+
+    if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
+      setQtdVendida(String(vendaReal.qtd_vendida));
+      setAnalisePromo({
+        lucroHistPeriodo: Number(vendaReal.lucro_hist_periodo || 0),
+        lucroRealPromo: Number(vendaReal.lucro_real_promo || 0),
+        diff: Number(vendaReal.diff || 0),
+        situacao:
+          (vendaReal.situacao as "ACIMA" | "ABAIXO" | "IGUAL") || "IGUAL",
+      });
+    } else {
+      setQtdVendida("");
+      setAnalisePromo(null);
+    }
+  }
+
+
   return (
     <div className="min-h-screen bg-slate-100">
       <AppHeader
         title="Histórico de Simulações"
         rightSlot={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {/* Botão Simulador (azul) */}
             <Link href="/" style={{ textDecoration: "none" }}>
               <span
                 style={{
@@ -186,6 +294,9 @@ export default function HistoricoPage() {
               </span>
             </Link>
 
+            
+
+            {/* Botão Sair (cinza) */}
             <button
               type="button"
               onClick={handleLogout}
@@ -206,6 +317,9 @@ export default function HistoricoPage() {
         }
       />
 
+
+
+      {/* CONTEÚDO PRINCIPAL – só aparece quando NÃO está carregando */}
       {!loading && (
         <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
           {erro && (
@@ -214,6 +328,7 @@ export default function HistoricoPage() {
             </div>
           )}
 
+          {/* FILTROS */}
           <section
             style={{
               backgroundColor: "#ffffff",
@@ -276,6 +391,7 @@ export default function HistoricoPage() {
                 alignItems: "end",
               }}
             >
+              {/* Produto */}
               <div>
                 <label
                   style={{
@@ -307,6 +423,7 @@ export default function HistoricoPage() {
                 />
               </div>
 
+              {/* Marca */}
               <div>
                 <label
                   style={{
@@ -343,6 +460,7 @@ export default function HistoricoPage() {
                 </select>
               </div>
 
+              {/* Categoria */}
               <div>
                 <label
                   style={{
@@ -379,6 +497,7 @@ export default function HistoricoPage() {
                 </select>
               </div>
 
+              {/* Comprador */}
               <div>
                 <label
                   style={{
@@ -417,6 +536,7 @@ export default function HistoricoPage() {
             </div>
           </section>
 
+          {/* Lista */}
           {!erro && itens.length === 0 && (
             <p className="text-sm text-slate-600">
               Nenhuma simulação encontrada.
@@ -441,7 +561,7 @@ export default function HistoricoPage() {
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => setSelecionado(item)}
+                      onClick={() => abrirModal(item)}
                       style={{
                         borderRadius: 18,
                         width: 260,
@@ -454,6 +574,7 @@ export default function HistoricoPage() {
                       }}
                       className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                     >
+                      {/* X vermelho */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -475,6 +596,7 @@ export default function HistoricoPage() {
                         {excluindoId === item.id ? "…" : "✕"}
                       </button>
 
+                      {/* topo: produto + data */}
                       <div className="flex items-start justify-between gap-2 pr-5">
                         <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
                           {nomeProduto || "Produto não informado"}
@@ -484,6 +606,7 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
+                      {/* lucro/meta */}
                       <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
                         {lucroMedio !== undefined &&
                           !Number.isNaN(lucroMedio) && (
@@ -518,6 +641,7 @@ export default function HistoricoPage() {
                 })}
               </div>
 
+              {/* Paginação */}
               <div
                 style={{
                   marginTop: "8px",
@@ -591,6 +715,7 @@ export default function HistoricoPage() {
         </main>
       )}
 
+      {/* MODAL DE DETALHES */}
       {selecionado && (
         <div
           style={{
@@ -690,6 +815,7 @@ export default function HistoricoPage() {
 
               return (
                 <>
+                  {/* cards principais */}
                   <div
                     style={{
                       display: "grid",
@@ -835,6 +961,7 @@ export default function HistoricoPage() {
                     </div>
                   </div>
 
+                  {/* dados de entrada */}
                   <div
                     style={{
                       marginTop: "6px",
@@ -860,6 +987,7 @@ export default function HistoricoPage() {
                         gap: "6px",
                       }}
                     >
+                      {/* Produto */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -889,6 +1017,7 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
+                      {/* Categoria */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -918,6 +1047,7 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
+                      {/* Comprador */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -947,6 +1077,7 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
+                      {/* Marca */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -976,6 +1107,7 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
+                      {/* Demais campos A–F */}
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
@@ -1026,6 +1158,229 @@ export default function HistoricoPage() {
                       })}
                     </div>
                   </div>
+
+                  {/* BLOCO: Análise pós-promocional */}
+                  <div
+                    style={{
+                      marginTop: "14px",
+                      paddingTop: "10px",
+                      borderTop: "1px dashed #e5e7eb",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#111827",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Análise após encerramento da promoção
+                    </p>
+
+                    {/* Campo de quantidade */}
+                    <div
+                      style={{
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Quantidade TOTAL vendida na promoção
+                      </label>
+                      <input
+                        type="text"
+                        value={qtdVendida}
+                        onChange={(e) => setQtdVendida(e.target.value)}
+                        placeholder="Ex: 620"
+                        style={{
+                          width: "100%",
+                          borderRadius: "10px",
+                          border: "1px solid #d1d5db",
+                          padding: "6px 10px",
+                          fontSize: "12px",
+                          backgroundColor: "#f9fafb",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    {/* Botão embaixo, alinhado à direita */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={avaliarResultado}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: "999px",
+                          border: "none",
+                          backgroundColor: "#4f46e5",
+                          color: "#ffffff",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Avaliar resultado da promoção
+                      </button>
+                    </div>
+
+
+                    {analisePromo && (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                          gap: "8px",
+                          marginTop: "4px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#f9fafb",
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            Lucro histórico no período
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color: "#111827",
+                            }}
+                          >
+                            {`R$ ${formatBR(analisePromo.lucroHistPeriodo)}`}
+                          </p>
+                        </div>
+
+                        <div
+                          style={{
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#f9fafb",
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            Lucro REAL na promoção
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color: "#111827",
+                            }}
+                          >
+                            {`R$ ${formatBR(analisePromo.lucroRealPromo)}`}
+                          </p>
+                        </div>
+
+                        <div
+                          style={{
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#f9fafb",
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            Diferença vs histórico
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color:
+                                analisePromo.diff > 0
+                                  ? "#047857"
+                                  : analisePromo.diff < 0
+                                    ? "#b91c1c"
+                                    : "#111827",
+                            }}
+                          >
+                            {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(
+                              analisePromo.diff
+                            )}`}
+                          </p>
+                        </div>
+
+                        <div
+                          style={{
+                            gridColumn: "1 / -1",
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor:
+                              analisePromo.situacao === "ACIMA"
+                                ? "#ecfdf3"
+                                : analisePromo.situacao === "ABAIXO"
+                                  ? "#fef2f2"
+                                  : "#fffbeb",
+                            padding: "8px 10px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color:
+                                analisePromo.situacao === "ACIMA"
+                                  ? "#047857"
+                                  : analisePromo.situacao === "ABAIXO"
+                                    ? "#b91c1c"
+                                    : "#92400e",
+                            }}
+                          >
+                            {analisePromo.situacao === "ACIMA" &&
+                              "📈 Promoção ACIMA do histórico de lucro."}
+                            {analisePromo.situacao === "ABAIXO" &&
+                              "📉 Promoção ABAIXO do histórico de lucro."}
+                            {analisePromo.situacao === "IGUAL" &&
+                              "⚖ Promoção IGUAL ao histórico de lucro."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               );
             })()}
@@ -1033,6 +1388,7 @@ export default function HistoricoPage() {
         </div>
       )}
 
+      {/* OVERLAY DE LOADING */}
       {loading && (
         <div
           style={{
