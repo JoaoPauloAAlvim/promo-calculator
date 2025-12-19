@@ -41,6 +41,9 @@ export default function HistoricoPage() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
+  // filtro local por status da análise
+  const [filtroStatus, setFiltroStatus] = useState<string>("");
+
   // paginação
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -132,6 +135,24 @@ export default function HistoricoPage() {
         .filter((v) => v !== "")
     )
   ).sort((a, b) => a.localeCompare(b));
+
+  // filtro local por status com base em metas.venda_real.situacao
+  const itensFiltrados = itens.filter((item) => {
+    if (!filtroStatus) return true;
+
+    const vendaReal = item.resultado?.metas?.venda_real as
+      | { situacao?: string }
+      | undefined;
+    const sit = vendaReal?.situacao?.toUpperCase?.() ?? null;
+
+    if (filtroStatus === "PENDENTE") {
+      // sem venda_real ou sem situacao => pendente
+      return !sit;
+    }
+
+    // ACIMA / ABAIXO / IGUAL
+    return sit === filtroStatus;
+  });
 
   async function excluirItem(id: number) {
     try {
@@ -231,25 +252,24 @@ export default function HistoricoPage() {
           situacao,
         }),
       });
-      // se quiser, você pode opcionalmente atualizar 'selecionado.resultado.metas.venda_real' aqui
     } catch (err) {
       console.error(err);
       alert("A análise foi calculada, mas não foi possível salvar no banco.");
     }
   }
 
-
+  // Reset de campos quando abre um novo modal (e carrega venda_real se existir)
   function abrirModal(item: HistoricoItem) {
     setSelecionado(item);
 
     const vendaReal = item.resultado?.metas?.venda_real as
       | {
-        qtd_vendida?: number;
-        lucro_hist_periodo?: number;
-        lucro_real_promo?: number;
-        diff?: number;
-        situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
-      }
+          qtd_vendida?: number;
+          lucro_hist_periodo?: number;
+          lucro_real_promo?: number;
+          diff?: number;
+          situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
+        }
       | undefined;
 
     if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
@@ -267,14 +287,12 @@ export default function HistoricoPage() {
     }
   }
 
-
   return (
     <div className="min-h-screen bg-slate-100">
       <AppHeader
         title="Histórico de Simulações"
         rightSlot={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {/* Botão Simulador (azul) */}
             <Link href="/" style={{ textDecoration: "none" }}>
               <span
                 style={{
@@ -294,18 +312,15 @@ export default function HistoricoPage() {
               </span>
             </Link>
 
-
-
-            {/* Botão Sair (cinza) */}
             <button
               type="button"
               onClick={handleLogout}
               style={{
                 padding: "6px 14px",
-                borderRadius: "10px",
+                borderRadius: "999px",
                 border: "1px solid #d1d5db",
-                backgroundColor: "#ff0000ff",
-                color: "#ffffffff",
+                backgroundColor: "#f9fafb",
+                color: "#4b5563",
                 fontSize: "12px",
                 fontWeight: 500,
                 cursor: "pointer",
@@ -316,8 +331,6 @@ export default function HistoricoPage() {
           </div>
         }
       />
-
-
 
       {/* CONTEÚDO PRINCIPAL – só aparece quando NÃO está carregando */}
       {!loading && (
@@ -366,11 +379,12 @@ export default function HistoricoPage() {
                   setFiltroMarca("");
                   setFiltroCategoria("");
                   setFiltroComprador("");
+                  setFiltroStatus("");
                   setPage(1);
                 }}
                 style={{
                   fontSize: "11px",
-                  borderRadius: "10px",
+                  borderRadius: "999px",
                   border: "1px solid #e5e7eb",
                   padding: "3px 10px",
                   backgroundColor: "#f9fafb",
@@ -414,7 +428,7 @@ export default function HistoricoPage() {
                   placeholder="Ex: creme dental"
                   style={{
                     width: "100%",
-                    borderRadius: "10px",
+                    borderRadius: "999px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -444,7 +458,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "10px",
+                    borderRadius: "999px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -481,7 +495,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "10px",
+                    borderRadius: "999px",
                     border: "1px solid #d1d5db",
                     padding: "6px 10px",
                     fontSize: "12px",
@@ -518,8 +532,7 @@ export default function HistoricoPage() {
                   }}
                   style={{
                     width: "100%",
-                    borderRadius: "10px",
-                    border: "1px solid #d1d5db",
+                    borderRadius: "999px",
                     padding: "6px 10px",
                     fontSize: "12px",
                     backgroundColor: "#f9fafb",
@@ -534,6 +547,44 @@ export default function HistoricoPage() {
                 </select>
               </div>
             </div>
+
+            {/* Filtro de status da análise */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginTop: "4px",
+              }}
+            >
+              <label
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: "#6b7280",
+                }}
+              >
+                Status da análise
+              </label>
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                style={{
+                  minWidth: "180px",
+                  borderRadius: "999px",
+                  border: "1px solid #d1d5db",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  backgroundColor: "#f9fafb",
+                }}
+              >
+                <option value="">Todos</option>
+                <option value="PENDENTE">Pendentes</option>
+                <option value="ACIMA">Analisadas – ACIMA</option>
+                <option value="IGUAL">Analisadas – IGUAL</option>
+                <option value="ABAIXO">Analisadas – ABAIXO</option>
+              </select>
+            </div>
           </section>
 
           {/* Lista */}
@@ -543,10 +594,16 @@ export default function HistoricoPage() {
             </p>
           )}
 
-          {!erro && itens.length > 0 && (
+          {!erro && itens.length > 0 && itensFiltrados.length === 0 && (
+            <p className="text-sm text-slate-600">
+              Nenhuma simulação encontrada para esse status de análise.
+            </p>
+          )}
+
+          {!erro && itensFiltrados.length > 0 && (
             <>
               <div className="cards-historico-grid">
-                {itens.map((item) => {
+                {itensFiltrados.map((item) => {
                   const entrada = item.resultado?.entrada ?? {};
                   const metas = item.resultado?.metas ?? {};
                   const nomeProduto =
@@ -556,6 +613,33 @@ export default function HistoricoPage() {
                   const lucroMedio =
                     metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
                   const metaDia = metas?.meta_unid_dia;
+
+                  const vendaReal = metas?.venda_real as
+                    | { situacao?: string }
+                    | undefined;
+                  const sit = vendaReal?.situacao?.toUpperCase?.() ?? null;
+
+                  let statusLabel = "Pendente de análise";
+                  let statusBg = "#f3f4f6";
+                  let statusColor = "#4b5563";
+                  let statusBorder = "#e5e7eb";
+
+                  if (sit === "ACIMA") {
+                    statusLabel = "Analisada – ACIMA";
+                    statusBg = "#ecfdf3";
+                    statusColor = "#047857";
+                    statusBorder = "#6ee7b7";
+                  } else if (sit === "ABAIXO") {
+                    statusLabel = "Analisada – ABAIXO";
+                    statusBg = "#fef2f2";
+                    statusColor = "#b91c1c";
+                    statusBorder = "#fecaca";
+                  } else if (sit === "IGUAL") {
+                    statusLabel = "Analisada – IGUAL";
+                    statusBg = "#fffbeb";
+                    statusColor = "#92400e";
+                    statusBorder = "#fcd34d";
+                  }
 
                   return (
                     <button
@@ -606,8 +690,8 @@ export default function HistoricoPage() {
                         </p>
                       </div>
 
-                      {/* lucro/meta */}
-                      <div className="mt-1 flex flex-col gap-0.5 text-[11px] text-slate-600 pr-5">
+                      {/* lucro/meta + status */}
+                      <div className="mt-1 flex flex-col gap-1 text-[11px] text-slate-600 pr-5">
                         {lucroMedio !== undefined &&
                           !Number.isNaN(lucroMedio) && (
                             <span className="inline-flex items-center gap-1">
@@ -631,6 +715,25 @@ export default function HistoricoPage() {
                             </span>
                           </span>
                         )}
+
+                        {/* Status da análise */}
+                        <span
+                          style={{
+                            marginTop: "2px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            backgroundColor: statusBg,
+                            color: statusColor,
+                            border: `1px solid ${statusBorder}`,
+                            alignSelf: "flex-start",
+                          }}
+                        >
+                          {statusLabel}
+                        </span>
                       </div>
 
                       <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
@@ -661,7 +764,7 @@ export default function HistoricoPage() {
                     <>
                       Página {page} de{" "}
                       {Math.max(1, Math.ceil(totalCount / pageSize))} – exibindo{" "}
-                      {itens.length} de {totalCount} registro
+                      {itensFiltrados.length} de {totalCount} registro
                       {totalCount === 1 ? "" : "s"}
                     </>
                   ) : (
@@ -682,9 +785,8 @@ export default function HistoricoPage() {
                     disabled={page === 1}
                     style={{
                       fontSize: "12px",
-                      borderRadius: "10px",
-                      border: "1px solid #d1d5db",
-                      padding: "4px 10px",
+                      borderRadius: "999px",
+                        padding: "4px 10px",
                       backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
                       color: page === 1 ? "#9ca3af" : "#4b5563",
                       cursor: page === 1 ? "default" : "pointer",
@@ -698,7 +800,7 @@ export default function HistoricoPage() {
                     disabled={!hasMore}
                     style={{
                       fontSize: "12px",
-                      borderRadius: "10px",
+                      borderRadius: "999px",
                       border: "1px solid #d1d5db",
                       padding: "4px 10px",
                       backgroundColor: !hasMore ? "#f3f4f6" : "#ffffff",
@@ -749,7 +851,7 @@ export default function HistoricoPage() {
                 position: "absolute",
                 top: "8px",
                 right: "8px",
-                borderRadius: "10px",
+                borderRadius: "999px",
                 border: "none",
                 padding: "4px 8px",
                 fontSize: "12px",
@@ -1111,7 +1213,7 @@ export default function HistoricoPage() {
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[
-                          chave as keyof typeof entradaLabels
+                            chave as keyof typeof entradaLabels
                           ] ?? chave.replace(/_/g, " ");
 
                         const isNumero = typeof valor === "number";
@@ -1119,10 +1221,10 @@ export default function HistoricoPage() {
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                              ? chave === "A" || chave === "C"
-                                ? String(Math.round(valor as number))
-                                : formatBR(Number(valor))
-                              : String(valor);
+                            ? chave === "A" || chave === "C"
+                              ? String(Math.round(valor as number))
+                              : formatBR(Number(valor))
+                            : String(valor);
 
                         return (
                           <div
@@ -1159,7 +1261,6 @@ export default function HistoricoPage() {
                     </div>
                   </div>
 
-                  {/* BLOCO: Análise pós-promocional */}
                   {/* BLOCO: Análise após encerramento da promoção */}
                   <div
                     style={{
@@ -1182,7 +1283,6 @@ export default function HistoricoPage() {
                     {/* Enquanto ainda não foi avaliado → input + botão */}
                     {!analisePromo && (
                       <>
-                        {/* Campo de quantidade */}
                         <div
                           style={{
                             marginBottom: "8px",
@@ -1207,8 +1307,7 @@ export default function HistoricoPage() {
                             style={{
                               width: "100%",
                               borderRadius: "10px",
-                              border: "1px solid #d1d5db",
-                              padding: "6px 10px",
+                                        padding: "6px 10px",
                               fontSize: "12px",
                               backgroundColor: "#f9fafb",
                               boxSizing: "border-box",
@@ -1216,7 +1315,6 @@ export default function HistoricoPage() {
                           />
                         </div>
 
-                        {/* Botão Avaliar resultado alinhado à direita */}
                         <div
                           style={{
                             display: "flex",
@@ -1339,17 +1437,16 @@ export default function HistoricoPage() {
                                 analisePromo.diff > 0
                                   ? "#047857"
                                   : analisePromo.diff < 0
-                                    ? "#b91c1c"
-                                    : "#111827",
+                                  ? "#b91c1c"
+                                  : "#111827",
                             }}
                           >
-                            {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(
-                              analisePromo.diff
-                            )}`}
+                            {`${
+                              analisePromo.diff >= 0 ? "+" : ""
+                            }R$ ${formatBR(analisePromo.diff)}`}
                           </p>
                         </div>
 
-                        {/* Linha de situação */}
                         <div
                           style={{
                             gridColumn: "1 / -1",
@@ -1359,8 +1456,8 @@ export default function HistoricoPage() {
                               analisePromo.situacao === "ACIMA"
                                 ? "#ecfdf3"
                                 : analisePromo.situacao === "ABAIXO"
-                                  ? "#fef2f2"
-                                  : "#fffbeb",
+                                ? "#fef2f2"
+                                : "#fffbeb",
                             padding: "8px 10px",
                             marginTop: "4px",
                           }}
@@ -1373,8 +1470,8 @@ export default function HistoricoPage() {
                                 analisePromo.situacao === "ACIMA"
                                   ? "#047857"
                                   : analisePromo.situacao === "ABAIXO"
-                                    ? "#b91c1c"
-                                    : "#92400e",
+                                  ? "#b91c1c"
+                                  : "#92400e",
                             }}
                           >
                             {analisePromo.situacao === "ACIMA" &&
@@ -1388,7 +1485,6 @@ export default function HistoricoPage() {
                       </div>
                     )}
                   </div>
-
                 </>
               );
             })()}
