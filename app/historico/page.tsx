@@ -294,7 +294,7 @@ export default function HistoricoPage() {
               </span>
             </Link>
 
-            
+
 
             {/* Botão Sair (cinza) */}
             <button
@@ -1160,6 +1160,7 @@ export default function HistoricoPage() {
                   </div>
 
                   {/* BLOCO: Análise pós-promocional */}
+                  {/* BLOCO: Análise após encerramento da promoção */}
                   <div
                     style={{
                       marginTop: "14px",
@@ -1178,68 +1179,73 @@ export default function HistoricoPage() {
                       Análise após encerramento da promoção
                     </p>
 
-                    {/* Campo de quantidade */}
-                    <div
-                      style={{
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          color: "#6b7280",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Quantidade TOTAL vendida na promoção
-                      </label>
-                      <input
-                        type="text"
-                        value={qtdVendida}
-                        onChange={(e) => setQtdVendida(e.target.value)}
-                        placeholder="Ex: 620"
-                        style={{
-                          width: "100%",
-                          borderRadius: "10px",
-                          border: "1px solid #d1d5db",
-                          padding: "6px 10px",
-                          fontSize: "12px",
-                          backgroundColor: "#f9fafb",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
+                    {/* Enquanto ainda não foi avaliado → input + botão */}
+                    {!analisePromo && (
+                      <>
+                        {/* Campo de quantidade */}
+                        <div
+                          style={{
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <label
+                            style={{
+                              display: "block",
+                              fontSize: "11px",
+                              fontWeight: 500,
+                              color: "#6b7280",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            Quantidade TOTAL vendida na promoção
+                          </label>
+                          <input
+                            type="text"
+                            value={qtdVendida}
+                            onChange={(e) => setQtdVendida(e.target.value)}
+                            placeholder="Ex: 620"
+                            style={{
+                              width: "100%",
+                              borderRadius: "10px",
+                              border: "1px solid #d1d5db",
+                              padding: "6px 10px",
+                              fontSize: "12px",
+                              backgroundColor: "#f9fafb",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
 
-                    {/* Botão embaixo, alinhado à direita */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={avaliarResultado}
-                        style={{
-                          padding: "6px 14px",
-                          borderRadius: "10px",
-                          border: "none",
-                          backgroundColor: "#4f46e5",
-                          color: "#ffffff",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Avaliar resultado da promoção
-                      </button>
-                    </div>
+                        {/* Botão Avaliar resultado alinhado à direita */}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={avaliarResultado}
+                            style={{
+                              padding: "6px 14px",
+                              borderRadius: "999px",
+                              border: "none",
+                              backgroundColor: "#4f46e5",
+                              color: "#ffffff",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Avaliar resultado da promoção
+                          </button>
+                        </div>
+                      </>
+                    )}
 
-
+                    {/* Depois de avaliado (ou carregado do banco) → só os cards */}
                     {analisePromo && (
                       <div
                         style={{
@@ -1343,6 +1349,7 @@ export default function HistoricoPage() {
                           </p>
                         </div>
 
+                        {/* Linha de situação */}
                         <div
                           style={{
                             gridColumn: "1 / -1",
@@ -1381,6 +1388,7 @@ export default function HistoricoPage() {
                       </div>
                     )}
                   </div>
+
                 </>
               );
             })()}
