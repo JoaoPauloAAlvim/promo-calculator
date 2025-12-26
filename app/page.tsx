@@ -152,6 +152,7 @@ export default function Home() {
 
       const inicioDate = new Date(dataInicio);
       const fimDate = new Date(dataFim);
+      
 
       const inicioDia = new Date(
         inicioDate.getFullYear(),

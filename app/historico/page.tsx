@@ -34,6 +34,7 @@ export default function HistoricoPage() {
   const [erro, setErro] = useState<string | null>(null);
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
+  const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>("");
 
   // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
@@ -136,23 +137,66 @@ export default function HistoricoPage() {
     )
   ).sort((a, b) => a.localeCompare(b));
 
-  // filtro local por status com base em metas.venda_real.situacao
   const itensFiltrados = itens.filter((item) => {
-    if (!filtroStatus) return true;
+    // ----- filtro por status da ANÁLISE (se você já tem isso) -----
+    if (filtroStatus) {
+      const vendaReal = item.resultado?.metas?.venda_real as
+        | { situacao?: string }
+        | undefined;
+      const sitAnalise = vendaReal?.situacao?.toUpperCase?.() ?? null;
 
-    const vendaReal = item.resultado?.metas?.venda_real as
-      | { situacao?: string }
-      | undefined;
-    const sit = vendaReal?.situacao?.toUpperCase?.() ?? null;
-
-    if (filtroStatus === "PENDENTE") {
-      // sem venda_real ou sem situacao => pendente
-      return !sit;
+      if (filtroStatus === "PENDENTE") {
+        if (sitAnalise) return false; // tem análise -> não é pendente
+      } else {
+        if (sitAnalise !== filtroStatus) return false;
+      }
     }
 
-    // ACIMA / ABAIXO / IGUAL
-    return sit === filtroStatus;
+    // ----- filtro por status da PROMOÇÃO (novo) -----
+    if (filtroStatusPromo) {
+      const e = item.resultado.entrada ?? {};
+      const dataInicioPromoStr = e.data_inicio_promocao as string | undefined;
+      const dataFimPromoStr = e.data_fim_promocao as string | undefined;
+
+      let promoStatus:
+        | "SEM_DATAS"
+        | "NAO_INICIOU"
+        | "EM_ANDAMENTO"
+        | "ENCERRADA" = "SEM_DATAS";
+
+      if (dataInicioPromoStr && dataFimPromoStr) {
+        const hoje = new Date();
+        const hojeDia = new Date(
+          hoje.getFullYear(),
+          hoje.getMonth(),
+          hoje.getDate()
+        );
+
+        const inicioDate = new Date(dataInicioPromoStr);
+        const fimDate = new Date(dataFimPromoStr);
+
+        const inicioDia = new Date(
+          inicioDate.getFullYear(),
+          inicioDate.getMonth(),
+          inicioDate.getDate()
+        );
+        const fimDia = new Date(
+          fimDate.getFullYear(),
+          fimDate.getMonth(),
+          fimDate.getDate()
+        );
+
+        if (hojeDia < inicioDia) promoStatus = "NAO_INICIOU";
+        else if (hojeDia > fimDia) promoStatus = "ENCERRADA";
+        else promoStatus = "EM_ANDAMENTO";
+      }
+
+      if (promoStatus !== filtroStatusPromo) return false;
+    }
+
+    return true;
   });
+
 
   async function excluirItem(id: number) {
     try {
@@ -549,6 +593,7 @@ export default function HistoricoPage() {
             </div>
 
             {/* Filtro de status da análise */}
+            {/* Filtro de status da PROMOÇÃO */}
             <div
               style={{
                 display: "flex",
@@ -564,27 +609,28 @@ export default function HistoricoPage() {
                   color: "#6b7280",
                 }}
               >
-                Status da análise
+                Status da promoção
               </label>
               <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
+                value={filtroStatusPromo}
+                onChange={(e) => setFiltroStatusPromo(e.target.value)}
                 style={{
                   minWidth: "180px",
-                  borderRadius: "10px",
+                  borderRadius: "999px",
                   border: "1px solid #d1d5db",
                   padding: "4px 10px",
                   fontSize: "12px",
                   backgroundColor: "#f9fafb",
                 }}
               >
-                <option value="">Todos</option>
-                <option value="PENDENTE">Pendentes</option>
-                <option value="ACIMA">Analisadas – ACIMA</option>
-                <option value="IGUAL">Analisadas – IGUAL</option>
-                <option value="ABAIXO">Analisadas – ABAIXO</option>
+                <option value="">Todas</option>
+                <option value="NAO_INICIOU">Não iniciadas</option>
+                <option value="EM_ANDAMENTO">Em andamento</option>
+                <option value="ENCERRADA">Encerradas</option>
+                <option value="SEM_DATAS">Sem datas</option>
               </select>
             </div>
+
           </section>
 
           {/* Lista */}
@@ -618,6 +664,67 @@ export default function HistoricoPage() {
                     | { situacao?: string }
                     | undefined;
                   const sit = vendaReal?.situacao?.toUpperCase?.() ?? null;
+
+                  const eCard = item.resultado.entrada ?? {};
+                  const dataInicioPromoStr = eCard.data_inicio_promocao as string | undefined;
+                  const dataFimPromoStr = eCard.data_fim_promocao as string | undefined;
+
+                  let promoStatusCard:
+                    | "SEM_DATAS"
+                    | "NAO_INICIOU"
+                    | "EM_ANDAMENTO"
+                    | "ENCERRADA" = "SEM_DATAS";
+
+                  if (dataInicioPromoStr && dataFimPromoStr) {
+                    const hoje = new Date();
+                    const hojeDia = new Date(
+                      hoje.getFullYear(),
+                      hoje.getMonth(),
+                      hoje.getDate()
+                    );
+
+                    const inicioDate = new Date(dataInicioPromoStr);
+                    const fimDate = new Date(dataFimPromoStr);
+
+                    const inicioDia = new Date(
+                      inicioDate.getFullYear(),
+                      inicioDate.getMonth(),
+                      inicioDate.getDate()
+                    );
+                    const fimDia = new Date(
+                      fimDate.getFullYear(),
+                      fimDate.getMonth(),
+                      fimDate.getDate()
+                    );
+
+                    if (hojeDia < inicioDia) promoStatusCard = "NAO_INICIOU";
+                    else if (hojeDia > fimDia) promoStatusCard = "ENCERRADA";
+                    else promoStatusCard = "EM_ANDAMENTO";
+                  }
+
+                  // Mapeia para label e cores
+                  let promoLabel = "Sem datas";
+                  let promoBg = "#f3f4f6";
+                  let promoColor = "#4b5563";
+                  let promoBorder = "#e5e7eb";
+
+                  if (promoStatusCard === "NAO_INICIOU") {
+                    promoLabel = "Não iniciada";
+                    promoBg = "#eff6ff";
+                    promoColor = "#1d4ed8";
+                    promoBorder = "#bfdbfe";
+                  } else if (promoStatusCard === "EM_ANDAMENTO") {
+                    promoLabel = "Em andamento";
+                    promoBg = "#ecfeff";
+                    promoColor = "#0e7490";
+                    promoBorder = "#a5f3fc";
+                  } else if (promoStatusCard === "ENCERRADA") {
+                    promoLabel = "Encerrada";
+                    promoBg = "#fef2f2";
+                    promoColor = "#b91c1c";
+                    promoBorder = "#fecaca";
+                  }
+
 
                   let statusLabel = "Pendente de análise";
                   let statusBg = "#f3f4f6";
@@ -734,6 +841,26 @@ export default function HistoricoPage() {
                         >
                           {statusLabel}
                         </span>
+
+                        {/* chip de status da promoção */}
+                        <span
+                          style={{
+                            marginTop: "2px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            backgroundColor: promoBg,
+                            color: promoColor,
+                            border: `1px solid ${promoBorder}`,
+                            alignSelf: "flex-start",
+                          }}
+                        >
+                          {promoLabel}
+                        </span>
+
                       </div>
 
                       <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
