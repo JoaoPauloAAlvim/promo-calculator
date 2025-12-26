@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       path: "/",
       secure: true,
       sameSite: "lax",
-      maxAge: lembrar ? 60 * 60 * 24 * 30 : 60 * 60 * 1,
+      maxAge: lembrar ? 60 * 60 * 24 * 7 : 60 * 60 * 1,
     });
 
     return res;

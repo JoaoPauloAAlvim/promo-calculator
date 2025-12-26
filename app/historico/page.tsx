@@ -47,6 +47,8 @@ export default function HistoricoPage() {
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
   const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>("");
+  const [reloadToken, setReloadToken] = useState(0);
+
 
   // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
@@ -113,7 +115,7 @@ export default function HistoricoPage() {
     }
 
     carregar();
-  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page]);
+  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page,reloadToken]);
 
   // selects – opções derivadas
   const opcoesMarca = Array.from(
@@ -211,31 +213,44 @@ export default function HistoricoPage() {
 
 
   async function excluirItem(id: number) {
-    try {
-      setExcluindoId(id);
-      const res = await fetch("/api/historico", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+  try {
+    setExcluindoId(id);
 
-      const data = await res.json();
+    const res = await fetch("/api/historico", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
 
-      if (!res.ok) {
-        console.error("Erro ao excluir:", data);
-        alert(data?.error || "Erro ao excluir simulação.");
-        return;
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Erro ao excluir:", data);
+      alert(data?.error || "Erro ao excluir simulação.");
+      return;
+    }
+
+    setItens((prev) => {
+      const novaLista = prev.filter((item) => item.id !== id);
+
+      if (novaLista.length === 0 && page > 1) {
+        setPage((p) => Math.max(1, p - 1));
       }
 
-      setItens((prev) => prev.filter((item) => item.id !== id));
-      setSelecionado((atual) => (atual?.id === id ? null : atual));
-    } catch (e) {
-      console.error(e);
-      alert("Erro inesperado ao excluir.");
-    } finally {
-      setExcluindoId(null);
-    }
+      return novaLista;
+    });
+
+    setTotalCount((prevTotal) => Math.max(0, prevTotal - 1));
+    setSelecionado((atual) => (atual?.id === id ? null : atual));
+    setReloadToken((t) => t + 1);
+  } catch (e) {
+    console.error(e);
+    alert("Erro inesperado ao excluir.");
+  } finally {
+    setExcluindoId(null);
   }
+}
+
 
   async function handleLogout() {
     try {
