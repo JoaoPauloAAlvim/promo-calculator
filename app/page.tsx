@@ -35,11 +35,13 @@ type ImportRow = {
   Marca?: string;
   PeriodoHistorico?: number | string;
   LucroTotalHistorico?: number | string;
-  DuracaoPromocao?: number | string;
+  DataInicioPromocao?: string | number;
+  DataFimPromocao?: string | number;
   PrecoPromocional?: number | string;
   CustoUnitario?: number | string;
   ReceitaAdicional?: number | string;
 };
+
 
 type ResultadoLote = {
   linha: number;
@@ -71,6 +73,23 @@ const formatBR = (valor: number | undefined): string => {
     maximumFractionDigits: 2,
   });
 };
+
+function parseDateFromCell(v: unknown): string | null {
+  if (!v) return null;
+
+  if (typeof v === "string") {
+    const s = v.trim();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+      const [d, m, y] = s.split("/");
+      return `${y}-${m}-${d}`; // ISO
+    }
+  }
+
+  return null;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -104,6 +123,7 @@ export default function Home() {
       label: "Receita adicional (R$)",
       placeholder: "Ex: 0,42",
     },
+
   ];
 
   const entrada = result?.entrada ?? {};
@@ -152,7 +172,7 @@ export default function Home() {
 
       const inicioDate = new Date(dataInicio);
       const fimDate = new Date(dataFim);
-      
+
 
       const inicioDia = new Date(
         inicioDate.getFullYear(),
@@ -297,11 +317,13 @@ export default function Home() {
       "Marca",
       "PeriodoHistorico",
       "LucroTotalHistorico",
-      "DuracaoPromocao",
+      "DataInicioPromocao",
+      "DataFimPromocao",
       "PrecoPromocional",
       "CustoUnitario",
       "ReceitaAdicional",
     ];
+
 
     const exemplo = [
       "CREME DENTAL COLGATE 120G",
@@ -310,11 +332,13 @@ export default function Home() {
       "COLGATE",
       30,
       12450,
-      7,
+      "10/01/2025", // DataInicioPromocao
+      "20/01/2025", // DataFimPromocao
       4.79,
       4.45,
       0.42,
     ];
+
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([header, exemplo]);
@@ -362,8 +386,47 @@ export default function Home() {
         return "";
       };
 
+      // converte célula de data (texto BR, ISO ou data Excel) para AAAA-MM-DD
+      const parseDateFromCell = (v: any): string | null => {
+        if (!v && v !== 0) return null;
+
+        // 1) Texto
+        if (typeof v === "string") {
+          const s = v.trim();
+
+          // AAAA-MM-DD
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+          // DD/MM/AAAA
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+            const [d, m, y] = s.split("/");
+            return `${y}-${m}-${d}`;
+          }
+
+          // outros formatos de texto: considera inválido
+          return null;
+        }
+
+        // 2) Número: data nativa do Excel
+        if (typeof v === "number") {
+          const dateObj = (XLSX.SSF as any).parse_date_code?.(v);
+          if (!dateObj) return null;
+          const y = dateObj.y;
+          const m = dateObj.m;
+          const d = dateObj.d;
+
+          if (!y || !m || !d) return null;
+
+          const mm = String(m).padStart(2, "0");
+          const dd = String(d).padStart(2, "0");
+          return `${y}-${mm}-${dd}`;
+        }
+
+        return null;
+      };
+
       for (let i = 0; i < json.length; i++) {
-        const linha = i + 2;
+        const linha = i + 2; // +2 por causa do cabeçalho
         const row = json[i];
 
         const produto = String(row.Produto || "").trim();
@@ -383,10 +446,54 @@ export default function Home() {
 
         const A = toNumericString(row.PeriodoHistorico);
         const B = toNumericString(row.LucroTotalHistorico);
-        const C = toNumericString(row.DuracaoPromocao);
         const D = toNumericString(row.PrecoPromocional);
         const E = toNumericString(row.CustoUnitario);
         const F = toNumericString(row.ReceitaAdicional);
+
+        // Datas da promoção (podem vir como texto BR, ISO ou data Excel)
+        const dataInicio = parseDateFromCell(row.DataInicioPromocao);
+        const dataFim = parseDateFromCell(row.DataFimPromocao);
+
+        if (!dataInicio || !dataFim) {
+          resultadosTemp.push({
+            linha,
+            produto,
+            ok: false,
+            erro:
+              "DataInicioPromocao ou DataFimPromocao inválida(s). Use data ou texto no formato DD/MM/AAAA ou AAAA-MM-DD.",
+          });
+          continue;
+        }
+
+        // calcula C = dias da promoção (início e fim inclusivos)
+        const inicioDate = new Date(dataInicio);
+        const fimDate = new Date(dataFim);
+
+        const inicioDia = new Date(
+          inicioDate.getFullYear(),
+          inicioDate.getMonth(),
+          inicioDate.getDate()
+        );
+        const fimDia = new Date(
+          fimDate.getFullYear(),
+          fimDate.getMonth(),
+          fimDate.getDate()
+        );
+
+        const diffMs = fimDia.getTime() - inicioDia.getTime();
+        if (diffMs < 0) {
+          resultadosTemp.push({
+            linha,
+            produto,
+            ok: false,
+            erro:
+              "DataFimPromocao deve ser maior ou igual à DataInicioPromocao na planilha.",
+          });
+          continue;
+        }
+
+        const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1;
+        const C = String(diasPromo);
 
         try {
           const res = await fetch("/api/calculo", {
@@ -397,9 +504,11 @@ export default function Home() {
               categoria,
               comprador,
               marca,
+              dataInicio,
+              dataFim,
               A,
               B,
-              C,
+              C, // calculado pelas datas
               D,
               E,
               F,
@@ -448,6 +557,8 @@ export default function Home() {
       setImportLoading(false);
     }
   }
+
+
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -1383,11 +1494,13 @@ export default function Home() {
             >
               Formato esperado: primeira aba com colunas{" "}
               <strong>
-                Produto, Categoria, Comprador, Marca, PeriodoHistorico, LucroTotalHistorico,
-                DuracaoPromocao, PrecoPromocional, CustoUnitario, ReceitaAdicional
+                Produto, Categoria, Comprador, Marca, PeriodoHistorico,
+                LucroTotalHistorico, DataInicioPromocao, DataFimPromocao,
+                PrecoPromocional, CustoUnitario, ReceitaAdicional
               </strong>
-              .
+              . Use datas como <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>.
             </p>
+
 
             {/* Linha com Escolher arquivo (esquerda) e Baixar modelo (direita) */}
             <div

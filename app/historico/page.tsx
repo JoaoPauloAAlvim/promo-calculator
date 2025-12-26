@@ -26,6 +26,18 @@ const formatBR = (valor: number | undefined): string => {
   });
 };
 
+const formatDateBR = (value: string | Date | undefined): string => {
+  if (!value) return "—";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+
 export default function HistoricoPage() {
   const router = useRouter();
 
@@ -616,7 +628,7 @@ export default function HistoricoPage() {
                 onChange={(e) => setFiltroStatusPromo(e.target.value)}
                 style={{
                   minWidth: "180px",
-                  borderRadius: "999px",
+                  borderRadius: "10px",
                   border: "1px solid #d1d5db",
                   padding: "4px 10px",
                   fontSize: "12px",
@@ -849,7 +861,7 @@ export default function HistoricoPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             padding: "2px 8px",
-                            borderRadius: "999px",
+                            borderRadius: "10px",
                             fontSize: "10px",
                             fontWeight: 600,
                             backgroundColor: promoBg,
@@ -1032,8 +1044,11 @@ export default function HistoricoPage() {
                   chave !== "produto" &&
                   chave !== "categoria" &&
                   chave !== "comprador" &&
-                  chave !== "marca"
+                  chave !== "marca" &&
+                  chave !== "data_inicio_promocao" &&
+                  chave !== "data_fim_promocao"
               );
+
 
               const nomeProdutoEntrada =
                 (e as any).produto_nome ?? (e as any).produto ?? "";
@@ -1041,6 +1056,8 @@ export default function HistoricoPage() {
               const categoria = e.categoria ?? "";
               const comprador = e.comprador ?? "";
               const marca = e.marca ?? "";
+
+
 
               // ==============================
               // CONTROLE DE STATUS DA PROMOÇÃO
@@ -1387,6 +1404,70 @@ export default function HistoricoPage() {
                           {marca || "—"}
                         </p>
                       </div>
+                      {/* Data início da promoção */}
+                      {dataInicioPromoStr && (
+                        <div
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            padding: "6px 8px",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            Data início da promoção
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "13px",
+                              color: "#111827",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {formatDateBR(dataInicioPromoStr)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Data fim da promoção */}
+                      {dataFimPromoStr && (
+                        <div
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            padding: "6px 8px",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: "#6b7280",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            Data fim da promoção
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "13px",
+                              color: "#111827",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {formatDateBR(dataFimPromoStr)}
+                          </p>
+                        </div>
+                      )}
+
 
                       {/* Demais campos A–F */}
                       {entradaEntries.map(([chave, valor]) => {
@@ -1533,7 +1614,7 @@ export default function HistoricoPage() {
                             onClick={avaliarResultado}
                             style={{
                               padding: "6px 14px",
-                              borderRadius: "999px",
+                              borderRadius: "10px",
                               border: "none",
                               backgroundColor: "#4f46e5",
                               color: "#ffffff",
