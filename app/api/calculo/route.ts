@@ -6,19 +6,21 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     let {
       produto,
       categoria,
       comprador,
       marca,
+      dataInicio,
+      dataFim,
       A,
       B,
       C,
       D,
       E,
       F,
-    } = body ?? {};
+    } = body;
+
 
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
@@ -43,8 +45,8 @@ export async function POST(req: Request) {
       typeof v === "number"
         ? v
         : typeof v === "string"
-        ? Number(v)
-        : NaN;
+          ? Number(v)
+          : NaN;
 
     const periodoHistorico = toNumber(A);
     const lucroTotalHistorico = toNumber(B);
@@ -165,14 +167,17 @@ export async function POST(req: Request) {
       categoria: categoria || "",
       comprador: comprador || "",
       marca: marca || "",
-      A: periodoHistorico,
-      B: lucroTotalHistorico,
-      C: diasPromo,
-      D: precoPromo,
-      E: custoUnit,
-      F: receitaAdicional,
+      data_inicio_promocao: typeof dataInicio === "string" ? dataInicio : "",
+      data_fim_promocao: typeof dataFim === "string" ? dataFim : "",
+      A,
+      B,
+      C,
+      D,
+      E,
+      F,
       lucro_diario_hist: lucroDiarioHist,
     };
+
 
     const metas = {
       meta_unid_dia: Math.ceil(metaUnidDia),

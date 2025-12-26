@@ -264,12 +264,12 @@ export default function HistoricoPage() {
 
     const vendaReal = item.resultado?.metas?.venda_real as
       | {
-          qtd_vendida?: number;
-          lucro_hist_periodo?: number;
-          lucro_real_promo?: number;
-          diff?: number;
-          situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
-        }
+        qtd_vendida?: number;
+        lucro_hist_periodo?: number;
+        lucro_real_promo?: number;
+        diff?: number;
+        situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
+      }
       | undefined;
 
     if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
@@ -786,7 +786,7 @@ export default function HistoricoPage() {
                     style={{
                       fontSize: "12px",
                       borderRadius: "10px",
-                        padding: "4px 10px",
+                      padding: "4px 10px",
                       backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
                       color: page === 1 ? "#9ca3af" : "#4b5563",
                       cursor: page === 1 ? "default" : "pointer",
@@ -914,6 +914,58 @@ export default function HistoricoPage() {
               const categoria = e.categoria ?? "";
               const comprador = e.comprador ?? "";
               const marca = e.marca ?? "";
+
+              // ==============================
+              // CONTROLE DE STATUS DA PROMOÇÃO
+              // ==============================
+
+              const dataInicioPromoStr = e.data_inicio_promocao as string | undefined;
+              const dataFimPromoStr = e.data_fim_promocao as string | undefined;
+
+              let promoStatus:
+                | "SEM_DATAS"
+                | "NAO_INICIOU"
+                | "EM_ANDAMENTO"
+                | "ENCERRADA" = "SEM_DATAS";
+
+              if (dataInicioPromoStr && dataFimPromoStr) {
+                const hoje = new Date();
+                const hojeDia = new Date(
+                  hoje.getFullYear(),
+                  hoje.getMonth(),
+                  hoje.getDate()
+                );
+
+                const inicioDate = new Date(dataInicioPromoStr);
+                const fimDate = new Date(dataFimPromoStr);
+
+                const inicioDia = new Date(
+                  inicioDate.getFullYear(),
+                  inicioDate.getMonth(),
+                  inicioDate.getDate()
+                );
+                const fimDia = new Date(
+                  fimDate.getFullYear(),
+                  fimDate.getMonth(),
+                  fimDate.getDate()
+                );
+
+                if (hojeDia < inicioDia) {
+                  promoStatus = "NAO_INICIOU";
+                } else if (hojeDia > fimDia) {
+                  promoStatus = "ENCERRADA";
+                } else {
+                  promoStatus = "EM_ANDAMENTO";
+                }
+              }
+
+              // só pode avaliar se:
+              // - ainda não há análise (analisePromo === null)
+              // - e a promoção está ENCERRADA
+              // - ou não há datas (casos antigos / sem datas cadastradas)
+              const podeAvaliar =
+                !analisePromo &&
+                (promoStatus === "ENCERRADA" || promoStatus === "SEM_DATAS");
 
               return (
                 <>
@@ -1212,19 +1264,18 @@ export default function HistoricoPage() {
                       {/* Demais campos A–F */}
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
-                          entradaLabels[
-                            chave as keyof typeof entradaLabels
-                          ] ?? chave.replace(/_/g, " ");
+                          entradaLabels[chave as keyof typeof entradaLabels] ??
+                          chave.replace(/_/g, " ");
 
                         const isNumero = typeof valor === "number";
                         const valorFormatado =
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                            ? chave === "A" || chave === "C"
-                              ? String(Math.round(valor as number))
-                              : formatBR(Number(valor))
-                            : String(valor);
+                              ? chave === "A" || chave === "C"
+                                ? String(Math.round(valor as number))
+                                : formatBR(Number(valor))
+                              : String(valor);
 
                         return (
                           <div
@@ -1280,8 +1331,35 @@ export default function HistoricoPage() {
                       Análise após encerramento da promoção
                     </p>
 
-                    {/* Enquanto ainda não foi avaliado → input + botão */}
-                    {!analisePromo && (
+                    {/* Mensagem de status se houver datas */}
+                    {promoStatus === "NAO_INICIOU" && (
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          color: "#6b7280",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Promoção ainda não começou. A análise só ficará disponível após a
+                        data de fim.
+                      </p>
+                    )}
+
+                    {promoStatus === "EM_ANDAMENTO" && (
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          color: "#6b7280",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Promoção em andamento. Só é possível lançar o resultado após a data
+                        de fim.
+                      </p>
+                    )}
+
+                    {/* Enquanto ainda não foi avaliado E pode avaliar → input + botão */}
+                    {podeAvaliar && (
                       <>
                         <div
                           style={{
@@ -1307,7 +1385,8 @@ export default function HistoricoPage() {
                             style={{
                               width: "100%",
                               borderRadius: "10px",
-                                        padding: "6px 10px",
+                              border: "1px solid #d1d5db",
+                              padding: "6px 10px",
                               fontSize: "12px",
                               backgroundColor: "#f9fafb",
                               boxSizing: "border-box",
@@ -1327,7 +1406,7 @@ export default function HistoricoPage() {
                             onClick={avaliarResultado}
                             style={{
                               padding: "6px 14px",
-                              borderRadius: "10px",
+                              borderRadius: "999px",
                               border: "none",
                               backgroundColor: "#4f46e5",
                               color: "#ffffff",
@@ -1414,7 +1493,7 @@ export default function HistoricoPage() {
                         <div
                           style={{
                             borderRadius: "12px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid#e5e7eb",
                             backgroundColor: "#f9fafb",
                             padding: "8px 10px",
                           }}
@@ -1437,13 +1516,13 @@ export default function HistoricoPage() {
                                 analisePromo.diff > 0
                                   ? "#047857"
                                   : analisePromo.diff < 0
-                                  ? "#b91c1c"
-                                  : "#111827",
+                                    ? "#b91c1c"
+                                    : "#111827",
                             }}
                           >
-                            {`${
-                              analisePromo.diff >= 0 ? "+" : ""
-                            }R$ ${formatBR(analisePromo.diff)}`}
+                            {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(
+                              analisePromo.diff
+                            )}`}
                           </p>
                         </div>
 
@@ -1456,8 +1535,8 @@ export default function HistoricoPage() {
                               analisePromo.situacao === "ACIMA"
                                 ? "#ecfdf3"
                                 : analisePromo.situacao === "ABAIXO"
-                                ? "#fef2f2"
-                                : "#fffbeb",
+                                  ? "#fef2f2"
+                                  : "#fffbeb",
                             padding: "8px 10px",
                             marginTop: "4px",
                           }}
@@ -1470,8 +1549,8 @@ export default function HistoricoPage() {
                                 analisePromo.situacao === "ACIMA"
                                   ? "#047857"
                                   : analisePromo.situacao === "ABAIXO"
-                                  ? "#b91c1c"
-                                  : "#92400e",
+                                    ? "#b91c1c"
+                                    : "#92400e",
                             }}
                           >
                             {analisePromo.situacao === "ACIMA" &&
@@ -1488,6 +1567,7 @@ export default function HistoricoPage() {
                 </>
               );
             })()}
+
           </div>
         </div>
       )}

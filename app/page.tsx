@@ -13,13 +13,15 @@ type FormState = {
   categoria: string;
   comprador: string;
   marca: string;
+  dataInicio: string;
+  dataFim: string;
   A: string;
   B: string;
-  C: string;
   D: string;
   E: string;
   F: string;
 };
+
 
 type Resultado = {
   entrada: Record<string, any>;
@@ -52,13 +54,15 @@ const initialForm: FormState = {
   categoria: "",
   comprador: "",
   marca: "",
+  dataInicio: "",
+  dataFim: "",
   A: "",
   B: "",
-  C: "",
   D: "",
   E: "",
   F: "",
 };
+
 
 const formatBR = (valor: number | undefined): string => {
   if (valor === undefined || Number.isNaN(valor)) return "—";
@@ -82,31 +86,25 @@ export default function Home() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importResults, setImportResults] = useState<ResultadoLote[]>([]);
 
-  const campos: { id: keyof FormState; label: string; placeholder?: string }[] =
-    [
-      { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
-      {
-        id: "B",
-        label: "Lucro total histórico (R$)",
-        placeholder: "Ex: 12.450,00",
-      },
-      {
-        id: "C",
-        label: "Duração da promoção (dias)",
-        placeholder: "Ex: 7",
-      },
-      {
-        id: "D",
-        label: "Preço promocional (R$)",
-        placeholder: "Ex: 4,79",
-      },
-      { id: "E", label: "Custo unitário (R$)", placeholder: "Ex: 4,45" },
-      {
-        id: "F",
-        label: "Receita adicional (R$)",
-        placeholder: "Ex: 0,42",
-      },
-    ];
+  const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
+    { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
+    {
+      id: "B",
+      label: "Lucro total histórico (R$)",
+      placeholder: "Ex: 12.450,00",
+    },
+    {
+      id: "D",
+      label: "Preço promocional (R$)",
+      placeholder: "Ex: 4,79",
+    },
+    { id: "E", label: "Custo unitário (R$)", placeholder: "Ex: 4,45" },
+    {
+      id: "F",
+      label: "Receita adicional (R$)",
+      placeholder: "Ex: 0,42",
+    },
+  ];
 
   const entrada = result?.entrada ?? {};
   const metas = result?.metas ?? {};
@@ -138,7 +136,7 @@ export default function Home() {
     setResult(null);
 
     try {
-      const { produto, categoria, comprador, marca } = form;
+      const { produto, categoria, comprador, marca, dataInicio, dataFim } = form;
 
       if (!produto.trim()) {
         setResult(null);
@@ -146,14 +144,45 @@ export default function Home() {
         return;
       }
 
+      if (!dataInicio || !dataFim) {
+        setResult(null);
+        setError("Informe a data de início e a data de fim da promoção.");
+        return;
+      }
+
+      const inicioDate = new Date(dataInicio);
+      const fimDate = new Date(dataFim);
+
+      const inicioDia = new Date(
+        inicioDate.getFullYear(),
+        inicioDate.getMonth(),
+        inicioDate.getDate()
+      );
+      const fimDia = new Date(
+        fimDate.getFullYear(),
+        fimDate.getMonth(),
+        fimDate.getDate()
+      );
+
+      const diffMs = fimDia.getTime() - inicioDia.getTime();
+      if (diffMs < 0) {
+        setResult(null);
+        setError(
+          "A data de fim da promoção deve ser maior ou igual à data de início."
+        );
+        return;
+      }
+
+      const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1; // dias inclusivos
+      const C = diasPromo; // vamos mandar C como número de dias calculados
+
       const A = parseBR(form.A);
       const B = parseBR(form.B);
-      const C = parseBR(form.C);
       const D = parseBR(form.D);
       const E = parseBR(form.E);
       const F = parseBR(form.F);
 
-      const valoresNumericos = [form.A, form.B, form.C, form.D, form.E, form.F];
+      const valoresNumericos = [form.A, form.B, form.D, form.E, form.F];
       const algumVazio = valoresNumericos.some((v) => v.trim() === "");
       if (algumVazio) {
         setResult(null);
@@ -161,7 +190,7 @@ export default function Home() {
         return;
       }
 
-      if ([A, B, C, D, E, F].some((v) => Number.isNaN(v))) {
+      if ([A, B, D, E, F].some((v) => Number.isNaN(v))) {
         setResult(null);
         setError(
           "Todos os campos numéricos devem ser válidos. Use vírgula como separador decimal (ex: 4,79)."
@@ -189,6 +218,8 @@ export default function Home() {
           categoria,
           comprador,
           marca,
+          dataInicio,
+          dataFim,
           A,
           B,
           C,
@@ -197,6 +228,9 @@ export default function Home() {
           F,
         }),
       });
+
+      // ... resto da função (parse do response, setResult, setError) continua igual
+
 
       let data: any = null;
       try {
@@ -628,6 +662,68 @@ export default function Home() {
                 }}
               />
             </div>
+            {/* Data de início da promoção */}
+            <div style={{ marginBottom: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                }}
+              >
+                Data de início da promoção
+              </label>
+              <input
+                type="date"
+                value={form.dataInicio}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dataInicio: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+            </div>
+
+            {/* Data de fim da promoção */}
+            <div style={{ marginBottom: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                }}
+              >
+                Data de fim da promoção
+              </label>
+              <input
+                type="date"
+                value={form.dataFim}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dataFim: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+            </div>
+
 
             {/* Campos numéricos A–F */}
             {campos.map((campo) => (
@@ -1407,7 +1503,7 @@ export default function Home() {
                 style={{ display: "none" }}
               />
 
-              
+
 
               {importFileName && (
                 <span
