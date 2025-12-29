@@ -51,7 +51,8 @@ export default function HistoricoPage() {
 
 
   // filtros -> backend
-  const [filtroProduto, setFiltroProduto] = useState("");
+  const [filtroProduto, setFiltroProduto] = useState("");           // o que vai para a API
+  const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState(""); // o que o usuário está digitando
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
@@ -73,6 +74,17 @@ export default function HistoricoPage() {
     diff: number;
     situacao: "ACIMA" | "ABAIXO" | "IGUAL";
   } | null>(null);
+
+  useEffect(() => {
+    // debounce: só aplica na API 400ms depois de parar de digitar
+    const handle = setTimeout(() => {
+      setPage(1); // sempre volta pra página 1 quando muda o filtro
+      setFiltroProduto(filtroProdutoDigitado.trim());
+    }, 1000);
+
+    return () => clearTimeout(handle);
+  }, [filtroProdutoDigitado]);
+
 
   // carregar histórico sempre que filtros ou página mudarem
   useEffect(() => {
@@ -115,7 +127,7 @@ export default function HistoricoPage() {
     }
 
     carregar();
-  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page,reloadToken]);
+  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page, reloadToken]);
 
   // selects – opções derivadas
   const opcoesMarca = Array.from(
@@ -213,43 +225,43 @@ export default function HistoricoPage() {
 
 
   async function excluirItem(id: number) {
-  try {
-    setExcluindoId(id);
+    try {
+      setExcluindoId(id);
 
-    const res = await fetch("/api/historico", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+      const res = await fetch("/api/historico", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      console.error("Erro ao excluir:", data);
-      alert(data?.error || "Erro ao excluir simulação.");
-      return;
-    }
-
-    setItens((prev) => {
-      const novaLista = prev.filter((item) => item.id !== id);
-
-      if (novaLista.length === 0 && page > 1) {
-        setPage((p) => Math.max(1, p - 1));
+      if (!res.ok) {
+        console.error("Erro ao excluir:", data);
+        alert(data?.error || "Erro ao excluir simulação.");
+        return;
       }
 
-      return novaLista;
-    });
+      setItens((prev) => {
+        const novaLista = prev.filter((item) => item.id !== id);
 
-    setTotalCount((prevTotal) => Math.max(0, prevTotal - 1));
-    setSelecionado((atual) => (atual?.id === id ? null : atual));
-    setReloadToken((t) => t + 1);
-  } catch (e) {
-    console.error(e);
-    alert("Erro inesperado ao excluir.");
-  } finally {
-    setExcluindoId(null);
+        if (novaLista.length === 0 && page > 1) {
+          setPage((p) => Math.max(1, p - 1));
+        }
+
+        return novaLista;
+      });
+
+      setTotalCount((prevTotal) => Math.max(0, prevTotal - 1));
+      setSelecionado((atual) => (atual?.id === id ? null : atual));
+      setReloadToken((t) => t + 1);
+    } catch (e) {
+      console.error(e);
+      alert("Erro inesperado ao excluir.");
+    } finally {
+      setExcluindoId(null);
+    }
   }
-}
 
 
   async function handleLogout() {
@@ -491,11 +503,8 @@ export default function HistoricoPage() {
                 </label>
                 <input
                   type="text"
-                  value={filtroProduto}
-                  onChange={(e) => {
-                    setFiltroProduto(e.target.value);
-                    setPage(1);
-                  }}
+                  value={filtroProdutoDigitado}
+                  onChange={(e) => setFiltroProdutoDigitado(e.target.value)}
                   placeholder="Ex: creme dental"
                   style={{
                     width: "100%",
@@ -506,6 +515,7 @@ export default function HistoricoPage() {
                     backgroundColor: "#f9fafb",
                   }}
                 />
+
               </div>
 
               {/* Marca */}
