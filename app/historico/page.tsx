@@ -670,7 +670,8 @@ export default function HistoricoPage() {
             </div>
 
           </section>
-
+          <br/>
+          
           {/* Lista */}
           {!erro && itens.length === 0 && (
             <p className="text-sm text-slate-600">
