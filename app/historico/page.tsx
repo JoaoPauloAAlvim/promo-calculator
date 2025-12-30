@@ -64,7 +64,7 @@ export default function HistoricoPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 20;
+  const pageSize = 10;
 
   // campos para análise da promoção encerrada
   const [qtdVendida, setQtdVendida] = useState<string>("");

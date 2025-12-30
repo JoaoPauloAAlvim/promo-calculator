@@ -13,13 +13,13 @@ body {
 }
 
 .cards-historico-grid {
-  margin-top: 24px;
-  margin-bottom: 32px;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;              /* espaço entre os cards */
-  padding-left: 12px;     /* descola da borda esquerda */
+  justify-content: center; /* centraliza os cards */
+  gap: 16px;               /* espaçamento entre eles */
+  align-items: flex-start;
 }
+
 
 
 .card-historico {
