@@ -463,6 +463,7 @@ export default function HistoricoPage() {
                   setFiltroCategoria("");
                   setFiltroComprador("");
                   setFiltroStatus("");
+                  setFiltroStatusPromo("")
                   setPage(1);
                 }}
                 style={{
