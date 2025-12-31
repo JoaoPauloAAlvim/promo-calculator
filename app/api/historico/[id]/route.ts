@@ -1,6 +1,7 @@
-// app/api/historico/[id]/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
+
+export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
 
