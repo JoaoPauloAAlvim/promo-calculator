@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       F,
     } = body;
 
-
+    // Normalização de strings
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     comprador = typeof comprador === "string" ? comprador.trim() : "";
@@ -56,12 +56,18 @@ export async function POST(req: Request) {
     const receitaAdicional = toNumber(F);
 
     const camposInvalidos: string[] = [];
-    if (!Number.isFinite(periodoHistorico)) camposInvalidos.push("Período histórico (A)");
-    if (!Number.isFinite(lucroTotalHistorico)) camposInvalidos.push("Lucro total histórico (B)");
-    if (!Number.isFinite(diasPromo)) camposInvalidos.push("Duração da promoção (C)");
-    if (!Number.isFinite(precoPromo)) camposInvalidos.push("Preço promocional (D)");
-    if (!Number.isFinite(custoUnit)) camposInvalidos.push("Custo unitário (E)");
-    if (!Number.isFinite(receitaAdicional)) camposInvalidos.push("Receita adicional (F)");
+    if (!Number.isFinite(periodoHistorico))
+      camposInvalidos.push("Período histórico (A)");
+    if (!Number.isFinite(lucroTotalHistorico))
+      camposInvalidos.push("Lucro total histórico (B)");
+    if (!Number.isFinite(diasPromo))
+      camposInvalidos.push("Duração da promoção (C)");
+    if (!Number.isFinite(precoPromo))
+      camposInvalidos.push("Preço promocional (D)");
+    if (!Number.isFinite(custoUnit))
+      camposInvalidos.push("Custo unitário (E)");
+    if (!Number.isFinite(receitaAdicional))
+      camposInvalidos.push("Receita adicional (F)");
 
     if (camposInvalidos.length > 0) {
       return NextResponse.json(
@@ -145,11 +151,22 @@ export async function POST(req: Request) {
       );
     }
 
+    // Lucro diário histórico
     const lucroDiarioHist = lucroTotalHistorico / periodoHistorico;
 
-    const lucroUnitarioPromo = precoPromo + receitaAdicional - custoUnit;
+    // DRE UNITÁRIO
+    const lucroUnitarioSemAdicional = precoPromo - custoUnit;
+    const lucroUnitarioComAdicional =
+      lucroUnitarioSemAdicional + receitaAdicional;
 
-    if (!Number.isFinite(lucroUnitarioPromo) || lucroUnitarioPromo <= 0) {
+    const markupComAdicional =
+      custoUnit > 0 ? lucroUnitarioComAdicional / custoUnit : null;
+
+    // Regra atual: não aceita promoção com lucro unitário <= 0
+    if (
+      !Number.isFinite(lucroUnitarioComAdicional) ||
+      lucroUnitarioComAdicional <= 0
+    ) {
       return NextResponse.json(
         {
           error:
@@ -159,7 +176,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const metaUnidDia = lucroDiarioHist / lucroUnitarioPromo;
+    // metas baseadas no lucro unitário COM adicional (como já fazia)
+    const metaUnidDia = lucroDiarioHist / lucroUnitarioComAdicional;
     const metaUnidTotal = metaUnidDia * diasPromo;
 
     const entrada = {
@@ -178,12 +196,20 @@ export async function POST(req: Request) {
       lucro_diario_hist: lucroDiarioHist,
     };
 
-
     const metas = {
       meta_unid_dia: Math.ceil(metaUnidDia),
       meta_unid_total: Math.ceil(metaUnidTotal),
-      lucro_unitario_promo: lucroUnitarioPromo,
+
+      lucro_unitario_sem_adicional: lucroUnitarioSemAdicional,
+      lucro_unitario_com_adicional: lucroUnitarioComAdicional,
+
+      // mantém o campo que você já usava
+      lucro_unitario_promo: lucroUnitarioComAdicional,
+
+      // ✅ novo
+      markup_com_adicional: markupComAdicional,
     };
+
 
     const resultado = { entrada, metas };
 

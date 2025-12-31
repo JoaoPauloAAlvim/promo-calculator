@@ -74,22 +74,18 @@ const formatBR = (valor: number | undefined): string => {
   });
 };
 
-function parseDateFromCell(v: unknown): string | null {
-  if (!v) return null;
+const parseISODateLocal = (iso?: string): Date | null => {
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+  return new Date(y, mo - 1, d);
+};
 
-  if (typeof v === "string") {
-    const s = v.trim();
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-      const [d, m, y] = s.split("/");
-      return `${y}-${m}-${d}`; // ISO
-    }
-  }
-
-  return null;
-}
 
 export default function Home() {
   const router = useRouter();
@@ -170,20 +166,15 @@ export default function Home() {
         return;
       }
 
-      const inicioDate = new Date(dataInicio);
-      const fimDate = new Date(dataFim);
+      const inicioDia = parseISODateLocal(dataInicio);
+      const fimDia = parseISODateLocal(dataFim);
 
+      if (!inicioDia || !fimDia) {
+        setResult(null);
+        setError("Data de início ou fim inválida.");
+        return;
+      }
 
-      const inicioDia = new Date(
-        inicioDate.getFullYear(),
-        inicioDate.getMonth(),
-        inicioDate.getDate()
-      );
-      const fimDia = new Date(
-        fimDate.getFullYear(),
-        fimDate.getMonth(),
-        fimDate.getDate()
-      );
 
       const diffMs = fimDia.getTime() - inicioDia.getTime();
       if (diffMs < 0) {
@@ -902,6 +893,7 @@ export default function Home() {
       </main>
 
       {/* MODAL DE RESULTADO */}
+      {/* MODAL DE RESULTADO */}
       {result && (
         <div
           style={{
@@ -973,7 +965,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Lucro diário + lucro unitário */}
+            {/* Lucro diário histórico + lucro unitário promo */}
             <div
               style={{
                 display: "grid",
@@ -1041,6 +1033,187 @@ export default function Home() {
                     : "—"}
                 </p>
               </div>
+            </div>
+
+            {/* DRE UNITÁRIO */}
+            <div
+              style={{
+                marginTop: "8px",
+                paddingTop: "8px",
+                borderTop: "1px solid #e5e7eb",
+                marginBottom: "8px",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#111827",
+                  marginBottom: "6px",
+                }}
+              >
+                Detalhamento do lucro unitário (DRE por unidade)
+              </p>
+
+              {(() => {
+                const precoPromo = Number(entrada.D ?? entrada.d);
+                const custoUnit = Number(entrada.E ?? entrada.e);
+                const receitaAdic = Number(entrada.F ?? entrada.f ?? 0);
+
+                const lucroSemAdic =
+                  metas?.lucro_unitario_sem_adicional !== undefined
+                    ? Number(metas.lucro_unitario_sem_adicional)
+                    : precoPromo - custoUnit;
+
+                const lucroComAdic =
+                  metas?.lucro_unitario_com_adicional !== undefined
+                    ? Number(metas.lucro_unitario_com_adicional)
+                    : metas?.lucro_unitario_promo !== undefined
+                      ? Number(metas.lucro_unitario_promo)
+                      : lucroSemAdic + receitaAdic;
+
+                return (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* Preço e custo */}
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f9fafb",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Preço promocional
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: "#111827",
+                        }}
+                      >
+                        {`R$ ${formatBR(precoPromo)}`}
+                      </p>
+
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginTop: "6px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Custo unitário
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: "#111827",
+                        }}
+                      >
+                        {`R$ ${formatBR(custoUnit)}`}
+                      </p>
+                    </div>
+
+                    {/* Receita adicional */}
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f9fafb",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Receita adicional (verba / rebate)
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: "#047857",
+                        }}
+                      >
+                        {`R$ ${formatBR(receitaAdic)}`}
+                      </p>
+                    </div>
+
+                    {/* Resultado com e sem adicional */}
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f9fafb",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Lucro unitário SEM receita adicional
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: lucroSemAdic >= 0 ? "#111827" : "#b91c1c",
+                        }}
+                      >
+                        {`R$ ${formatBR(lucroSemAdic)}`}
+                      </p>
+
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginTop: "6px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Lucro unitário COM receita adicional
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          color: lucroComAdic >= 0 ? "#047857" : "#b91c1c",
+                        }}
+                      >
+                        {`R$ ${formatBR(lucroComAdic)}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Metas */}
@@ -1274,7 +1447,7 @@ export default function Home() {
 
                 {/* Campos A–F */}
                 {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
-                  const raw = entrada[key];
+                  const raw = (entrada as any)[key];
                   const label = entradaLabels[key] ?? key;
                   const isNumero = typeof raw === "number";
                   const valor =
@@ -1323,6 +1496,7 @@ export default function Home() {
           </div>
         </div>
       )}
+
 
       {/* MODAL DE ERRO */}
       {error && !result && (

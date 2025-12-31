@@ -18,6 +18,23 @@ type HistoricoItem = {
   resultado: Resultado;
 };
 
+const parseISODateLocal = (iso?: string): Date | null => {
+  if (!iso) return null;
+  if (typeof iso !== "string") return null;
+
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+
+  return new Date(y, mo - 1, d); // LOCAL, sem UTC shift
+};
+
+
 const formatBR = (valor: number | undefined): string => {
   if (valor === undefined || Number.isNaN(valor)) return "—";
   return valor.toLocaleString("pt-BR", {
@@ -28,13 +45,49 @@ const formatBR = (valor: number | undefined): string => {
 
 const formatDateBR = (value: string | Date | undefined): string => {
   if (!value) return "—";
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("pt-BR", {
+
+  // Se for string ISO (YYYY-MM-DD), parse como local
+  if (typeof value === "string") {
+    const dLocal = parseISODateLocal(value);
+    if (!dLocal) return "—";
+    return dLocal.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  // Se for Date normal
+  if (Number.isNaN(value.getTime())) return "—";
+  return value.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
+};
+
+
+const formatPctBR = (v: number | null | undefined): string => {
+  if (v === null || v === undefined || Number.isNaN(v)) return "—";
+  return (
+    (v * 100).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) + "%"
+  );
+};
+
+
+// dias inclusivos (igual na Home): (fim - início) + 1
+const calcDiasPromoInclusivo = (dataInicio?: string, dataFim?: string): number | null => {
+  const inicio = parseISODateLocal(dataInicio);
+  const fim = parseISODateLocal(dataFim);
+  if (!inicio || !fim) return null;
+
+  const diffMs = fim.getTime() - inicio.getTime();
+  if (diffMs < 0) return null;
+
+  return diffMs / (1000 * 60 * 60 * 24) + 1;
 };
 
 
@@ -48,11 +101,11 @@ export default function HistoricoPage() {
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
   const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>("");
   const [reloadToken, setReloadToken] = useState(0);
-
+  const [dreAberto, setDreAberto] = useState(false);
 
   // filtros -> backend
-  const [filtroProduto, setFiltroProduto] = useState("");           // o que vai para a API
-  const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState(""); // o que o usuário está digitando
+  const [filtroProduto, setFiltroProduto] = useState("");
+  const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
@@ -76,17 +129,14 @@ export default function HistoricoPage() {
   } | null>(null);
 
   useEffect(() => {
-    // debounce: só aplica na API 400ms depois de parar de digitar
     const handle = setTimeout(() => {
-      setPage(1); // sempre volta pra página 1 quando muda o filtro
+      setPage(1);
       setFiltroProduto(filtroProdutoDigitado.trim());
     }, 1000);
 
     return () => clearTimeout(handle);
   }, [filtroProdutoDigitado]);
 
-
-  // carregar histórico sempre que filtros ou página mudarem
   useEffect(() => {
     async function carregar() {
       try {
@@ -114,7 +164,9 @@ export default function HistoricoPage() {
         }
         setItens(Array.isArray(data.itens) ? data.itens : []);
         setHasMore(Boolean(data.hasMore));
-        setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
+        setTotalCount(
+          typeof data.totalCount === "number" ? data.totalCount : 0
+        );
       } catch (e) {
         console.error(e);
         setErro("Erro ao buscar histórico. Verifique a conexão.");
@@ -127,7 +179,14 @@ export default function HistoricoPage() {
     }
 
     carregar();
-  }, [filtroProduto, filtroMarca, filtroCategoria, filtroComprador, page, reloadToken]);
+  }, [
+    filtroProduto,
+    filtroMarca,
+    filtroCategoria,
+    filtroComprador,
+    page,
+    reloadToken,
+  ]);
 
   // selects – opções derivadas
   const opcoesMarca = Array.from(
@@ -164,7 +223,7 @@ export default function HistoricoPage() {
   ).sort((a, b) => a.localeCompare(b));
 
   const itensFiltrados = itens.filter((item) => {
-    // ----- filtro por status da ANÁLISE (se você já tem isso) -----
+    // ----- filtro por status da ANÁLISE -----
     if (filtroStatus) {
       const vendaReal = item.resultado?.metas?.venda_real as
         | { situacao?: string }
@@ -172,13 +231,13 @@ export default function HistoricoPage() {
       const sitAnalise = vendaReal?.situacao?.toUpperCase?.() ?? null;
 
       if (filtroStatus === "PENDENTE") {
-        if (sitAnalise) return false; // tem análise -> não é pendente
+        if (sitAnalise) return false;
       } else {
         if (sitAnalise !== filtroStatus) return false;
       }
     }
 
-    // ----- filtro por status da PROMOÇÃO (novo) -----
+    // ----- filtro por status da PROMOÇÃO -----
     if (filtroStatusPromo) {
       const e = item.resultado.entrada ?? {};
       const dataInicioPromoStr = e.data_inicio_promocao as string | undefined;
@@ -223,7 +282,6 @@ export default function HistoricoPage() {
     return true;
   });
 
-
   async function excluirItem(id: number) {
     try {
       setExcluindoId(id);
@@ -263,7 +321,6 @@ export default function HistoricoPage() {
     }
   }
 
-
   async function handleLogout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -279,23 +336,29 @@ export default function HistoricoPage() {
     (selecionado?.resultado as any)?.entrada?.produto ??
     "";
 
-  // Função para avaliar se a promoção deu certo ou não
   async function avaliarResultado() {
     if (!selecionado) return;
 
     const e = selecionado.resultado.entrada || {};
     const m = selecionado.resultado.metas || {};
 
-    const qtd = Number(
-      qtdVendida.trim().replace(/\./g, "").replace(",", ".")
-    );
+    const qtd = Number(qtdVendida.trim().replace(/\./g, "").replace(",", "."));
     if (!qtd || Number.isNaN(qtd) || qtd <= 0) {
       alert("Informe uma quantidade total vendida válida (maior que zero).");
       return;
     }
 
     const lucroDiarioHist = Number(e.lucro_diario_hist);
-    const diasPromo = Number(e.C ?? e.c);
+
+    // Duração: prioriza cálculo pelas datas (igual Home); fallback para C salvo
+    const dataInicio = e.data_inicio_promocao as string | undefined;
+    const dataFim = e.data_fim_promocao as string | undefined;
+    const diasPromoCalc = calcDiasPromoInclusivo(dataInicio, dataFim);
+    const diasPromoFallback = Number(e.C ?? e.c);
+    const diasPromo =
+      diasPromoCalc ??
+      (Number.isFinite(diasPromoFallback) ? diasPromoFallback : NaN);
+
     const lucroUnitPromo = Number(m.lucro_unitario_promo);
 
     if (
@@ -304,7 +367,7 @@ export default function HistoricoPage() {
       !Number.isFinite(lucroUnitPromo)
     ) {
       alert(
-        "Não foi possível calcular a análise para esta simulação. Verifique se A, C e o lucro unitário foram calculados corretamente."
+        "Não foi possível calcular a análise para esta simulação. Verifique se a duração (datas/C), o lucro diário histórico e o lucro unitário foram calculados corretamente."
       );
       return;
     }
@@ -319,10 +382,8 @@ export default function HistoricoPage() {
     else if (diff < -EPS) situacao = "ABAIXO";
     else situacao = "IGUAL";
 
-    // Atualiza no estado (pra ver na hora)
     setAnalisePromo({ lucroHistPeriodo, lucroRealPromo, diff, situacao });
 
-    // Salva no banco
     try {
       await fetch(`/api/historico/${selecionado.id}`, {
         method: "PATCH",
@@ -341,8 +402,8 @@ export default function HistoricoPage() {
     }
   }
 
-  // Reset de campos quando abre um novo modal (e carrega venda_real se existir)
   function abrirModal(item: HistoricoItem) {
+    setDreAberto(false);
     setSelecionado(item);
 
     const vendaReal = item.resultado?.metas?.venda_real as
@@ -355,7 +416,11 @@ export default function HistoricoPage() {
       }
       | undefined;
 
-    if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
+    if (
+      vendaReal &&
+      vendaReal.qtd_vendida &&
+      !Number.isNaN(vendaReal.qtd_vendida)
+    ) {
       setQtdVendida(String(vendaReal.qtd_vendida));
       setAnalisePromo({
         lucroHistPeriodo: Number(vendaReal.lucro_hist_periodo || 0),
@@ -369,6 +434,7 @@ export default function HistoricoPage() {
       setAnalisePromo(null);
     }
   }
+const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -415,7 +481,6 @@ export default function HistoricoPage() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL – só aparece quando NÃO está carregando */}
       {!loading && (
         <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
           {erro && (
@@ -459,11 +524,12 @@ export default function HistoricoPage() {
                 type="button"
                 onClick={() => {
                   setFiltroProduto("");
+                  setFiltroProdutoDigitado("");
                   setFiltroMarca("");
                   setFiltroCategoria("");
                   setFiltroComprador("");
                   setFiltroStatus("");
-                  setFiltroStatusPromo("")
+                  setFiltroStatusPromo("");
                   setPage(1);
                 }}
                 style={{
@@ -516,7 +582,6 @@ export default function HistoricoPage() {
                     backgroundColor: "#f9fafb",
                   }}
                 />
-
               </div>
 
               {/* Marca */}
@@ -630,8 +695,7 @@ export default function HistoricoPage() {
               </div>
             </div>
 
-            {/* Filtro de status da análise */}
-            {/* Filtro de status da PROMOÇÃO */}
+            {/* Status da promoção */}
             <div
               style={{
                 display: "flex",
@@ -668,15 +732,13 @@ export default function HistoricoPage() {
                 <option value="SEM_DATAS">Sem datas</option>
               </select>
             </div>
-
           </section>
-          <br/>
-          
+
+          <br />
+
           {/* Lista */}
           {!erro && itens.length === 0 && (
-            <p className="text-sm text-slate-600">
-              Nenhuma simulação encontrada.
-            </p>
+            <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
           )}
 
           {!erro && itens.length > 0 && itensFiltrados.length === 0 && (
@@ -691,22 +753,30 @@ export default function HistoricoPage() {
                 {itensFiltrados.map((item) => {
                   const entrada = item.resultado?.entrada ?? {};
                   const metas = item.resultado?.metas ?? {};
+
                   const nomeProduto =
                     (entrada as any)?.produto_nome ??
                     (entrada as any)?.produto ??
                     "";
+
                   const lucroMedio =
                     metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
+
                   const metaDia = metas?.meta_unid_dia;
 
                   const vendaReal = metas?.venda_real as
                     | { situacao?: string }
                     | undefined;
+
                   const sit = vendaReal?.situacao?.toUpperCase?.() ?? null;
 
                   const eCard = item.resultado.entrada ?? {};
-                  const dataInicioPromoStr = eCard.data_inicio_promocao as string | undefined;
-                  const dataFimPromoStr = eCard.data_fim_promocao as string | undefined;
+                  const dataInicioPromoStr = eCard.data_inicio_promocao as
+                    | string
+                    | undefined;
+                  const dataFimPromoStr = eCard.data_fim_promocao as
+                    | string
+                    | undefined;
 
                   let promoStatusCard:
                     | "SEM_DATAS"
@@ -715,30 +785,30 @@ export default function HistoricoPage() {
                     | "ENCERRADA" = "SEM_DATAS";
 
                   if (dataInicioPromoStr && dataFimPromoStr) {
-                    const hoje = new Date();
-                    const hojeDia = new Date(
-                      hoje.getFullYear(),
-                      hoje.getMonth(),
-                      hoje.getDate()
-                    );
+                    const inicioDate = parseISODateLocal(dataInicioPromoStr);
+                    const fimDate = parseISODateLocal(dataFimPromoStr);
 
-                    const inicioDate = new Date(dataInicioPromoStr);
-                    const fimDate = new Date(dataFimPromoStr);
+                    if (!inicioDate || !fimDate) {
+                      promoStatusCard = "SEM_DATAS";
+                    } else {
+                      const hoje = new Date();
+                      const hojeDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-                    const inicioDia = new Date(
-                      inicioDate.getFullYear(),
-                      inicioDate.getMonth(),
-                      inicioDate.getDate()
-                    );
-                    const fimDia = new Date(
-                      fimDate.getFullYear(),
-                      fimDate.getMonth(),
-                      fimDate.getDate()
-                    );
+                      const inicioDia = new Date(
+                        inicioDate.getFullYear(),
+                        inicioDate.getMonth(),
+                        inicioDate.getDate()
+                      );
+                      const fimDia = new Date(
+                        fimDate.getFullYear(),
+                        fimDate.getMonth(),
+                        fimDate.getDate()
+                      );
 
-                    if (hojeDia < inicioDia) promoStatusCard = "NAO_INICIOU";
-                    else if (hojeDia > fimDia) promoStatusCard = "ENCERRADA";
-                    else promoStatusCard = "EM_ANDAMENTO";
+                      if (hojeDia < inicioDia) promoStatusCard = "NAO_INICIOU";
+                      else if (hojeDia > fimDia) promoStatusCard = "ENCERRADA";
+                      else promoStatusCard = "EM_ANDAMENTO";
+                    }
                   }
 
                   // Mapeia para label e cores
@@ -764,7 +834,6 @@ export default function HistoricoPage() {
                     promoBorder = "#fecaca";
                   }
 
-
                   let statusLabel = "Pendente de análise";
                   let statusBg = "#f3f4f6";
                   let statusColor = "#4b5563";
@@ -786,6 +855,7 @@ export default function HistoricoPage() {
                     statusColor = "#92400e";
                     statusBorder = "#fcd34d";
                   }
+
 
                   return (
                     <button
@@ -899,7 +969,6 @@ export default function HistoricoPage() {
                         >
                           {promoLabel}
                         </span>
-
                       </div>
 
                       <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
@@ -911,6 +980,7 @@ export default function HistoricoPage() {
               </div>
 
               {/* Paginação */}
+              {/* Paginação */}
               <div
                 style={{
                   marginTop: "8px",
@@ -920,17 +990,10 @@ export default function HistoricoPage() {
                   gap: "8px",
                 }}
               >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#6b7280",
-                  }}
-                >
+                <span style={{ fontSize: "11px", color: "#6b7280" }}>
                   {totalCount > 0 ? (
                     <>
-                      Página {page} de{" "}
-                      {Math.max(1, Math.ceil(totalCount / pageSize))} – exibindo{" "}
-                      {itensFiltrados.length} de {totalCount} registro
+                      Página {page} de {totalPages} – exibindo {itensFiltrados.length} de {totalCount} registro
                       {totalCount === 1 ? "" : "s"}
                     </>
                   ) : (
@@ -938,13 +1001,26 @@ export default function HistoricoPage() {
                   )}
                 </span>
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {/* Primeira */}
+                  <button
+                    type="button"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
+                    style={{
+                      fontSize: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      padding: "4px 10px",
+                      backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
+                      color: page === 1 ? "#9ca3af" : "#4b5563",
+                      cursor: page === 1 ? "default" : "pointer",
+                    }}
+                  >
+                    ⏮ Primeira
+                  </button>
+
+                  {/* Anterior */}
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -952,6 +1028,7 @@ export default function HistoricoPage() {
                     style={{
                       fontSize: "12px",
                       borderRadius: "10px",
+                      border: "1px solid #d1d5db",
                       padding: "4px 10px",
                       backgroundColor: page === 1 ? "#f3f4f6" : "#ffffff",
                       color: page === 1 ? "#9ca3af" : "#4b5563",
@@ -960,24 +1037,45 @@ export default function HistoricoPage() {
                   >
                     ◀ Anterior
                   </button>
+
+                  {/* Próxima */}
                   <button
                     type="button"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={!hasMore}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
                     style={{
                       fontSize: "12px",
                       borderRadius: "10px",
                       border: "1px solid #d1d5db",
                       padding: "4px 10px",
-                      backgroundColor: !hasMore ? "#f3f4f6" : "#ffffff",
-                      color: !hasMore ? "#9ca3af" : "#4b5563",
-                      cursor: !hasMore ? "default" : "pointer",
+                      backgroundColor: page >= totalPages ? "#f3f4f6" : "#ffffff",
+                      color: page >= totalPages ? "#9ca3af" : "#4b5563",
+                      cursor: page >= totalPages ? "default" : "pointer",
                     }}
                   >
                     Próxima ▶
                   </button>
+
+                  {/* Última */}
+                  <button
+                    type="button"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page >= totalPages}
+                    style={{
+                      fontSize: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      padding: "4px 10px",
+                      backgroundColor: page >= totalPages ? "#f3f4f6" : "#ffffff",
+                      color: page >= totalPages ? "#9ca3af" : "#4b5563",
+                      cursor: page >= totalPages ? "default" : "pointer",
+                    }}
+                  >
+                    Última ⏭
+                  </button>
                 </div>
               </div>
+
             </>
           )}
         </main>
@@ -1012,7 +1110,10 @@ export default function HistoricoPage() {
             }}
           >
             <button
-              onClick={() => setSelecionado(null)}
+              onClick={() => {
+                setDreAberto(false);
+                setSelecionado(null);
+              }}
               style={{
                 position: "absolute",
                 top: "8px",
@@ -1062,6 +1163,22 @@ export default function HistoricoPage() {
               const lucroHist = Number(e.lucro_diario_hist);
               const lucroUnitarioPromo = m.lucro_unitario_promo;
 
+              // Datas + duração (como na Home)
+              const dataInicioPromoStr = e.data_inicio_promocao as
+                | string
+                | undefined;
+              const dataFimPromoStr = e.data_fim_promocao as string | undefined;
+
+              const diasPromoCalc = calcDiasPromoInclusivo(
+                dataInicioPromoStr,
+                dataFimPromoStr
+              );
+              const diasPromoFallback = Number(e.C ?? e.c);
+              const diasPromoFinal =
+                diasPromoCalc ??
+                (Number.isFinite(diasPromoFallback) ? diasPromoFallback : null);
+
+              // Não mostrar datas/C nos “dados informados” (vamos mostrar em cards próprios)
               const entradaEntries = Object.entries(e).filter(
                 ([chave, valor]) =>
                   valor !== undefined &&
@@ -1073,9 +1190,10 @@ export default function HistoricoPage() {
                   chave !== "comprador" &&
                   chave !== "marca" &&
                   chave !== "data_inicio_promocao" &&
-                  chave !== "data_fim_promocao"
+                  chave !== "data_fim_promocao" &&
+                  chave !== "C" &&
+                  chave !== "c"
               );
-
 
               const nomeProdutoEntrada =
                 (e as any).produto_nome ?? (e as any).produto ?? "";
@@ -1084,15 +1202,9 @@ export default function HistoricoPage() {
               const comprador = e.comprador ?? "";
               const marca = e.marca ?? "";
 
-
-
               // ==============================
               // CONTROLE DE STATUS DA PROMOÇÃO
               // ==============================
-
-              const dataInicioPromoStr = e.data_inicio_promocao as string | undefined;
-              const dataFimPromoStr = e.data_fim_promocao as string | undefined;
-
               let promoStatus:
                 | "SEM_DATAS"
                 | "NAO_INICIOU"
@@ -1100,43 +1212,36 @@ export default function HistoricoPage() {
                 | "ENCERRADA" = "SEM_DATAS";
 
               if (dataInicioPromoStr && dataFimPromoStr) {
-                const hoje = new Date();
-                const hojeDia = new Date(
-                  hoje.getFullYear(),
-                  hoje.getMonth(),
-                  hoje.getDate()
-                );
+                const inicioDate = parseISODateLocal(dataInicioPromoStr);
+                const fimDate = parseISODateLocal(dataFimPromoStr);
 
-                const inicioDate = new Date(dataInicioPromoStr);
-                const fimDate = new Date(dataFimPromoStr);
-
-                const inicioDia = new Date(
-                  inicioDate.getFullYear(),
-                  inicioDate.getMonth(),
-                  inicioDate.getDate()
-                );
-                const fimDia = new Date(
-                  fimDate.getFullYear(),
-                  fimDate.getMonth(),
-                  fimDate.getDate()
-                );
-
-                if (hojeDia < inicioDia) {
-                  promoStatus = "NAO_INICIOU";
-                } else if (hojeDia > fimDia) {
-                  promoStatus = "ENCERRADA";
+                if (!inicioDate || !fimDate) {
+                  promoStatus = "SEM_DATAS";
                 } else {
-                  promoStatus = "EM_ANDAMENTO";
+                  const hoje = new Date();
+                  const hojeDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+                  const inicioDia = new Date(
+                    inicioDate.getFullYear(),
+                    inicioDate.getMonth(),
+                    inicioDate.getDate()
+                  );
+                  const fimDia = new Date(
+                    fimDate.getFullYear(),
+                    fimDate.getMonth(),
+                    fimDate.getDate()
+                  );
+
+                  if (hojeDia < inicioDia) promoStatus = "NAO_INICIOU";
+                  else if (hojeDia > fimDia) promoStatus = "ENCERRADA";
+                  else promoStatus = "EM_ANDAMENTO";
                 }
               }
 
-              // só pode avaliar se:
-              // - ainda não há análise (analisePromo === null)
-              // - e a promoção está ENCERRADA
-              // - ou não há datas (casos antigos / sem datas cadastradas)
               const podeAvaliar =
                 !analisePromo &&
                 (promoStatus === "ENCERRADA" || promoStatus === "SEM_DATAS");
+
 
               return (
                 <>
@@ -1207,6 +1312,27 @@ export default function HistoricoPage() {
                           ? `R$ ${formatBR(Number(lucroUnitarioPromo))}`
                           : "—"}
                       </p>
+
+                      <button
+                        type="button"
+                        onClick={() => setDreAberto(true)}
+                        style={{
+                          marginTop: "6px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          borderRadius: "10px",
+                          border: "1px solid #d1d5db",
+                          padding: "4px 10px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          backgroundColor: "#ffffff",
+                          color: "#4b5563",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver detalhes ▸
+                      </button>
                     </div>
 
                     <div
@@ -1285,6 +1411,404 @@ export default function HistoricoPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Período + duração da promoção */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: "8px",
+                      marginBottom: "14px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f9fafb",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Período da promoção
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#111827",
+                        }}
+                      >
+                        {formatDateBR(dataInicioPromoStr)}{" "}
+                        <span style={{ color: "#6b7280", fontWeight: 600 }}>
+                          até
+                        </span>{" "}
+                        {formatDateBR(dataFimPromoStr)}
+                      </p>
+                    </div>
+
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f9fafb",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Duração da promoção
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: 700,
+                          color: "#111827",
+                        }}
+                      >
+                        {diasPromoFinal !== null ? (
+                          <>
+                            {Math.round(diasPromoFinal)}{" "}
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 400,
+                                color: "#6b7280",
+                              }}
+                            >
+                              dias{" "}
+                            </span>
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </p>
+
+                      {dataInicioPromoStr &&
+                        dataFimPromoStr &&
+                        diasPromoCalc === null && (
+                          <p
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "10px",
+                              color: "#b91c1c",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Datas inválidas (fim antes do início).
+                          </p>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* MODAL DRE (separado) */}
+                  {selecionado &&
+                    dreAberto &&
+                    (() => {
+                      const e = selecionado.resultado.entrada ?? {};
+                      const m = selecionado.resultado.metas ?? {};
+
+                      const precoPromo = Number(e.D ?? e.d);
+                      const custoUnit = Number(e.E ?? e.e);
+                      const receitaAdic = Number(e.F ?? e.f ?? 0);
+
+                      const lucroSemAdic =
+                        m.lucro_unitario_sem_adicional !== undefined
+                          ? Number(m.lucro_unitario_sem_adicional)
+                          : precoPromo - custoUnit;
+
+                      const lucroComAdic =
+                        m.lucro_unitario_com_adicional !== undefined
+                          ? Number(m.lucro_unitario_com_adicional)
+                          : lucroSemAdic + receitaAdic;
+
+                      const markupComAdic =
+                        m.markup_com_adicional !== undefined
+                          ? (m.markup_com_adicional as number | null)
+                          : custoUnit > 0
+                            ? lucroComAdic / custoUnit
+                            : null;
+
+
+                      return (
+                        <div
+                          role="dialog"
+                          aria-modal="true"
+                          style={{
+                            position: "fixed",
+                            inset: 0,
+                            backgroundColor: "rgba(0,0,0,0.55)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            padding: "16px",
+                            zIndex: 80,
+                          }}
+                          onClick={() => setDreAberto(false)}
+                        >
+                          <div
+                            style={{
+                              backgroundColor: "#ffffff",
+                              borderRadius: "16px",
+                              maxWidth: "640px",
+                              width: "100%",
+                              padding: "18px",
+                              position: "relative",
+                              border: "1px solid #e5e7eb",
+                              boxShadow:
+                                "0 20px 25px -5px rgba(0,0,0,0.15)",
+                            }}
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setDreAberto(false)}
+                              style={{
+                                position: "absolute",
+                                top: "8px",
+                                right: "8px",
+                                borderRadius: "999px",
+                                border: "none",
+                                padding: "4px 8px",
+                                fontSize: "12px",
+                                backgroundColor: "#f3f4f6",
+                                color: "#4b5563",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ✕
+                            </button>
+
+                            <p
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: 800,
+                                color: "#111827",
+                                marginBottom: "10px",
+                              }}
+                            >
+                              DRE unitário (por unidade)
+                            </p>
+
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(2, minmax(0, 1fr))",
+                                gap: "8px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  backgroundColor: "#f9fafb",
+                                  padding: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  Receita
+                                </p>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  <span>Preço promocional</span>
+                                  <strong>{`R$ ${formatBR(precoPromo)}`}</strong>
+                                </div>
+                              </div>
+
+                              <div
+                                style={{
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  backgroundColor: "#f9fafb",
+                                  padding: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  Custos
+                                </p>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  <span>(-) Custo unitário</span>
+                                  <strong>{`R$ ${formatBR(custoUnit)}`}</strong>
+                                </div>
+                              </div>
+
+                              <div
+                                style={{
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  backgroundColor: "#f9fafb",
+                                  padding: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  Receitas adicionais
+                                </p>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  <span>(+) Verba / rebate</span>
+                                  <strong style={{ color: "#047857" }}>
+                                    {`R$ ${formatBR(receitaAdic)}`}
+                                  </strong>
+                                </div>
+                              </div>
+
+                              <div
+                                style={{
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  backgroundColor: "#f9fafb",
+                                  padding: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  Resultado
+                                </p>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  <span>Lucro (sem adicional)</span>
+                                  <strong
+                                    style={{
+                                      color:
+                                        lucroSemAdic >= 0
+                                          ? "#111827"
+                                          : "#b91c1c",
+                                    }}
+                                  >
+                                    {`R$ ${formatBR(lucroSemAdic)}`}
+                                  </strong>
+                                </div>
+
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                    marginTop: "6px",
+                                  }}
+                                >
+                                  <span>Lucro (com adicional)</span>
+                                  <strong
+                                    style={{
+                                      color:
+                                        lucroComAdic >= 0
+                                          ? "#047857"
+                                          : "#b91c1c",
+                                    }}
+                                  >
+                                    {`R$ ${formatBR(lucroComAdic)}`}
+                                  </strong>
+                                </div>
+                              </div>
+                              <div
+                                style={{
+                                  gridColumn: "1 / -1",
+                                  borderRadius: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  backgroundColor: "#ffffff",
+                                  padding: "10px",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#6b7280",
+                                    marginBottom: "6px",
+                                  }}
+                                >
+                                  Markup (com adicional)
+                                </p>
+
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "12px",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  <span>Markup</span>
+                                  <strong>{formatPctBR(markupComAdic)}</strong>
+                                </div>
+
+                                {custoUnit <= 0 && (
+                                  <p style={{ marginTop: "6px", fontSize: "10px", color: "#b91c1c", fontWeight: 600 }}>
+                                    Não foi possível calcular markup: custo unitário é 0.
+                                  </p>
+                                )}
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   {/* dados de entrada */}
                   <div
@@ -1431,72 +1955,8 @@ export default function HistoricoPage() {
                           {marca || "—"}
                         </p>
                       </div>
-                      {/* Data início da promoção */}
-                      {dataInicioPromoStr && (
-                        <div
-                          style={{
-                            borderRadius: "10px",
-                            border: "1px solid #e5e7eb",
-                            padding: "6px 8px",
-                            backgroundColor: "#f9fafb",
-                          }}
-                        >
-                          <p
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              color: "#6b7280",
-                              marginBottom: "2px",
-                            }}
-                          >
-                            Data início da promoção
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "13px",
-                              color: "#111827",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {formatDateBR(dataInicioPromoStr)}
-                          </p>
-                        </div>
-                      )}
 
-                      {/* Data fim da promoção */}
-                      {dataFimPromoStr && (
-                        <div
-                          style={{
-                            borderRadius: "10px",
-                            border: "1px solid #e5e7eb",
-                            padding: "6px 8px",
-                            backgroundColor: "#f9fafb",
-                          }}
-                        >
-                          <p
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              color: "#6b7280",
-                              marginBottom: "2px",
-                            }}
-                          >
-                            Data fim da promoção
-                          </p>
-                          <p
-                            style={{
-                              fontSize: "13px",
-                              color: "#111827",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {formatDateBR(dataFimPromoStr)}
-                          </p>
-                        </div>
-                      )}
-
-
-                      {/* Demais campos A–F */}
+                      {/* Demais campos (sem datas e sem C) */}
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[chave as keyof typeof entradaLabels] ??
@@ -1507,7 +1967,7 @@ export default function HistoricoPage() {
                           valor === undefined || valor === null
                             ? "—"
                             : isNumero
-                              ? chave === "A" || chave === "C"
+                              ? chave === "A"
                                 ? String(Math.round(valor as number))
                                 : formatBR(Number(valor))
                               : String(valor);
@@ -1566,7 +2026,6 @@ export default function HistoricoPage() {
                       Análise após encerramento da promoção
                     </p>
 
-                    {/* Mensagem de status se houver datas */}
                     {promoStatus === "NAO_INICIOU" && (
                       <p
                         style={{
@@ -1593,14 +2052,9 @@ export default function HistoricoPage() {
                       </p>
                     )}
 
-                    {/* Enquanto ainda não foi avaliado E pode avaliar → input + botão */}
                     {podeAvaliar && (
                       <>
-                        <div
-                          style={{
-                            marginBottom: "8px",
-                          }}
-                        >
+                        <div style={{ marginBottom: "8px" }}>
                           <label
                             style={{
                               display: "block",
@@ -1615,7 +2069,7 @@ export default function HistoricoPage() {
                           <input
                             type="text"
                             value={qtdVendida}
-                            onChange={(e) => setQtdVendida(e.target.value)}
+                            onChange={(ev) => setQtdVendida(ev.target.value)}
                             placeholder="Ex: 620"
                             style={{
                               width: "100%",
@@ -1657,7 +2111,6 @@ export default function HistoricoPage() {
                       </>
                     )}
 
-                    {/* Depois de avaliado (ou carregado do banco) → só os cards */}
                     {analisePromo && (
                       <div
                         style={{
@@ -1728,7 +2181,7 @@ export default function HistoricoPage() {
                         <div
                           style={{
                             borderRadius: "12px",
-                            border: "1px solid#e5e7eb",
+                            border: "1px solid #e5e7eb",
                             backgroundColor: "#f9fafb",
                             padding: "8px 10px",
                           }}
@@ -1802,7 +2255,6 @@ export default function HistoricoPage() {
                 </>
               );
             })()}
-
           </div>
         </div>
       )}
