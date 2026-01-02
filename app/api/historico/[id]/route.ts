@@ -39,7 +39,6 @@ export async function PATCH(
       );
     }
 
-    // busca o registro atual
     const row = await db("historico")
       .select("resultado")
       .where({ id })

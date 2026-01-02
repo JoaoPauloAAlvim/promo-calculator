@@ -23,7 +23,6 @@ export async function POST(req: Request) {
       F,
     } = body;
 
-    // Normalização de strings
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     comprador = typeof comprador === "string" ? comprador.trim() : "";
@@ -153,10 +152,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Lucro diário histórico
     const lucroDiarioHist = lucroTotalHistorico / periodoHistorico;
 
-    // DRE UNITÁRIO
     const lucroUnitarioSemAdicional = precoPromo - custoUnit;
     const lucroUnitarioComAdicional =
       lucroUnitarioSemAdicional + receitaAdicional;
@@ -164,7 +161,6 @@ export async function POST(req: Request) {
     const markupComAdicional =
       custoUnit > 0 ? lucroUnitarioComAdicional / custoUnit : null;
 
-    // Regra atual: não aceita promoção com lucro unitário <= 0
     if (
       !Number.isFinite(lucroUnitarioComAdicional) ||
       lucroUnitarioComAdicional <= 0
@@ -178,7 +174,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // metas baseadas no lucro unitário COM adicional (como já fazia)
     const metaUnidDia = lucroDiarioHist / lucroUnitarioComAdicional;
     const metaUnidTotal = metaUnidDia * diasPromo;
 
@@ -205,10 +200,8 @@ export async function POST(req: Request) {
       lucro_unitario_sem_adicional: lucroUnitarioSemAdicional,
       lucro_unitario_com_adicional: lucroUnitarioComAdicional,
 
-      // mantém o campo que você já usava
       lucro_unitario_promo: lucroUnitarioComAdicional,
 
-      // ✅ novo
       markup_com_adicional: markupComAdicional,
     };
 

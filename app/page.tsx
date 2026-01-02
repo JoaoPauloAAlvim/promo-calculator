@@ -91,10 +91,9 @@ export default function Home() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<Resultado | null>(null);
-  const [loading, setLoading] = useState(false); // loading da simulação única
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // estado do modal de importação
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -185,8 +184,8 @@ export default function Home() {
         return;
       }
 
-      const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1; // dias inclusivos
-      const C = diasPromo; // vamos mandar C como número de dias calculados
+      const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1;
+      const C = diasPromo;
 
       const A = parseBR(form.A);
       const B = parseBR(form.B);
@@ -241,7 +240,6 @@ export default function Home() {
         }),
       });
 
-      // ... resto da função (parse do response, setResult, setError) continua igual
 
 
       let data: any = null;
@@ -323,8 +321,8 @@ export default function Home() {
       "COLGATE",
       30,
       12450,
-      "10/01/2025", // DataInicioPromocao
-      "20/01/2025", // DataFimPromocao
+      "10/01/2025",
+      "20/01/2025",
       4.79,
       4.45,
       0.42,
@@ -377,28 +375,22 @@ export default function Home() {
         return "";
       };
 
-      // converte célula de data (texto BR, ISO ou data Excel) para AAAA-MM-DD
       const parseDateFromCell = (v: any): string | null => {
         if (!v && v !== 0) return null;
 
-        // 1) Texto
         if (typeof v === "string") {
           const s = v.trim();
 
-          // AAAA-MM-DD
           if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
 
-          // DD/MM/AAAA
           if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
             const [d, m, y] = s.split("/");
             return `${y}-${m}-${d}`;
           }
 
-          // outros formatos de texto: considera inválido
           return null;
         }
 
-        // 2) Número: data nativa do Excel
         if (typeof v === "number") {
           const dateObj = (XLSX.SSF as any).parse_date_code?.(v);
           if (!dateObj) return null;
@@ -417,7 +409,7 @@ export default function Home() {
       };
 
       for (let i = 0; i < json.length; i++) {
-        const linha = i + 2; // +2 por causa do cabeçalho
+        const linha = i + 2;
         const row = json[i];
 
         const produto = String(row.Produto || "").trim();
@@ -441,7 +433,6 @@ export default function Home() {
         const E = toNumericString(row.CustoUnitario);
         const F = toNumericString(row.ReceitaAdicional);
 
-        // Datas da promoção (podem vir como texto BR, ISO ou data Excel)
         const dataInicio = parseDateFromCell(row.DataInicioPromocao);
         const dataFim = parseDateFromCell(row.DataFimPromocao);
 
@@ -456,20 +447,15 @@ export default function Home() {
           continue;
         }
 
-        // calcula C = dias da promoção (início e fim inclusivos)
-        const inicioDate = new Date(dataInicio);
-        const fimDate = new Date(dataFim);
+        const inicioDia = parseISODateLocal(dataInicio);
+        const fimDia = parseISODateLocal(dataFim);
 
-        const inicioDia = new Date(
-          inicioDate.getFullYear(),
-          inicioDate.getMonth(),
-          inicioDate.getDate()
-        );
-        const fimDia = new Date(
-          fimDate.getFullYear(),
-          fimDate.getMonth(),
-          fimDate.getDate()
-        );
+        if (!inicioDia || !fimDia) {
+          setResult(null);
+          setError("Data de início ou fim inválida.");
+          return;
+        }
+
 
         const diffMs = fimDia.getTime() - inicioDia.getTime();
         if (diffMs < 0) {
@@ -499,7 +485,7 @@ export default function Home() {
               dataFim,
               A,
               B,
-              C, // calculado pelas datas
+              C,
               D,
               E,
               F,
@@ -614,7 +600,6 @@ export default function Home() {
         }
       />
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <section
           className="bg-white shadow-md p-6 md:p-7"
@@ -638,7 +623,6 @@ export default function Home() {
               margin: "0 auto",
             }}
           >
-            {/* Nome do produto */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -670,7 +654,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Categoria */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -702,7 +685,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Comprador */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -734,7 +716,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Marca */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -765,7 +746,6 @@ export default function Home() {
                 }}
               />
             </div>
-            {/* Data de início da promoção */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -796,7 +776,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Data de fim da promoção */}
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -828,7 +807,6 @@ export default function Home() {
             </div>
 
 
-            {/* Campos numéricos A–F */}
             {campos.map((campo) => (
               <div key={campo.id} style={{ marginBottom: "16px" }}>
                 <label
@@ -866,7 +844,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Botão Calcular */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <button
               type="button"
@@ -892,8 +869,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* MODAL DE RESULTADO */}
-      {/* MODAL DE RESULTADO */}
+
       {result && (
         <div
           style={{
@@ -939,7 +915,6 @@ export default function Home() {
               ✕
             </button>
 
-            {/* Cabeçalho */}
             <div style={{ marginBottom: "12px" }}>
               <p
                 style={{
@@ -965,7 +940,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Lucro diário histórico + lucro unitário promo */}
             <div
               style={{
                 display: "grid",
@@ -1035,7 +1009,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* DRE UNITÁRIO */}
             <div
               style={{
                 marginTop: "8px",
@@ -1080,7 +1053,6 @@ export default function Home() {
                       gap: "8px",
                     }}
                   >
-                    {/* Preço e custo */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -1131,7 +1103,6 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Receita adicional */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -1161,7 +1132,6 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Resultado com e sem adicional */}
                     <div
                       style={{
                         borderRadius: "12px",
@@ -1216,7 +1186,6 @@ export default function Home() {
               })()}
             </div>
 
-            {/* Metas */}
             <div
               style={{
                 display: "grid",
@@ -1299,7 +1268,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Dados informados */}
             <div
               style={{
                 marginTop: "12px",
@@ -1325,7 +1293,6 @@ export default function Home() {
                   gap: "6px",
                 }}
               >
-                {/* Produto */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -1355,7 +1322,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Categoria */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -1385,7 +1351,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Comprador */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -1415,7 +1380,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Marca */}
                 <div
                   style={{
                     borderRadius: "10px",
@@ -1445,7 +1409,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Campos A–F */}
                 {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
                   const raw = (entrada as any)[key];
                   const label = entradaLabels[key] ?? key;
@@ -1498,7 +1461,6 @@ export default function Home() {
       )}
 
 
-      {/* MODAL DE ERRO */}
       {error && !result && (
         <div
           style={{
@@ -1602,7 +1564,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DE IMPORTAÇÃO */}
       {showImportModal && (
         <div
           style={{
@@ -1676,7 +1637,6 @@ export default function Home() {
             </p>
 
 
-            {/* Linha com Escolher arquivo (esquerda) e Baixar modelo (direita) */}
             <div
               style={{
                 display: "flex",
@@ -1686,7 +1646,6 @@ export default function Home() {
                 marginBottom: "10px",
               }}
             >
-              {/* Lado esquerdo: botão Escolher arquivo + nome do arquivo */}
               <div
                 style={{
                   display: "flex",
@@ -1711,7 +1670,7 @@ export default function Home() {
                     justifyContent: "center",
                     padding: "6px 14px",
                     borderRadius: "10px",
-                    backgroundColor: "#0f766e", // mesmo estilo de antes
+                    backgroundColor: "#0f766e",
                     color: "#ffffff",
                     fontWeight: 600,
                     fontSize: "12px",
@@ -1740,7 +1699,6 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Lado direito: botão Baixar modelo */}
               <div
                 style={{
                   flex: "0 0 auto",
@@ -1757,7 +1715,7 @@ export default function Home() {
                     justifyContent: "center",
                     padding: "6px 14px",
                     borderRadius: "10px",
-                    backgroundColor: "#0f766e", // mesmo estilo de antes
+                    backgroundColor: "#0f766e",
                     color: "#ffffff",
                     fontWeight: 600,
                     fontSize: "12px",
@@ -1774,7 +1732,6 @@ export default function Home() {
 
 
 
-            {/* Botão para escolher arquivo */}
             <div
               style={{
                 marginBottom: "10px",
@@ -1966,7 +1923,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* OVERLAY DE LOADING da simulação única */}
       {loading && (
         <div
           style={{

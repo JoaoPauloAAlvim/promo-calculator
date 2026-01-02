@@ -22,7 +22,6 @@ export async function GET(req: Request) {
       100
     );
 
-    // base query com filtros
     const baseQuery = db("historico");
 
     if (produto) {
@@ -54,7 +53,6 @@ export async function GET(req: Request) {
       );
     }
 
-    // total de registros para esses filtros
     const countRow = await baseQuery
       .clone()
       .count<{ total: string | number }>({ total: "*" })
@@ -68,7 +66,6 @@ export async function GET(req: Request) {
 
     const offset = (page - 1) * pageSize;
 
-    // busca da página – +1 pra saber se tem próxima
     const rows = await baseQuery
       .clone()
       .select("id", "dataHora", "resultado")

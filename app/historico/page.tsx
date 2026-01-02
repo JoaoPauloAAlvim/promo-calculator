@@ -31,7 +31,7 @@ const parseISODateLocal = (iso?: string): Date | null => {
 
   if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
 
-  return new Date(y, mo - 1, d); // LOCAL, sem UTC shift
+  return new Date(y, mo - 1, d);
 };
 
 
@@ -46,7 +46,6 @@ const formatBR = (valor: number | undefined): string => {
 const formatDateBR = (value: string | Date | undefined): string => {
   if (!value) return "—";
 
-  // Se for string ISO (YYYY-MM-DD), parse como local
   if (typeof value === "string") {
     const dLocal = parseISODateLocal(value);
     if (!dLocal) return "—";
@@ -57,7 +56,6 @@ const formatDateBR = (value: string | Date | undefined): string => {
     });
   }
 
-  // Se for Date normal
   if (Number.isNaN(value.getTime())) return "—";
   return value.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -78,7 +76,6 @@ const formatPctBR = (v: number | null | undefined): string => {
 };
 
 
-// dias inclusivos (igual na Home): (fim - início) + 1
 const calcDiasPromoInclusivo = (dataInicio?: string, dataFim?: string): number | null => {
   const inicio = parseISODateLocal(dataInicio);
   const fim = parseISODateLocal(dataFim);
@@ -103,23 +100,19 @@ export default function HistoricoPage() {
   const [reloadToken, setReloadToken] = useState(0);
   const [dreAberto, setDreAberto] = useState(false);
 
-  // filtros -> backend
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
 
-  // filtro local por status da análise
   const [filtroStatus, setFiltroStatus] = useState<string>("");
 
-  // paginação
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 10;
 
-  // campos para análise da promoção encerrada
   const [qtdVendida, setQtdVendida] = useState<string>("");
   const [analisePromo, setAnalisePromo] = useState<{
     lucroHistPeriodo: number;
@@ -188,7 +181,6 @@ export default function HistoricoPage() {
     reloadToken,
   ]);
 
-  // selects – opções derivadas
   const opcoesMarca = Array.from(
     new Set(
       itens
@@ -223,7 +215,6 @@ export default function HistoricoPage() {
   ).sort((a, b) => a.localeCompare(b));
 
   const itensFiltrados = itens.filter((item) => {
-    // ----- filtro por status da ANÁLISE -----
     if (filtroStatus) {
       const vendaReal = item.resultado?.metas?.venda_real as
         | { situacao?: string }
@@ -237,7 +228,6 @@ export default function HistoricoPage() {
       }
     }
 
-    // ----- filtro por status da PROMOÇÃO -----
     if (filtroStatusPromo) {
       const e = item.resultado.entrada ?? {};
       const dataInicioPromoStr = e.data_inicio_promocao as string | undefined;
@@ -250,34 +240,27 @@ export default function HistoricoPage() {
         | "ENCERRADA" = "SEM_DATAS";
 
       if (dataInicioPromoStr && dataFimPromoStr) {
-        const hoje = new Date();
-        const hojeDia = new Date(
-          hoje.getFullYear(),
-          hoje.getMonth(),
-          hoje.getDate()
-        );
+        const inicioDate = parseISODateLocal(dataInicioPromoStr);
+        const fimDate = parseISODateLocal(dataFimPromoStr);
 
-        const inicioDate = new Date(dataInicioPromoStr);
-        const fimDate = new Date(dataFimPromoStr);
+        if (!inicioDate || !fimDate) {
+          promoStatus = "SEM_DATAS";
+        } else {
+          const hoje = new Date();
+          const hojeDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
-        const inicioDia = new Date(
-          inicioDate.getFullYear(),
-          inicioDate.getMonth(),
-          inicioDate.getDate()
-        );
-        const fimDia = new Date(
-          fimDate.getFullYear(),
-          fimDate.getMonth(),
-          fimDate.getDate()
-        );
+          const inicioDia = new Date(inicioDate.getFullYear(), inicioDate.getMonth(), inicioDate.getDate());
+          const fimDia = new Date(fimDate.getFullYear(), fimDate.getMonth(), fimDate.getDate());
 
-        if (hojeDia < inicioDia) promoStatus = "NAO_INICIOU";
-        else if (hojeDia > fimDia) promoStatus = "ENCERRADA";
-        else promoStatus = "EM_ANDAMENTO";
+          if (hojeDia < inicioDia) promoStatus = "NAO_INICIOU";
+          else if (hojeDia > fimDia) promoStatus = "ENCERRADA";
+          else promoStatus = "EM_ANDAMENTO";
+        }
       }
 
       if (promoStatus !== filtroStatusPromo) return false;
     }
+
 
     return true;
   });
@@ -350,7 +333,6 @@ export default function HistoricoPage() {
 
     const lucroDiarioHist = Number(e.lucro_diario_hist);
 
-    // Duração: prioriza cálculo pelas datas (igual Home); fallback para C salvo
     const dataInicio = e.data_inicio_promocao as string | undefined;
     const dataFim = e.data_fim_promocao as string | undefined;
     const diasPromoCalc = calcDiasPromoInclusivo(dataInicio, dataFim);
@@ -434,7 +416,7 @@ export default function HistoricoPage() {
       setAnalisePromo(null);
     }
   }
-const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -489,7 +471,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
             </div>
           )}
 
-          {/* FILTROS */}
           <section
             style={{
               backgroundColor: "#ffffff",
@@ -555,7 +536,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 alignItems: "end",
               }}
             >
-              {/* Produto */}
               <div>
                 <label
                   style={{
@@ -584,7 +564,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 />
               </div>
 
-              {/* Marca */}
               <div>
                 <label
                   style={{
@@ -621,7 +600,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 </select>
               </div>
 
-              {/* Categoria */}
               <div>
                 <label
                   style={{
@@ -658,7 +636,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 </select>
               </div>
 
-              {/* Comprador */}
               <div>
                 <label
                   style={{
@@ -695,7 +672,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
               </div>
             </div>
 
-            {/* Status da promoção */}
             <div
               style={{
                 display: "flex",
@@ -736,7 +712,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
           <br />
 
-          {/* Lista */}
           {!erro && itens.length === 0 && (
             <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
           )}
@@ -811,7 +786,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     }
                   }
 
-                  // Mapeia para label e cores
                   let promoLabel = "Sem datas";
                   let promoBg = "#f3f4f6";
                   let promoColor = "#4b5563";
@@ -874,7 +848,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                       }}
                       className="card-historico flex flex-col gap-2 text-left focus:outline-none"
                     >
-                      {/* X vermelho */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -896,7 +869,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         {excluindoId === item.id ? "…" : "✕"}
                       </button>
 
-                      {/* topo: produto + data */}
                       <div className="flex items-start justify-between gap-2 pr-5">
                         <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
                           {nomeProduto || "Produto não informado"}
@@ -906,7 +878,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         </p>
                       </div>
 
-                      {/* lucro/meta + status */}
                       <div className="mt-1 flex flex-col gap-1 text-[11px] text-slate-600 pr-5">
                         {lucroMedio !== undefined &&
                           !Number.isNaN(lucroMedio) && (
@@ -932,7 +903,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                           </span>
                         )}
 
-                        {/* Status da análise */}
                         <span
                           style={{
                             marginTop: "2px",
@@ -951,7 +921,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                           {statusLabel}
                         </span>
 
-                        {/* chip de status da promoção */}
                         <span
                           style={{
                             marginTop: "2px",
@@ -979,8 +948,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 })}
               </div>
 
-              {/* Paginação */}
-              {/* Paginação */}
               <div
                 style={{
                   marginTop: "8px",
@@ -1002,7 +969,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 </span>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  {/* Primeira */}
                   <button
                     type="button"
                     onClick={() => setPage(1)}
@@ -1020,7 +986,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     ⏮ Primeira
                   </button>
 
-                  {/* Anterior */}
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -1038,7 +1003,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     ◀ Anterior
                   </button>
 
-                  {/* Próxima */}
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -1056,7 +1020,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     Próxima ▶
                   </button>
 
-                  {/* Última */}
                   <button
                     type="button"
                     onClick={() => setPage(totalPages)}
@@ -1081,7 +1044,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
         </main>
       )}
 
-      {/* MODAL DE DETALHES */}
       {selecionado && (
         <div
           style={{
@@ -1163,7 +1125,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
               const lucroHist = Number(e.lucro_diario_hist);
               const lucroUnitarioPromo = m.lucro_unitario_promo;
 
-              // Datas + duração (como na Home)
               const dataInicioPromoStr = e.data_inicio_promocao as
                 | string
                 | undefined;
@@ -1178,7 +1139,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                 diasPromoCalc ??
                 (Number.isFinite(diasPromoFallback) ? diasPromoFallback : null);
 
-              // Não mostrar datas/C nos “dados informados” (vamos mostrar em cards próprios)
               const entradaEntries = Object.entries(e).filter(
                 ([chave, valor]) =>
                   valor !== undefined &&
@@ -1202,9 +1162,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
               const comprador = e.comprador ?? "";
               const marca = e.marca ?? "";
 
-              // ==============================
-              // CONTROLE DE STATUS DA PROMOÇÃO
-              // ==============================
               let promoStatus:
                 | "SEM_DATAS"
                 | "NAO_INICIOU"
@@ -1245,7 +1202,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
               return (
                 <>
-                  {/* cards principais */}
                   <div
                     style={{
                       display: "grid",
@@ -1412,7 +1368,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     </div>
                   </div>
 
-                  {/* Período + duração da promoção */}
                   <div
                     style={{
                       display: "grid",
@@ -1514,7 +1469,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     </div>
                   </div>
 
-                  {/* MODAL DRE (separado) */}
                   {selecionado &&
                     dreAberto &&
                     (() => {
@@ -1810,7 +1764,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                       );
                     })()}
 
-                  {/* dados de entrada */}
                   <div
                     style={{
                       marginTop: "6px",
@@ -1836,7 +1789,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         gap: "6px",
                       }}
                     >
-                      {/* Produto */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -1866,7 +1818,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         </p>
                       </div>
 
-                      {/* Categoria */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -1896,7 +1847,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         </p>
                       </div>
 
-                      {/* Comprador */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -1926,7 +1876,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         </p>
                       </div>
 
-                      {/* Marca */}
                       <div
                         style={{
                           borderRadius: "10px",
@@ -1956,7 +1905,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                         </p>
                       </div>
 
-                      {/* Demais campos (sem datas e sem C) */}
                       {entradaEntries.map(([chave, valor]) => {
                         const label =
                           entradaLabels[chave as keyof typeof entradaLabels] ??
@@ -2007,7 +1955,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
                     </div>
                   </div>
 
-                  {/* BLOCO: Análise após encerramento da promoção */}
                   <div
                     style={{
                       marginTop: "14px",
@@ -2259,7 +2206,6 @@ const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
         </div>
       )}
 
-      {/* OVERLAY DE LOADING */}
       {loading && (
         <div
           style={{

@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -14,7 +13,6 @@ export function middleware(req: NextRequest) {
 
   const hasAuth = req.cookies.get("simulador_auth")?.value === "ok";
 
-  // se tentar acessar rota protegida sem cookie → manda para /login
   if (isProtected && !hasAuth) {
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -22,7 +20,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // se já estiver logado e tentar ir para /login → manda para /
   if (isLogin && hasAuth) {
     const homeUrl = req.nextUrl.clone();
     homeUrl.pathname = "/";
