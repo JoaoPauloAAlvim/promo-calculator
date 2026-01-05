@@ -1,0 +1,74 @@
+export type PromoStatus = "SEM_DATAS" | "NAO_INICIOU" | "EM_ANDAMENTO" | "ENCERRADA";
+export type AnaliseStatus = "PENDENTE" | "ACIMA" | "ABAIXO" | "IGUAL";
+
+export type Resultado = {
+  entrada?: Record<string, any>;
+  metas?: Record<string, any>;
+};
+
+export type HistoricoItem = {
+  id: number;
+  dataHora: string;
+  resultado: Resultado;
+};
+
+export type HistoricoFiltros = {
+  produto?: string;
+  marca?: string;
+  categoria?: string;
+  comprador?: string;
+  statusPromo?: PromoStatus | "";
+  statusAnalise?: AnaliseStatus | "";
+};
+
+export type ChipStyle = {
+  label: string;
+  bg: string;
+  color: string;
+  border: string;
+};
+
+export type AnalisePromo = {
+  lucroHistPeriodo: number;
+  lucroRealPromo: number;
+  diff: number;
+  situacao: "ACIMA" | "ABAIXO" | "IGUAL";
+};
+
+export type FormState = {
+  produto: string;
+  categoria: string;
+  comprador: string;
+  marca: string;
+  dataInicio: string;
+  dataFim: string;
+  A: string;
+  B: string;
+  D: string;
+  E: string;
+  F: string;
+};
+
+
+export type ImportRow = {
+  Produto?: string;
+  Categoria?: string;
+  Comprador?: string;
+  Marca?: string;
+  PeriodoHistorico?: number | string;
+  LucroTotalHistorico?: number | string;
+  DataInicioPromocao?: string | number;
+  DataFimPromocao?: string | number;
+  PrecoPromocional?: number | string;
+  CustoUnitario?: number | string;
+  ReceitaAdicional?: number | string;
+};
+
+
+export type ResultadoLote = {
+  linha: number;
+  produto: string;
+  ok: boolean;
+  erro?: string;
+  resultado?: Resultado;
+};

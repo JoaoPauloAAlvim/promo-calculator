@@ -93,6 +93,7 @@ export default function Home() {
   const [result, setResult] = useState<Resultado | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFileName, setImportFileName] = useState<string | null>(null);

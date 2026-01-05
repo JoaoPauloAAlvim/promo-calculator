@@ -2,8 +2,27 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
 
 export const runtime = "nodejs";
-
 export const dynamic = "force-dynamic";
+
+type MonitoramentoItem = {
+  data: string;      
+  vendido: number;   
+  estoque: number;   
+  criadoEm: string; 
+};
+
+function isISODate(s: unknown): s is string {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+function toNumberBR(v: any): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const n = Number(v.trim().replace(/\./g, "").replace(",", "."));
+    return n;
+  }
+  return NaN;
+}
 
 export async function PATCH(
   req: Request,
@@ -18,23 +37,10 @@ export async function PATCH(
       );
     }
 
-    const body = await req.json();
-    const qtdVendida = Number(body.qtdVendida);
-    const lucroHistPeriodo = Number(body.lucroHistPeriodo);
-    const lucroRealPromo = Number(body.lucroRealPromo);
-    const diff = Number(body.diff);
-    const situacao = String(body.situacao || "").toUpperCase();
-
-    if (!qtdVendida || Number.isNaN(qtdVendida) || qtdVendida <= 0) {
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { error: "Quantidade vendida inválida." },
-        { status: 400 }
-      );
-    }
-
-    if (!["ACIMA", "ABAIXO", "IGUAL"].includes(situacao)) {
-      return NextResponse.json(
-        { error: "Situação inválida." },
+        { error: "Body inválido." },
         { status: 400 }
       );
     }
@@ -56,29 +62,135 @@ export async function PATCH(
         ? JSON.parse(row.resultado)
         : row.resultado || {};
 
+    const metasAtuais = (atual?.metas && typeof atual.metas === "object") ? atual.metas : {};
+
+    const hasVendaReal =
+      body.qtdVendida !== undefined ||
+      body.lucroHistPeriodo !== undefined ||
+      body.lucroRealPromo !== undefined ||
+      body.diff !== undefined ||
+      body.situacao !== undefined;
+
+    let vendaRealPatch: any = null;
+
+    if (hasVendaReal) {
+      const qtdVendida = toNumberBR(body.qtdVendida);
+      const lucroHistPeriodo = toNumberBR(body.lucroHistPeriodo);
+      const lucroRealPromo = toNumberBR(body.lucroRealPromo);
+      const diff = toNumberBR(body.diff);
+      const situacao = String(body.situacao || "").toUpperCase();
+
+      if (!Number.isFinite(qtdVendida) || qtdVendida <= 0) {
+        return NextResponse.json(
+          { error: "Quantidade vendida inválida." },
+          { status: 400 }
+        );
+      }
+
+      if (
+        !Number.isFinite(lucroHistPeriodo) ||
+        !Number.isFinite(lucroRealPromo) ||
+        !Number.isFinite(diff)
+      ) {
+        return NextResponse.json(
+          { error: "Valores de lucro inválidos." },
+          { status: 400 }
+        );
+      }
+
+      if (!["ACIMA", "ABAIXO", "IGUAL"].includes(situacao)) {
+        return NextResponse.json(
+          { error: "Situação inválida." },
+          { status: 400 }
+        );
+      }
+
+      vendaRealPatch = {
+        qtd_vendida: qtdVendida,
+        lucro_hist_periodo: lucroHistPeriodo,
+        lucro_real_promo: lucroRealPromo,
+        diff,
+        situacao,
+        atualizadoEm: new Date().toISOString(),
+      };
+    }
+
+    let monitoramentoPatch: MonitoramentoItem[] | null = null;
+
+    if (body.monitoramento) {
+      const data = body.monitoramento.data;
+      const vendido = toNumberBR(body.monitoramento.vendido);
+      const estoque = toNumberBR(body.monitoramento.estoque);
+
+      if (!isISODate(data)) {
+        return NextResponse.json(
+          { error: "Data do monitoramento inválida (use AAAA-MM-DD)." },
+          { status: 400 }
+        );
+      }
+      if (!Number.isFinite(vendido) || vendido < 0) {
+        return NextResponse.json(
+          { error: "Vendido acumulado inválido (>= 0)." },
+          { status: 400 }
+        );
+      }
+      if (!Number.isFinite(estoque) || estoque < 0) {
+        return NextResponse.json(
+          { error: "Estoque inválido (>= 0)." },
+          { status: 400 }
+        );
+      }
+
+      const lista: MonitoramentoItem[] = Array.isArray(metasAtuais.monitoramento)
+        ? metasAtuais.monitoramento
+        : [];
+
+      const novo: MonitoramentoItem = {
+        data,
+        vendido: Math.floor(vendido),
+        estoque: Math.floor(estoque),
+        criadoEm: new Date().toISOString(),
+      };
+
+      const idx = lista.findIndex((x) => x?.data === data);
+      if (idx >= 0) lista[idx] = novo;
+      else lista.push(novo);
+
+      lista.sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
+
+      monitoramentoPatch = lista;
+    }
+
+    if (!hasVendaReal && !body.monitoramento) {
+      return NextResponse.json(
+        { error: "Nada para atualizar." },
+        { status: 400 }
+      );
+    }
+
     const novoResultado = {
       ...atual,
       metas: {
-        ...(atual.metas || {}),
-        venda_real: {
-          qtd_vendida: qtdVendida,
-          lucro_hist_periodo: lucroHistPeriodo,
-          lucro_real_promo: lucroRealPromo,
-          diff,
-          situacao,
-        },
+        ...metasAtuais,
+        ...(vendaRealPatch ? { venda_real: vendaRealPatch } : {}),
+        ...(monitoramentoPatch ? { monitoramento: monitoramentoPatch } : {}),
       },
     };
 
+    const novoValor =
+      typeof row.resultado === "string"
+        ? JSON.stringify(novoResultado)
+        : novoResultado;
+
     await db("historico")
       .where({ id })
-      .update({ resultado: JSON.stringify(novoResultado) });
+      .update({ resultado: novoValor });
 
     return NextResponse.json({ ok: true, resultado: novoResultado });
   } catch (err: any) {
     console.error("ERRO PATCH /api/historico/:id:", err);
     return NextResponse.json(
-      { error: "Erro ao salvar análise da promoção." },
+      { error: "Erro ao atualizar histórico." },
       { status: 500 }
     );
   }
