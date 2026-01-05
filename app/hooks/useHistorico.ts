@@ -1,33 +1,51 @@
-import { useEffect, useMemo, useState } from "react";
-import type { HistoricoFiltros, HistoricoItem } from "@/lib/types";
+"use client";
 
-type UseHistoricoArgs = {
-  filtros: HistoricoFiltros;
+import { useEffect, useMemo, useState } from "react";
+import type { HistoricoItem } from "@/lib/types";
+import { getHistorico } from "@/lib/api/historico";
+
+export type UseHistoricoArgs = {
+  produto?: string;
+  marca?: string;
+  categoria?: string;
+  comprador?: string;
+  statusPromo?: string;  
+  statusAnalise?: string; 
   page: number;
   pageSize: number;
   reloadToken: number;
 };
 
-export function useHistorico({ filtros, page, pageSize, reloadToken }: UseHistoricoArgs) {
+export function useHistorico({
+  produto,
+  marca,
+  categoria,
+  comprador,
+  statusPromo,
+  statusAnalise,
+  page,
+  pageSize,
+  reloadToken,
+}: UseHistoricoArgs) {
   const [itens, setItens] = useState<HistoricoItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const url = useMemo(() => {
-    const params = new URLSearchParams();
-    if (filtros.produto) params.set("produto", filtros.produto);
-    if (filtros.marca) params.set("marca", filtros.marca);
-    if (filtros.categoria) params.set("categoria", filtros.categoria);
-    if (filtros.comprador) params.set("comprador", filtros.comprador);
-    if (filtros.statusPromo) params.set("statusPromo", filtros.statusPromo);
-    if (filtros.statusAnalise) params.set("statusAnalise", filtros.statusAnalise);
-
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
-    return `/api/historico?${params.toString()}`;
-  }, [filtros, page, pageSize]);
+  const params = useMemo(
+    () => ({
+      produto: produto || "",
+      marca: marca || "",
+      categoria: categoria || "",
+      comprador: comprador || "",
+      statusPromo: statusPromo || "",
+      statusAnalise: statusAnalise || "",
+      page,
+      pageSize,
+    }),
+    [produto, marca, categoria, comprador, statusPromo, statusAnalise, page, pageSize]
+  );
 
   useEffect(() => {
     let alive = true;
@@ -37,29 +55,30 @@ export function useHistorico({ filtros, page, pageSize, reloadToken }: UseHistor
         setLoading(true);
         setErro(null);
 
-        const res = await fetch(url);
-        const data = await res.json();
+        const data = await getHistorico({
+          produto: params.produto || undefined,
+          marca: params.marca || undefined,
+          categoria: params.categoria || undefined,
+          comprador: params.comprador || undefined,
+          statusPromo: params.statusPromo || undefined,
+          statusAnalise: params.statusAnalise || undefined,
+          page: params.page,
+          pageSize: params.pageSize,
+        });
 
         if (!alive) return;
-
-        if (!res.ok) {
-          setErro(data?.error || "Erro ao carregar histórico no servidor.");
-          setItens([]);
-          setHasMore(false);
-          setTotalCount(0);
-          return;
-        }
 
         setItens(Array.isArray(data.itens) ? data.itens : []);
-        setHasMore(Boolean(data.hasMore));
         setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
-      } catch (e) {
-        console.error(e);
+        setHasMore(Boolean(data.hasMore));
+      } catch (err: any) {
+        console.error(err);
         if (!alive) return;
-        setErro("Erro ao buscar histórico. Verifique a conexão.");
+
+        setErro(err?.message || "Erro ao buscar histórico. Verifique a conexão.");
         setItens([]);
-        setHasMore(false);
         setTotalCount(0);
+        setHasMore(false);
       } finally {
         if (alive) setLoading(false);
       }
@@ -68,7 +87,7 @@ export function useHistorico({ filtros, page, pageSize, reloadToken }: UseHistor
     return () => {
       alive = false;
     };
-  }, [url, reloadToken]);
+  }, [params, reloadToken]);
 
   return { itens, totalCount, hasMore, loading, erro };
 }

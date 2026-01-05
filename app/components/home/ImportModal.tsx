@@ -31,22 +31,56 @@ export function ImportModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-[720px] max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-        {/* Fechar */}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "16px",
+        zIndex: 80,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: "16px",
+          maxWidth: "720px",
+          width: "100%",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          padding: "20px",
+          position: "relative",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+        }}
+      >
         <button
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700"
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            borderRadius: "999px",
+            border: "none",
+            padding: "4px 8px",
+            fontSize: "12px",
+            backgroundColor: "#f3f4f6",
+            color: "#4b5563",
+            cursor: "pointer",
+          }}
           type="button"
         >
           ✕
         </button>
 
-        <h3 className="text-base font-semibold text-slate-900 mb-1">
+        <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
           Importar planilha Excel
         </h3>
 
-        <p className="text-xs text-slate-600 mb-3">
+        <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>
           Formato esperado: primeira aba com colunas{" "}
           <strong>
             Produto, Categoria, Comprador, Marca, PeriodoHistorico,
@@ -56,27 +90,56 @@ export function ImportModal({
           . Use datas como <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>.
         </p>
 
-        {/* Linha: escolher arquivo + baixar modelo */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {/* ✅ Apenas UM input file */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+            marginBottom: "10px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 0" }}>
             <input
               id="file-input-excel"
               type="file"
               accept=".xlsx,.xls"
               onChange={onFileChange}
-              className="hidden"
+              style={{ display: "none" }}
             />
 
             <label
               htmlFor="file-input-excel"
-              className="inline-flex items-center justify-center rounded-[10px] bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow cursor-pointer whitespace-nowrap"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 14px",
+                borderRadius: "10px",
+                backgroundColor: "#0f766e",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "12px",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                border: "none",
+                whiteSpace: "nowrap",
+              }}
             >
               Escolher arquivo
             </label>
 
             {importFileName && (
-              <span className="text-xs text-slate-600 truncate max-w-[260px]">
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "#6b7280",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "260px",
+                }}
+              >
                 {importFileName}
               </span>
             )}
@@ -85,32 +148,54 @@ export function ImportModal({
           <button
             type="button"
             onClick={onGenerateModel}
-            className="inline-flex items-center justify-center rounded-[10px] bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow whitespace-nowrap"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "6px 14px",
+              borderRadius: "10px",
+              backgroundColor: "#0f766e",
+              color: "#ffffff",
+              fontWeight: 600,
+              fontSize: "12px",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              border: "none",
+              whiteSpace: "nowrap",
+            }}
           >
             Baixar modelo (.xlsx)
           </button>
         </div>
 
-        {/* Erro */}
         {importError && (
-          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div
+            style={{
+              marginTop: "4px",
+              marginBottom: "8px",
+              borderRadius: "10px",
+              border: "1px solid #fecaca",
+              backgroundColor: "#fee2e2",
+              padding: "8px 10px",
+              fontSize: "12px",
+              color: "#b91c1c",
+            }}
+          >
             ⚠ {importError}
           </div>
         )}
 
-        {/* Resultados */}
         {importResults.length > 0 && (
-          <div className="mt-3 border-t border-slate-200 pt-3">
-            <p className="text-sm font-semibold text-slate-900 mb-1">
+          <div style={{ marginTop: "10px", borderTop: "1px solid #e5e7eb", paddingTop: "10px" }}>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
               Resultados da simulação em lote
             </p>
-            <p className="text-xs text-slate-600 mb-2">
+            <p style={{ fontSize: "11px", color: "#6b7280", marginBottom: "8px" }}>
               Linhas OK foram salvas no histórico normalmente via API de cálculo.
             </p>
 
-            {/* ✅ Scroll horizontal para não quebrar no mobile */}
-            <div className="max-h-[260px] overflow-y-auto overflow-x-auto rounded-xl border border-slate-200">
-              <table className="min-w-[900px] w-full text-xs border-collapse">
+            <div style={{ maxHeight: "260px", overflowY: "auto" }}>
+              <table className="min-w-full text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50">
                     <th className="border px-2 py-1 text-left">Linha</th>
@@ -153,9 +238,7 @@ export function ImportModal({
                         <td className="border px-2 py-1">
                           {r.ok && metas?.meta_unid_total !== undefined ? metas.meta_unid_total : "—"}
                         </td>
-                        <td className="border px-2 py-1 text-red-600">
-                          {!r.ok ? r.erro : ""}
-                        </td>
+                        <td className="border px-2 py-1 text-red-600">{!r.ok ? r.erro : ""}</td>
                       </tr>
                     );
                   })}
@@ -166,9 +249,20 @@ export function ImportModal({
         )}
 
         {importLoading && (
-          <div className="absolute inset-0 rounded-2xl bg-white/70 flex flex-col items-center justify-center">
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "rgba(255,255,255,0.7)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "16px",
+            }}
+          >
             <Spinner size={32} />
-            <p className="mt-2 text-xs font-medium text-slate-700">
+            <p style={{ marginTop: "8px", fontSize: "12px", fontWeight: 500, color: "#4b5563" }}>
               Processando planilha…
             </p>
           </div>

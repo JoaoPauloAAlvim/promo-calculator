@@ -4,14 +4,27 @@ import Link from "next/link";
 
 type Props = {
   onOpenImport: () => void;
-  onLogout: () => void;
+  onLogout: () => void; // aqui é "abrir confirmação"
 };
 
 export function HomeHeaderActions({ onOpenImport, onLogout }: Props) {
   return (
-    <div className="flex items-center gap-2">
-      <Link href="/historico" className="no-underline">
-        <span className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-[10px] bg-indigo-600 text-white text-xs font-semibold shadow">
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <Link href="/historico" style={{ textDecoration: "none" }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "6px 14px",
+            borderRadius: "10px",
+            backgroundColor: "#4f46e5",
+            color: "#ffffff",
+            fontWeight: 600,
+            fontSize: "12px",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+          }}
+        >
           Histórico
         </span>
       </Link>
@@ -19,7 +32,17 @@ export function HomeHeaderActions({ onOpenImport, onLogout }: Props) {
       <button
         type="button"
         onClick={onOpenImport}
-        className="px-3.5 py-1.5 rounded-[10px] bg-teal-700 text-white text-xs font-semibold shadow"
+        style={{
+          padding: "6px 14px",
+          borderRadius: "10px",
+          border: "none",
+          backgroundColor: "#0f766e",
+          color: "#ffffff",
+          fontSize: "12px",
+          fontWeight: 600,
+          cursor: "pointer",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+        }}
       >
         Importar planilha
       </button>
@@ -27,7 +50,16 @@ export function HomeHeaderActions({ onOpenImport, onLogout }: Props) {
       <button
         type="button"
         onClick={onLogout}
-        className="px-3.5 py-1.5 rounded-[10px] border border-slate-300 bg-red-600 text-white text-xs font-medium"
+        style={{
+          padding: "6px 14px",
+          borderRadius: "10px",
+          border: "1px solid #d1d5db",
+          backgroundColor: "#ff0303ff",
+          color: "#ffffffff",
+          fontSize: "12px",
+          fontWeight: 500,
+          cursor: "pointer",
+        }}
       >
         Sair
       </button>

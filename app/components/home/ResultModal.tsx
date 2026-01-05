@@ -17,40 +17,108 @@ export function ResultModal({ result, form, onClose }: Props) {
   const nomeProduto =
     (result as any)?.entrada?.produto_nome ??
     (result as any)?.entrada?.produto ??
-    form?.produto ?? 
+    form?.produto ??
     "";
 
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-[600px] max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "16px",
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: "16px",
+          maxWidth: "600px",
+          width: "100%",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          padding: "20px",
+          position: "relative",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+        }}
+      >
         <button
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-[10px] bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700"
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "8px",
+            borderRadius: "10px",
+            border: "none",
+            padding: "4px 8px",
+            fontSize: "12px",
+            backgroundColor: "#f3f4f6",
+            color: "#4b5563",
+            cursor: "pointer",
+          }}
         >
           ✕
         </button>
 
-        <div className="mb-3">
-          <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-slate-500 mb-1">
+        <div style={{ marginBottom: "12px" }}>
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#6b7280",
+              marginBottom: "4px",
+            }}
+          >
             Resultado da simulação
           </p>
-          <p className="text-sm font-semibold text-slate-900">
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
             {nomeProduto || "Produto não informado"}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500 mb-1">Lucro diário histórico</p>
-            <p className="text-base font-bold text-slate-900">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+              padding: "8px 10px",
+            }}
+          >
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+              Lucro diário histórico
+            </p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
               {`R$ ${formatBR(Number((entrada as any)?.lucro_diario_hist))}`}
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500 mb-1">Lucro unitário na promoção</p>
-            <p className="text-base font-bold text-slate-900">
+          <div
+            style={{
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+              padding: "8px 10px",
+            }}
+          >
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+              Lucro unitário na promoção
+            </p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
               {metas?.lucro_unitario_promo !== undefined
                 ? `R$ ${formatBR(Number(metas.lucro_unitario_promo))}`
                 : "—"}
@@ -58,46 +126,209 @@ export function ResultModal({ result, form, onClose }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs font-semibold text-slate-500 mb-1">Meta de unidades por dia</p>
-            <p className="text-base font-bold text-slate-900">
-              {metas?.meta_unid_dia ?? "—"}{" "}
-              <span className="text-xs font-normal text-slate-500">unid/dia</span>
+        {/* DRE por unidade (igual ao bloco antigo) */}
+        <div
+          style={{
+            marginTop: "8px",
+            paddingTop: "8px",
+            borderTop: "1px solid #e5e7eb",
+            marginBottom: "8px",
+          }}
+        >
+          <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
+            Detalhamento do lucro unitário (DRE por unidade)
+          </p>
+
+          {(() => {
+            const precoPromo = Number((entrada as any).D ?? (entrada as any).d);
+            const custoUnit = Number((entrada as any).E ?? (entrada as any).e);
+            const receitaAdic = Number((entrada as any).F ?? (entrada as any).f ?? 0);
+
+            const lucroSemAdic =
+              (metas as any)?.lucro_unitario_sem_adicional !== undefined
+                ? Number((metas as any).lucro_unitario_sem_adicional)
+                : precoPromo - custoUnit;
+
+            const lucroComAdic =
+              (metas as any)?.lucro_unitario_com_adicional !== undefined
+                ? Number((metas as any).lucro_unitario_com_adicional)
+                : metas?.lucro_unitario_promo !== undefined
+                ? Number(metas.lucro_unitario_promo)
+                : lucroSemAdic + receitaAdic;
+
+            return (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    padding: "8px 10px",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                    Preço promocional
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
+                    {`R$ ${formatBR(precoPromo)}`}
+                  </p>
+
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginTop: "6px", marginBottom: "4px" }}>
+                    Custo unitário
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
+                    {`R$ ${formatBR(custoUnit)}`}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    padding: "8px 10px",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                    Receita adicional (verba / rebate)
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: "#047857" }}>
+                    {`R$ ${formatBR(receitaAdic)}`}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#f9fafb",
+                    padding: "8px 10px",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                    Lucro unitário SEM receita adicional
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: lucroSemAdic >= 0 ? "#111827" : "#b91c1c" }}>
+                    {`R$ ${formatBR(lucroSemAdic)}`}
+                  </p>
+
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginTop: "6px", marginBottom: "4px" }}>
+                    Lucro unitário COM receita adicional
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: lucroComAdic >= 0 ? "#047857" : "#b91c1c" }}>
+                    {`R$ ${formatBR(lucroComAdic)}`}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Metas */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+            gap: "8px",
+          }}
+        >
+          <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px" }}>
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+              Meta de unidades por dia
+            </p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+              {(metas as any)?.meta_unid_dia ?? "—"}{" "}
+              <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs font-semibold text-slate-500 mb-1">Meta de unidades no período</p>
-            <p className="text-base font-bold text-slate-900">
-              {metas?.meta_unid_total ?? "—"}{" "}
-              <span className="text-xs font-normal text-slate-500">unid</span>
+          <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px" }}>
+            <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+              Meta de unidades no período
+            </p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+              {(metas as any)?.meta_unid_total ?? "—"}{" "}
+              <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
             </p>
           </div>
         </div>
 
-        <div className="mt-4 border-t border-slate-200 pt-3">
-          <p className="text-sm font-semibold text-slate-900 mb-2">Dados informados na simulação</p>
+        {/* Dados informados */}
+        <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
+          <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
+            Dados informados na simulação
+          </p>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: "6px",
+            }}
+          >
+            <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+              <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Produto</p>
+              <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                {nomeProduto || "Produto não informado"}
+              </p>
+            </div>
+
+            <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+              <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                Categoria do produto
+              </p>
+              <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                {(entrada as any).categoria || "—"}
+              </p>
+            </div>
+
+            <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+              <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Comprador</p>
+              <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                {(entrada as any).comprador || "—"}
+              </p>
+            </div>
+
+            <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+              <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Marca</p>
+              <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                {(entrada as any).marca || "—"}
+              </p>
+            </div>
+
             {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
               const raw = (entrada as any)[key];
               const label = (entradaLabels as any)[key] ?? key;
-
               const isNumero = typeof raw === "number";
               const valor =
                 raw === undefined || raw === null
                   ? "—"
                   : isNumero
-                    ? key === "A" || key === "C"
-                      ? String(Math.round(raw))
-                      : formatBR(raw)
-                    : String(raw);
+                  ? key === "A" || key === "C"
+                    ? String(Math.round(raw))
+                    : formatBR(raw)
+                  : String(raw);
 
               return (
-                <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs font-semibold text-slate-500 mb-1">{label}</p>
-                  <p className="text-sm font-bold text-slate-900">{valor}</p>
+                <div
+                  key={key}
+                  style={{
+                    borderRadius: "10px",
+                    border: "1px solid #e5e7eb",
+                    padding: "6px 8px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                    {label}
+                  </p>
+                  <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>{valor}</p>
                 </div>
               );
             })}

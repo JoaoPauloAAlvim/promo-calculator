@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import type { ImportRow, Resultado, ResultadoLote } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
 import { toNumericString } from "@/lib/format";
+import { calcularPromocao } from "@/lib/api/calculo";
 
 export function usePromoImport() {
   const [open, setOpen] = useState(false);
@@ -86,7 +87,7 @@ export function usePromoImport() {
     return null;
   };
 
-  
+
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -172,36 +173,20 @@ export function usePromoImport() {
         const C = String(diasPromo);
 
         try {
-          const res = await fetch("/api/calculo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              produto,
-              categoria,
-              comprador,
-              marca,
-              dataInicio,
-              dataFim,
-              A,
-              B,
-              C,
-              D,
-              E,
-              F,
-            }),
+          const payload = await calcularPromocao({
+            produto,
+            categoria,
+            comprador,
+            marca,
+            dataInicio,
+            dataFim,
+            A,
+            B,
+            C,
+            D,
+            E,
+            F,
           });
-
-          const payload = await res.json().catch(() => null);
-
-          if (!res.ok || payload?.error || payload?.erro) {
-            resultadosTemp.push({
-              linha,
-              produto,
-              ok: false,
-              erro: payload?.error || payload?.erro || "Erro ao calcular para esta linha.",
-            });
-            continue;
-          }
 
           resultadosTemp.push({
             linha,
@@ -209,15 +194,17 @@ export function usePromoImport() {
             ok: true,
             resultado: payload as Resultado,
           });
-        } catch (err) {
+        } catch (err: any) {
           console.error(err);
+
           resultadosTemp.push({
             linha,
             produto,
             ok: false,
-            erro: "Falha inesperada ao chamar a API.",
+            erro: err?.message || "Erro ao calcular para esta linha.",
           });
         }
+
       }
 
       setResults(resultadosTemp);

@@ -3,7 +3,14 @@
 import { useState } from "react";
 import type { FormState, Resultado } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
-import { parseBR } from "@/lib/format";
+import { calcularPromocao } from "@/lib/api/calculo";
+
+// parse BR local (evita depender de helpers espalhados)
+const parseBR = (valor: string): number => {
+  if (!valor) return NaN;
+  const limpo = valor.trim().replace(/\./g, "").replace(",", ".");
+  return Number(limpo);
+};
 
 export function usePromoCalculator(initialForm: FormState) {
   const [form, setForm] = useState<FormState>(initialForm);
@@ -43,7 +50,7 @@ export function usePromoCalculator(initialForm: FormState) {
         return;
       }
 
-      const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1;
+      const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1; 
       const C = diasPromo;
 
       const A = parseBR(form.A);
@@ -74,41 +81,24 @@ export function usePromoCalculator(initialForm: FormState) {
         return;
       }
 
-      const response = await fetch("/api/calculo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          produto,
-          categoria,
-          comprador,
-          marca,
-          dataInicio,
-          dataFim,
-          A,
-          B,
-          C,
-          D,
-          E,
-          F,
-        }),
+      const data = await calcularPromocao({
+        produto,
+        categoria,
+        comprador,
+        marca,
+        dataInicio,
+        dataFim,
+        A,
+        B,
+        C,
+        D,
+        E,
+        F,
       });
 
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        setError((data && (data.error || data.erro)) || "Erro ao processar o cálculo na API.");
-        return;
-      }
-
-      if (data && (data.error || data.erro)) {
-        setError(data.error || data.erro);
-        return;
-      }
-
-      setResult(data as Resultado);
-    } catch (e) {
-      console.error(e);
-      setError("Ocorreu um erro inesperado ao calcular. Tente novamente.");
+      setResult(data);
+    } catch (err: any) {
+      setError(err?.message || "Erro ao processar o cálculo na API.");
     } finally {
       setLoading(false);
     }

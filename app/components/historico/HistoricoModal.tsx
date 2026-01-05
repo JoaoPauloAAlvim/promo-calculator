@@ -2,18 +2,18 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { AnalisePromo, HistoricoItem } from "@/lib/types";
-import { formatBR, formatPctBR, toNumberBR } from "@/lib/format";
+import { formatBR, toNumberBR } from "@/lib/format";
 import {
-  parseISODateLocal,
   formatDateBR,
   calcDiasPromoInclusivo,
   getAcompDateISO,
 } from "@/lib/date";
 import { getPromoStatus } from "@/lib/promoStatus";
 import { entradaLabels } from "@/lib/entradaLabels";
-
+import { ActionModal } from "@/app/components/ui/ActionModal";
 import { DreModal } from "@/app/components/historico/DreModal";
 import { AcompanhamentoModal } from "@/app/components/historico/AcompanhamentoModal";
+import { patchVendaReal } from "@/lib/api/historico";
 
 type Props = {
   open: boolean;
@@ -38,6 +38,19 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
   const [qtdVendida, setQtdVendida] = useState<string>("");
   const [analisePromo, setAnalisePromo] = useState<AnalisePromo | null>(null);
 
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [feedbackVariant, setFeedbackVariant] = useState<"success" | "error" | "info">("info");
+
+  function showFeedback(opts: { title: string; message: string; variant?: "success" | "error" | "info" }) {
+    setFeedbackTitle(opts.title);
+    setFeedbackMsg(opts.message);
+    setFeedbackVariant(opts.variant || "info");
+    setFeedbackOpen(true);
+  }
+
+
   useEffect(() => {
     if (!open || !item) return;
 
@@ -51,12 +64,12 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
 
     const vendaReal = item.resultado?.metas?.venda_real as
       | {
-          qtd_vendida?: number;
-          lucro_hist_periodo?: number;
-          lucro_real_promo?: number;
-          diff?: number;
-          situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
-        }
+        qtd_vendida?: number;
+        lucro_hist_periodo?: number;
+        lucro_real_promo?: number;
+        diff?: number;
+        situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
+      }
       | undefined;
 
     if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
@@ -118,7 +131,11 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
 
     const qtd = toNumberBR(qtdVendida);
     if (!qtd || Number.isNaN(qtd) || qtd <= 0) {
-      alert("Informe uma quantidade total vendida válida (maior que zero).");
+      showFeedback({
+        title: "Quantidade inválida",
+        message: "Informe uma quantidade total vendida válida (maior que zero).",
+        variant: "error",
+      });
       return;
     }
 
@@ -130,16 +147,16 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
 
     const lucroUnitPromo = Number((m as any).lucro_unitario_promo);
 
-    if (
-      !Number.isFinite(lucroDiarioHist) ||
-      !Number.isFinite(diasPromo) ||
-      !Number.isFinite(lucroUnitPromo)
-    ) {
-      alert(
-        "Não foi possível calcular a análise para esta simulação. Verifique se a duração (datas/C), o lucro diário histórico e o lucro unitário foram calculados corretamente."
-      );
+    if (!Number.isFinite(lucroDiarioHist) || !Number.isFinite(diasPromo) || !Number.isFinite(lucroUnitPromo)) {
+      showFeedback({
+        title: "Não foi possível calcular",
+        message:
+          "Verifique se a duração (datas/C), o lucro diário histórico e o lucro unitário foram calculados corretamente.",
+        variant: "error",
+      });
       return;
     }
+
 
     const lucroHistPeriodo = lucroDiarioHist * diasPromo;
     const lucroRealPromo = lucroUnitPromo * qtd;
@@ -154,33 +171,44 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
     setAnalisePromo({ lucroHistPeriodo, lucroRealPromo, diff, situacao });
 
     try {
-      const res = await fetch(`/api/historico/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        const resp = await patchVendaReal(item.id, {
           qtdVendida: qtd,
           lucroHistPeriodo,
           lucroRealPromo,
           diff,
           situacao,
-        }),
-      });
+        });
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        alert(data?.error || "Erro ao salvar análise.");
-        return;
+        if (resp?.resultado) {
+          onUpdateItem({ ...item, resultado: resp.resultado });
+        }
+
+        onReload();
+        showFeedback({
+          title: "Análise salva",
+          message: "A análise foi calculada e salva com sucesso.",
+          variant: "success",
+        });
+
+      } catch (err: any) {
+        console.error(err);
+        showFeedback({
+          title: "Erro ao salvar",
+          message: err?.message || "Erro ao salvar análise.",
+          variant: "error",
+        });
       }
 
-      if (data?.resultado) {
-        onUpdateItem({ ...item, resultado: data.resultado });
-      }
-
-      onReload();
     } catch (err) {
       console.error(err);
-      alert("A análise foi calculada, mas não foi possível salvar no banco.");
+      showFeedback({
+        title: "Não foi possível salvar",
+        message: "A análise foi calculada, mas não foi possível salvar no banco.",
+        variant: "error",
+      });
     }
+
   }
 
   if (!open || !item) return null;
@@ -659,7 +687,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
         </div>
       </div>
 
-      {/* Sub-modais */}
       <DreModal
         open={dreAberto}
         onClose={() => setDreAberto(false)}
@@ -678,6 +705,14 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
         onClose={() => setAcompAberto(false)}
         onItemUpdated={(novo) => onUpdateItem(novo)}
         onReload={onReload}
+      />
+      <ActionModal
+        open={feedbackOpen}
+        title={feedbackTitle}
+        message={feedbackMsg}
+        variant={feedbackVariant}
+        onClose={() => setFeedbackOpen(false)}
+        autoCloseMs={feedbackVariant === "success" ? 1500 : undefined}
       />
     </>
   );

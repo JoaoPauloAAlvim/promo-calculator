@@ -1,5 +1,6 @@
 "use client";
 
+import { login } from "@/lib/api/auth";
 import { useState } from "react";
 
 type UseLoginArgs = {
@@ -25,26 +26,15 @@ export function useLogin({ onSuccess }: UseLoginArgs) {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha, lembrar }),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        setErro(data?.error || "Usuário ou senha inválidos.");
-        return;
-      }
-
+      await login({ email, senha, lembrar });
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setErro("Erro inesperado ao tentar fazer login. Tente novamente.");
+      setErro(err?.message || "Erro inesperado ao tentar fazer login. Tente novamente.");
     } finally {
       setLoading(false);
     }
+
   }
 
   function fecharErro() {

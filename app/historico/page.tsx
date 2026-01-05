@@ -12,7 +12,10 @@ import { HistoricoPagination } from "../components/historico/HistoricoPagination
 import { HistoricoFilters } from "@/app/components/historico/HistoricoFilters";
 import { HistoricoGrid } from "@/app/components/historico/HistoricoGrid";
 import { HistoricoModal } from "@/app/components/historico/HistoricoModal";
-
+import { ActionModal } from "@/app/components/ui/ActionModal";
+import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
+import { logout } from "@/lib/api/auth";
+import { deleteHistorico } from "@/lib/api/historico";
 
 
 export default function HistoricoPage() {
@@ -22,12 +25,20 @@ export default function HistoricoPage() {
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
   const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>("");
   const [reloadToken, setReloadToken] = useState(0);
-  
+
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+
   const [filtroProduto, setFiltroProduto] = useState("");
   const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState("");
   const [filtroMarca, setFiltroMarca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [filtroComprador, setFiltroComprador] = useState("");
+
+  const [opcoesMarca, setOpcoesMarca] = useState<string[]>([]);
+  const [opcoesCategoria, setOpcoesCategoria] = useState<string[]>([]);
+  const [opcoesComprador, setOpcoesComprador] = useState<string[]>([]);
 
   const [filtroStatus, setFiltroStatus] = useState<string>("");
   const debouncedProduto = useDebouncedValue(filtroProdutoDigitado.trim(), 1000)
@@ -35,10 +46,86 @@ export default function HistoricoPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<number | null>(null);
+
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actionModalTitle, setActionModalTitle] = useState("");
+  const [actionModalMessage, setActionModalMessage] = useState("");
+  const [actionModalVariant, setActionModalVariant] = useState<"success" | "error" | "info">("info");
+
+  function openActionModal(opts: {
+    title: string;
+    message: string;
+    variant?: "success" | "error" | "info";
+  }) {
+    setActionModalTitle(opts.title);
+    setActionModalMessage(opts.message);
+    setActionModalVariant(opts.variant || "info");
+    setActionModalOpen(true);
+  }
+
+  function pedirConfirmacaoExcluir(id: number) {
+    setConfirmId(id);
+    setConfirmOpen(true);
+  }
+
   useEffect(() => {
     setPage(1);
     setFiltroProduto(debouncedProduto);
   }, [debouncedProduto]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const params = new URLSearchParams();
+        if (filtroProduto) params.set("produto", filtroProduto);
+        if (filtroStatusPromo) params.set("statusPromo", filtroStatusPromo);
+        if (filtroStatus) params.set("statusAnalise", filtroStatus);
+
+        if (filtroMarca) params.set("marca", filtroMarca);
+        if (filtroCategoria) params.set("categoria", filtroCategoria);
+        if (filtroComprador) params.set("comprador", filtroComprador);
+
+        const res = await fetch(`/api/historico/options?${params.toString()}`);
+        const data = await res.json().catch(() => null);
+
+        if (!alive) return;
+        if (!res.ok) return;
+
+        setOpcoesMarca(Array.isArray(data?.marcas) ? data.marcas : []);
+        setOpcoesCategoria(Array.isArray(data?.categorias) ? data.categorias : []);
+        setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    filtroProduto,
+    filtroStatusPromo,
+    filtroStatus,
+    filtroMarca,
+    filtroCategoria,
+    filtroComprador,
+  ]);
+
+  useEffect(() => {
+    if (filtroMarca && opcoesMarca.length && !opcoesMarca.includes(filtroMarca)) setFiltroMarca("");
+  }, [opcoesMarca]);
+
+  useEffect(() => {
+    if (filtroCategoria && opcoesCategoria.length && !opcoesCategoria.includes(filtroCategoria)) setFiltroCategoria("");
+  }, [opcoesCategoria]);
+
+  useEffect(() => {
+    if (filtroComprador && opcoesComprador.length && !opcoesComprador.includes(filtroComprador)) setFiltroComprador("");
+  }, [opcoesComprador]);
 
   const filtros: HistoricoFiltros = {
     produto: filtroProduto || "",
@@ -50,92 +137,46 @@ export default function HistoricoPage() {
   };
 
   const { itens, totalCount, loading, erro } = useHistorico({
-    filtros,
+    ...filtros,
     page,
     pageSize,
     reloadToken,
   });
 
 
-  const opcoesMarca = Array.from(
-    new Set(
-      itens
-        .map((item) => {
-          const e = item.resultado.entrada ?? {};
-          return (e.marca as string | undefined)?.trim() || "";
-        })
-        .filter((v) => v !== "")
-    )
-  ).sort((a, b) => a.localeCompare(b));
-
-  const opcoesCategoria = Array.from(
-    new Set(
-      itens
-        .map((item) => {
-          const e = item.resultado.entrada ?? {};
-          return (e.categoria as string | undefined)?.trim() || "";
-        })
-        .filter((v) => v !== "")
-    )
-  ).sort((a, b) => a.localeCompare(b));
-
-  const opcoesComprador = Array.from(
-    new Set(
-      itens
-        .map((item) => {
-          const e = item.resultado.entrada ?? {};
-          return (e.comprador as string | undefined)?.trim() || "";
-        })
-        .filter((v) => v !== "")
-    )
-  ).sort((a, b) => a.localeCompare(b));
-
-
-
   async function excluirItem(id: number) {
     try {
       setExcluindoId(id);
-
-      const res = await fetch("/api/historico", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error("Erro ao excluir:", data);
-        alert(data?.error || "Erro ao excluir simulação.");
-        return;
-      }
+      await deleteHistorico(id); 
       setReloadToken((t) => t + 1);
-
-      if (page > 1 && itens.length === 1) {
-        setPage((p) => Math.max(1, p - 1));
-      }
-
-    } catch (e) {
-      console.error(e);
-      alert("Erro inesperado ao excluir.");
+    } catch (err: any) {
+      openActionModal({
+        title: "Erro ao excluir",
+        message: err?.message || "Erro ao excluir simulação.",
+        variant: "error",
+      });
     } finally {
       setExcluindoId(null);
     }
+
   }
 
   async function handleLogout() {
     try {
-      await fetch("/api/logout", { method: "POST" });
+      setLogoutLoading(true);
+      await logout();
     } catch (e) {
       console.error(e);
     } finally {
+      setLogoutLoading(false);
       router.push("/login");
     }
   }
 
+
   function abrirModal(item: HistoricoItem) {
-  setSelecionado(item);
-}
+    setSelecionado(item);
+  }
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
@@ -165,7 +206,7 @@ export default function HistoricoPage() {
 
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setConfirmLogoutOpen(true)}
               style={{
                 padding: "6px 14px",
                 borderRadius: "10px",
@@ -179,6 +220,7 @@ export default function HistoricoPage() {
             >
               Sair
             </button>
+
           </div>
         }
       />
@@ -232,8 +274,9 @@ export default function HistoricoPage() {
                 itens={itens}
                 excluindoId={excluindoId}
                 onOpen={(item) => abrirModal(item)}
-                onDelete={(id) => excluirItem(id)}
+                onDelete={(id) => pedirConfirmacaoExcluir(id)}
               />
+
 
               <HistoricoPagination
                 totalCount={totalCount}
@@ -288,6 +331,52 @@ export default function HistoricoPage() {
           </p>
         </div>
       )}
+
+      <ActionModal
+        open={actionModalOpen}
+        title={actionModalTitle}
+        message={actionModalMessage}
+        variant={actionModalVariant}
+        onClose={() => setActionModalOpen(false)}
+        autoCloseMs={actionModalVariant === "success" ? 3000 : undefined}
+      />
+      <ConfirmModal
+        open={confirmOpen}
+        title="Excluir simulação?"
+        message="Tem certeza que deseja apagar este card? Esta ação não pode ser desfeita."
+        confirmLabel="Sim, excluir"
+        cancelLabel="Cancelar"
+        danger
+        loading={confirmId !== null && excluindoId === confirmId}
+        onClose={() => {
+          if (excluindoId) return;
+          setConfirmOpen(false);
+          setConfirmId(null);
+        }}
+        onConfirm={async () => {
+          if (confirmId === null) return;
+          await excluirItem(confirmId);
+          setConfirmOpen(false);
+          setConfirmId(null);
+        }}
+      />
+      <ConfirmModal
+        open={confirmLogoutOpen}
+        title="Sair do sistema?"
+        message="Tem certeza que deseja encerrar sua sessão agora?"
+        confirmLabel="Sim, sair"
+        cancelLabel="Cancelar"
+        danger={false}
+        loading={logoutLoading}
+        onClose={() => {
+          if (logoutLoading) return;
+          setConfirmLogoutOpen(false);
+        }}
+        onConfirm={async () => {
+          await handleLogout();
+          setConfirmLogoutOpen(false);
+        }}
+      />
     </div>
   );
 }
