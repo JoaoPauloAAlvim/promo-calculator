@@ -40,6 +40,10 @@ export const getAcompDateISO = (inicio?: string): string => {
   return ontem;
 };
 
+export function isISODate(s: unknown): s is string {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
 
 
 

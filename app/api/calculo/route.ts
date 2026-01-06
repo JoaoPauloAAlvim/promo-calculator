@@ -209,8 +209,16 @@ export async function POST(req: Request) {
     const resultado = { entrada, metas };
 
     await db("historico").insert({
-      resultado: JSON.stringify(resultado),
-    });
+  resultado: JSON.stringify(resultado),
+
+  produto_nome_txt: produto,
+  marca_txt: marca || "",
+  categoria_txt: categoria || "",
+  comprador_txt: comprador || "",
+  data_inicio_promocao: dataInicio ? String(dataInicio) : null,
+  data_fim_promocao: dataFim ? String(dataFim) : null,
+  situacao_analise: null,
+});
 
     return NextResponse.json(resultado);
   } catch (err) {

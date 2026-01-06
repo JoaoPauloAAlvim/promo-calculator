@@ -53,7 +53,7 @@ export default function HistoricoPage() {
         if (state.statusPromo) p.set("statusPromo", state.statusPromo);
         if (state.statusAnalise) p.set("statusAnalise", state.statusAnalise);
 
-        if (state.sort) p.set("sort", state.sort); 
+        if (state.sort) p.set("sort", state.sort);
         p.set("page", String(state.page));
 
         return p.toString();
@@ -136,7 +136,7 @@ export default function HistoricoPage() {
         const comprador = getParam("comprador");
         const statusPromo = getParam("statusPromo");
         const statusAnalise = getParam("statusAnalise");
-        const urlSort = getParam("sort") || "RECENTE";  
+        const urlSort = getParam("sort") || "RECENTE";
         const urlPage = getParamNumber("page", 1);
 
         setFiltroProdutoDigitado((prev) => (prev !== produto ? produto : prev));
@@ -149,7 +149,7 @@ export default function HistoricoPage() {
         setFiltroStatusPromo((prev) => (prev !== statusPromo ? statusPromo : prev));
         setFiltroStatus((prev) => (prev !== statusAnalise ? statusAnalise : prev));
 
-        setSort((prev) => (prev !== urlSort ? urlSort : prev)); 
+        setSort((prev) => (prev !== urlSort ? urlSort : prev));
         setPage((prev) => (prev !== urlPage ? urlPage : prev));
     }, [searchParams]);
 
@@ -162,7 +162,7 @@ export default function HistoricoPage() {
             comprador: (filtroComprador || "").trim(),
             statusPromo: (filtroStatusPromo || "").trim(),
             statusAnalise: (filtroStatus || "").trim(),
-            sort: (sort || "RECENTE").trim(),  
+            sort: (sort || "RECENTE").trim(),
             page,
         });
 
@@ -178,10 +178,10 @@ export default function HistoricoPage() {
         filtroComprador,
         filtroStatusPromo,
         filtroStatus,
-        sort,        
+        sort,
         page,
         pathname,
-        searchParams, 
+        searchParams,
     ]);
 
 
@@ -192,7 +192,7 @@ export default function HistoricoPage() {
     }, [debouncedProduto, filtroProduto]);
 
     useEffect(() => {
-        let alive = true;
+        const controller = new AbortController();
 
         (async () => {
             try {
@@ -205,23 +205,23 @@ export default function HistoricoPage() {
                 if (filtroCategoria) params.set("categoria", filtroCategoria);
                 if (filtroComprador) params.set("comprador", filtroComprador);
 
-                const res = await fetch(`/api/historico/options?${params.toString()}`);
-                const data = await res.json().catch(() => null);
+                const res = await fetch(`/api/historico/options?${params.toString()}`, {
+                    signal: controller.signal,
+                });
 
-                if (!alive) return;
+                const data = await res.json().catch(() => null);
                 if (!res.ok) return;
 
                 setOpcoesMarca(Array.isArray(data?.marcas) ? data.marcas : []);
                 setOpcoesCategoria(Array.isArray(data?.categorias) ? data.categorias : []);
                 setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
-            } catch (e) {
+            } catch (e: any) {
+                if (e?.name === "AbortError") return;
                 console.error(e);
             }
         })();
 
-        return () => {
-            alive = false;
-        };
+        return () => controller.abort();
     }, [
         filtroProduto,
         filtroStatusPromo,
@@ -230,6 +230,7 @@ export default function HistoricoPage() {
         filtroCategoria,
         filtroComprador,
     ]);
+
 
     useEffect(() => {
         if (filtroMarca && opcoesMarca.length && !opcoesMarca.includes(filtroMarca)) setFiltroMarca("");

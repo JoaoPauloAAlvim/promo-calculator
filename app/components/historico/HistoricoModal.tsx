@@ -13,7 +13,7 @@ import { entradaLabels } from "@/lib/entradaLabels";
 import { ActionModal } from "@/app/components/ui/ActionModal";
 import { DreModal } from "@/app/components/historico/DreModal";
 import { AcompanhamentoModal } from "@/app/components/historico/AcompanhamentoModal";
-import { patchVendaReal } from "@/lib/api/historico";
+import { getHistoricoById, patchVendaReal } from "@/lib/api/historico";
 
 type Props = {
   open: boolean;
@@ -24,8 +24,6 @@ type Props = {
 
   onReload: () => void;
 };
-
-
 
 export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: Props) {
   const [dreAberto, setDreAberto] = useState(false);
@@ -52,39 +50,61 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
 
 
   useEffect(() => {
-    if (!open || !item) return;
+  if (!open || !item) return;
 
-    setDreAberto(false);
-    setAcompAberto(false);
+  let alive = true;
 
-    const inicio = item.resultado?.entrada?.data_inicio_promocao as string | undefined;
-    setMonData(getAcompDateISO(inicio));
-    setMonVendido("");
-    setMonEstoque("");
+  setDreAberto(false);
+  setAcompAberto(false);
 
-    const vendaReal = item.resultado?.metas?.venda_real as
-      | {
+  (async () => {
+    try {
+      const full = await getHistoricoById(item.id);
+
+      if (!alive) return;
+
+      onUpdateItem({
+        ...item,
+        dataHora: full.dataHora ?? item.dataHora,
+        resultado: full.resultado ?? item.resultado,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+
+  const inicio = item.resultado?.entrada?.data_inicio_promocao as string | undefined;
+  setMonData(getAcompDateISO(inicio));
+  setMonVendido("");
+  setMonEstoque("");
+
+  const vendaReal = item.resultado?.metas?.venda_real as
+    | {
         qtd_vendida?: number;
         lucro_hist_periodo?: number;
         lucro_real_promo?: number;
         diff?: number;
         situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
       }
-      | undefined;
+    | undefined;
 
-    if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
-      setQtdVendida(String(vendaReal.qtd_vendida));
-      setAnalisePromo({
-        lucroHistPeriodo: Number(vendaReal.lucro_hist_periodo || 0),
-        lucroRealPromo: Number(vendaReal.lucro_real_promo || 0),
-        diff: Number(vendaReal.diff || 0),
-        situacao: (vendaReal.situacao as any) || "IGUAL",
-      });
-    } else {
-      setQtdVendida("");
-      setAnalisePromo(null);
-    }
-  }, [open, item?.id]);
+  if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
+    setQtdVendida(String(vendaReal.qtd_vendida));
+    setAnalisePromo({
+      lucroHistPeriodo: Number(vendaReal.lucro_hist_periodo || 0),
+      lucroRealPromo: Number(vendaReal.lucro_real_promo || 0),
+      diff: Number(vendaReal.diff || 0),
+      situacao: (vendaReal.situacao as any) || "IGUAL",
+    });
+  } else {
+    setQtdVendida("");
+    setAnalisePromo(null);
+  }
+
+  return () => {
+    alive = false;
+  };
+}, [open, item?.id, onUpdateItem]);
 
   const entrada = item?.resultado?.entrada ?? {};
   const metas = item?.resultado?.metas ?? {};

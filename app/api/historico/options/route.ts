@@ -18,8 +18,8 @@ export async function GET(req: Request) {
     const categoria = clean(searchParams.get("categoria"));
     const comprador = clean(searchParams.get("comprador"));
 
-    const statusPromo = clean(searchParams.get("statusPromo")).toUpperCase();     
-    const statusAnalise = clean(searchParams.get("statusAnalise")).toUpperCase(); 
+    const statusPromo = clean(searchParams.get("statusPromo")).toUpperCase();
+    const statusAnalise = clean(searchParams.get("statusAnalise")).toUpperCase();
 
     const hojeBR = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Sao_Paulo",
@@ -27,43 +27,35 @@ export async function GET(req: Request) {
 
     const applyCommonFilters = (q: any) => {
       if (produto) {
-        const like = `%${produto.toLowerCase()}%`;
-        q.whereRaw(
-          `(
-            lower(resultado->'entrada'->>'produto_nome') like ?
-            OR lower(resultado->'entrada'->>'produto') like ?
-          )`,
-          [like, like]
-        );
+        q.where("produto_nome_txt", "ilike", `%${produto}%`);
       }
 
       if (statusPromo) {
-        const inicioExpr = `resultado->'entrada'->>'data_inicio_promocao'`;
-        const fimExpr = `resultado->'entrada'->>'data_fim_promocao'`;
-        const inicioVal = `coalesce(${inicioExpr}, '')`;
-        const fimVal = `coalesce(${fimExpr}, '')`;
-
         if (statusPromo === "SEM_DATAS") {
-          q.whereRaw(`(${inicioVal} = '' OR ${fimVal} = '')`);
-        } else if (statusPromo === "NAO_INICIOU") {
-          q.whereRaw(`(${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} > ?)`, [hojeBR]);
-        } else if (statusPromo === "ENCERRADA") {
-          q.whereRaw(`(${inicioVal} <> '' AND ${fimVal} <> '' AND ${fimExpr} < ?)`, [hojeBR]);
-        } else if (statusPromo === "EM_ANDAMENTO") {
-          q.whereRaw(
-            `(${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} <= ? AND ${fimExpr} >= ?)`,
-            [hojeBR, hojeBR]
+          q.where((qq: any) =>
+            qq.whereNull("data_inicio_promocao").orWhereNull("data_fim_promocao")
           );
+        } else if (statusPromo === "NAO_INICIOU") {
+          q.whereNotNull("data_inicio_promocao")
+            .whereNotNull("data_fim_promocao")
+            .where("data_inicio_promocao", ">", hojeBR);
+        } else if (statusPromo === "ENCERRADA") {
+          q.whereNotNull("data_inicio_promocao")
+            .whereNotNull("data_fim_promocao")
+            .where("data_fim_promocao", "<", hojeBR);
+        } else if (statusPromo === "EM_ANDAMENTO") {
+          q.whereNotNull("data_inicio_promocao")
+            .whereNotNull("data_fim_promocao")
+            .where("data_inicio_promocao", "<=", hojeBR)
+            .where("data_fim_promocao", ">=", hojeBR);
         }
       }
 
       if (statusAnalise) {
-        const sitExpr = `coalesce(resultado->'metas'->'venda_real'->>'situacao', '')`;
-
         if (statusAnalise === "PENDENTE") {
-          q.whereRaw(`${sitExpr} = ''`);
+          q.where((qq: any) => qq.whereNull("situacao_analise").orWhere("situacao_analise", ""));
         } else if (["ACIMA", "ABAIXO", "IGUAL"].includes(statusAnalise)) {
-          q.whereRaw(`upper(${sitExpr}) = ?`, [statusAnalise]);
+          q.where("situacao_analise", statusAnalise);
         }
       }
     };
@@ -72,13 +64,14 @@ export async function GET(req: Request) {
       const q = db("historico");
       applyCommonFilters(q);
 
-      if (categoria) q.whereRaw(`resultado->'entrada'->>'categoria' = ?`, [categoria]);
-      if (comprador) q.whereRaw(`resultado->'entrada'->>'comprador' = ?`, [comprador]);
+      if (categoria) q.where("categoria_txt", categoria);
+      if (comprador) q.where("comprador_txt", comprador);
 
       const rows = await q
         .clone()
-        .distinct(db.raw(`resultado->'entrada'->>'marca' as v`))
-        .whereRaw(`coalesce(resultado->'entrada'->>'marca','') <> ''`)
+        .distinct(db.raw(`marca_txt as v`))
+        .whereNotNull("marca_txt")
+        .where("marca_txt", "<>", "")
         .orderBy("v", "asc");
 
       return rows.map((r: any) => r.v).filter(Boolean);
@@ -88,13 +81,14 @@ export async function GET(req: Request) {
       const q = db("historico");
       applyCommonFilters(q);
 
-      if (marca) q.whereRaw(`resultado->'entrada'->>'marca' = ?`, [marca]);
-      if (comprador) q.whereRaw(`resultado->'entrada'->>'comprador' = ?`, [comprador]);
+      if (marca) q.where("marca_txt", marca);
+      if (comprador) q.where("comprador_txt", comprador);
 
       const rows = await q
         .clone()
-        .distinct(db.raw(`resultado->'entrada'->>'categoria' as v`))
-        .whereRaw(`coalesce(resultado->'entrada'->>'categoria','') <> ''`)
+        .distinct(db.raw(`categoria_txt as v`))
+        .whereNotNull("categoria_txt")
+        .where("categoria_txt", "<>", "")
         .orderBy("v", "asc");
 
       return rows.map((r: any) => r.v).filter(Boolean);
@@ -104,13 +98,14 @@ export async function GET(req: Request) {
       const q = db("historico");
       applyCommonFilters(q);
 
-      if (marca) q.whereRaw(`resultado->'entrada'->>'marca' = ?`, [marca]);
-      if (categoria) q.whereRaw(`resultado->'entrada'->>'categoria' = ?`, [categoria]);
+      if (marca) q.where("marca_txt", marca);
+      if (categoria) q.where("categoria_txt", categoria);
 
       const rows = await q
         .clone()
-        .distinct(db.raw(`resultado->'entrada'->>'comprador' as v`))
-        .whereRaw(`coalesce(resultado->'entrada'->>'comprador','') <> ''`)
+        .distinct(db.raw(`comprador_txt as v`))
+        .whereNotNull("comprador_txt")
+        .where("comprador_txt", "<>", "")
         .orderBy("v", "asc");
 
       return rows.map((r: any) => r.v).filter(Boolean);

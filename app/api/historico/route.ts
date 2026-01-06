@@ -14,8 +14,10 @@ export async function GET(req: Request) {
     const categoria = searchParams.get("categoria")?.trim();
     const comprador = searchParams.get("comprador")?.trim();
 
-    const statusPromo = searchParams.get("statusPromo")?.trim().toUpperCase();
-    const statusAnalise = searchParams.get("statusAnalise")?.trim().toUpperCase();
+    const statusPromo = (searchParams.get("statusPromo") ?? "").trim().toUpperCase();
+    const statusAnalise = (searchParams.get("statusAnalise") ?? "").trim().toUpperCase();
+
+
 
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10) || 1, 1);
     const pageSize = Math.min(
@@ -33,64 +35,52 @@ export async function GET(req: Request) {
 
 
     if (produto) {
-      const like = `%${produto.toLowerCase()}%`;
-      baseQuery.whereRaw(
-        `(
-          lower(resultado->'entrada'->>'produto_nome') like ?
-          OR lower(resultado->'entrada'->>'produto') like ?
-        )`,
-        [like, like]
-      );
+      baseQuery.where("produto_nome_txt", "ilike", `%${produto}%`);
     }
 
+
     if (marca) {
-      baseQuery.whereRaw("resultado->'entrada'->>'marca' = ?", [marca]);
+      baseQuery.where("marca_txt", marca);
     }
 
     if (categoria) {
-      baseQuery.whereRaw("resultado->'entrada'->>'categoria' = ?", [categoria]);
+      baseQuery.where("categoria_txt", categoria);
     }
 
     if (comprador) {
-      baseQuery.whereRaw("resultado->'entrada'->>'comprador' = ?", [comprador]);
+      baseQuery.where("comprador_txt", comprador);
     }
 
 
     if (statusPromo) {
-      const inicioExpr = `resultado->'entrada'->>'data_inicio_promocao'`;
-      const fimExpr = `resultado->'entrada'->>'data_fim_promocao'`;
-      const inicioVal = `coalesce(${inicioExpr}, '')`;
-      const fimVal = `coalesce(${fimExpr}, '')`;
-
       if (statusPromo === "SEM_DATAS") {
-        baseQuery.whereRaw(`(${inicioVal} = '' OR ${fimVal} = '')`);
+        baseQuery.where((q) =>
+          q.whereNull("data_inicio_promocao").orWhereNull("data_fim_promocao")
+        );
       } else if (statusPromo === "NAO_INICIOU") {
-        baseQuery.whereRaw(
-          `(${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} > ?)`,
-          [hojeBR]
-        );
+        baseQuery.whereNotNull("data_inicio_promocao")
+          .whereNotNull("data_fim_promocao")
+          .where("data_inicio_promocao", ">", hojeBR);
       } else if (statusPromo === "ENCERRADA") {
-        baseQuery.whereRaw(
-          `(${inicioVal} <> '' AND ${fimVal} <> '' AND ${fimExpr} < ?)`,
-          [hojeBR]
-        );
+        baseQuery.whereNotNull("data_inicio_promocao")
+          .whereNotNull("data_fim_promocao")
+          .where("data_fim_promocao", "<", hojeBR);
       } else if (statusPromo === "EM_ANDAMENTO") {
-        baseQuery.whereRaw(
-          `(${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} <= ? AND ${fimExpr} >= ?)`,
-          [hojeBR, hojeBR]
-        );
+        baseQuery.whereNotNull("data_inicio_promocao")
+          .whereNotNull("data_fim_promocao")
+          .where("data_inicio_promocao", "<=", hojeBR)
+          .where("data_fim_promocao", ">=", hojeBR);
       }
     }
 
     if (statusAnalise) {
-      const sitExpr = `coalesce(resultado->'metas'->'venda_real'->>'situacao', '')`;
-
       if (statusAnalise === "PENDENTE") {
-        baseQuery.whereRaw(`${sitExpr} = ''`);
+        baseQuery.whereNull("situacao_analise");
       } else if (["ACIMA", "ABAIXO", "IGUAL"].includes(statusAnalise)) {
-        baseQuery.whereRaw(`upper(${sitExpr}) = ?`, [statusAnalise]);
+        baseQuery.where("situacao_analise", statusAnalise);
       }
     }
+
 
     const countRow = await baseQuery
       .clone()
@@ -105,35 +95,53 @@ export async function GET(req: Request) {
 
     const offset = (page - 1) * pageSize;
 
-    const inicioExpr = `resultado->'entrada'->>'data_inicio_promocao'`;
-    const fimExpr = `resultado->'entrada'->>'data_fim_promocao'`;
-    const inicioVal = `coalesce(${inicioExpr}, '')`;
-    const fimVal = `coalesce(${fimExpr}, '')`;
-
-    const sitExpr = `coalesce(resultado->'metas'->'venda_real'->>'situacao', '')`;
-
-    const produtoExpr = `
-  lower(coalesce(
-    resultado->'entrada'->>'produto_nome',
-    resultado->'entrada'->>'produto',
-    ''
-  ))
-`;
+    const produtoExpr = `lower(coalesce(produto_nome_txt, ''))`;
 
     const isEmAndamentoExpr = `
   CASE
-    WHEN (${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} <= ? AND ${fimExpr} >= ?)
+    WHEN (data_inicio_promocao is not null
+      AND data_fim_promocao is not null
+      AND data_inicio_promocao <= ?::date
+      AND data_fim_promocao >= ?::date)
     THEN 1 ELSE 0
   END
 `;
 
+
     const isPendenteExpr = `
   CASE
-    WHEN (${sitExpr} = '') THEN 1 ELSE 0
+    WHEN (situacao_analise is null) THEN 1 ELSE 0
   END
 `;
 
-    const q = baseQuery.clone().select("id", "dataHora", "resultado");
+    const q = baseQuery
+      .clone()
+      .select(
+        "id",
+        "dataHora",
+        db.raw(`
+      jsonb_build_object(
+        'entrada', jsonb_build_object(
+  'produto_nome', produto_nome_txt,
+  'produto', produto_nome_txt,
+  'marca', marca_txt,
+  'categoria', categoria_txt,
+  'comprador', comprador_txt,
+  'data_inicio_promocao', to_char(data_inicio_promocao, 'YYYY-MM-DD'),
+  'data_fim_promocao', to_char(data_fim_promocao, 'YYYY-MM-DD')
+),
+        'metas', jsonb_build_object(
+          'lucro_med_dia', (resultado->'metas'->>'lucro_med_dia')::numeric,
+          'lucro_medio_diario_promo', (resultado->'metas'->>'lucro_medio_diario_promo')::numeric,
+          'meta_unid_dia', (resultado->'metas'->>'meta_unid_dia')::numeric,
+          'meta_unid_total', (resultado->'metas'->>'meta_unid_total')::numeric,
+          'venda_real', jsonb_build_object(
+            'situacao', resultado->'metas'->'venda_real'->>'situacao'
+          )
+        )
+      ) as resultado
+    `)
+      );
 
     if (sort === "ANTIGO") {
       q.orderBy("dataHora", "asc");
@@ -159,7 +167,7 @@ export async function GET(req: Request) {
     const itens = sliced.map((row: any) => ({
       id: row.id,
       dataHora: row.dataHora,
-      resultado: typeof row.resultado === "string" ? JSON.parse(row.resultado) : row.resultado,
+      resultado: row.resultado,
     }));
 
     return NextResponse.json({

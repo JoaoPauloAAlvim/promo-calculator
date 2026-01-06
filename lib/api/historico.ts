@@ -109,3 +109,9 @@ export async function getHistoricoOptions(params: HistoricoOptionsParams) {
     method: "GET",
   });
 }
+
+export async function getHistoricoById(id: number) {
+  return api<{ id: number; dataHora: string; resultado: any }>(`/api/historico/${id}`, {
+    method: "GET",
+  });
+}

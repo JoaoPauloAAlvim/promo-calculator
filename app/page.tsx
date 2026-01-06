@@ -431,7 +431,6 @@ export default function Home() {
           />
         }
       />
-      =
       <PromoForm
         form={form}
         campos={campos}

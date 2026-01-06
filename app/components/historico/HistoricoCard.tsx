@@ -79,25 +79,26 @@ export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
       </div>
 
       <div className="mt-1 flex flex-col gap-1 text-[11px] text-slate-600 pr-5">
-        {lucroMedio !== undefined && !Number.isNaN(lucroMedio) && (
+        {Number.isFinite(Number(lucroMedio)) && Number(lucroMedio) > 0 && (
           <span className="inline-flex items-center gap-1">
             <span>
               Lucro/dia:{" "}
               <strong>
                 R{" "}
-                {Number(lucroMedio).toLocaleString("pt-BR", {
+                {Number(Number(lucroMedio)).toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </strong>
+
             </span>
           </span>
         )}
 
-        {metaDia !== undefined && !Number.isNaN(metaDia) && (
+        {Number.isFinite(Number(metaDia)) && Number(metaDia) > 0 && (
           <span className="inline-flex items-center gap-1">
             <span>
-              Meta/dia: <strong>{metaDia}</strong>
+              Meta/dia: <strong>{Number(metaDia)}</strong>
             </span>
           </span>
         )}

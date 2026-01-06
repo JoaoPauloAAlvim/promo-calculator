@@ -1,27 +1,53 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
+import { MonitoramentoItem } from "@/lib/types";
+import { toNumberBR } from "@/lib/format";
+import { isISODate } from "@/lib/date";
+
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type MonitoramentoItem = {
-  data: string;      
-  vendido: number;   
-  estoque: number;   
-  criadoEm: string; 
-};
 
-function isISODate(s: unknown): s is string {
-  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = Number(params.id);
+    if (!id || Number.isNaN(id)) {
+      return NextResponse.json({ error: "ID inválido." }, { status: 400 });
+    }
 
-function toNumberBR(v: any): number {
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    const n = Number(v.trim().replace(/\./g, "").replace(",", "."));
-    return n;
+    const row = await db("historico")
+      .select("id", "dataHora", "resultado")
+      .where({ id })
+      .first();
+
+    if (!row) {
+      return NextResponse.json(
+        { error: "Registro de histórico não encontrado." },
+        { status: 404 }
+      );
+    }
+
+    const resultado =
+      typeof row.resultado === "string"
+        ? JSON.parse(row.resultado)
+        : row.resultado || {};
+
+    return NextResponse.json({
+      id: row.id,
+      dataHora: row.dataHora,
+      resultado,
+    });
+  } catch (err: any) {
+    console.error("ERRO GET /api/historico/:id:", err);
+    return NextResponse.json(
+      { error: err?.message || "Erro ao carregar detalhe." },
+      { status: 500 }
+    );
   }
-  return NaN;
 }
 
 export async function PATCH(
@@ -182,9 +208,14 @@ export async function PATCH(
         ? JSON.stringify(novoResultado)
         : novoResultado;
 
-    await db("historico")
-      .where({ id })
-      .update({ resultado: novoValor });
+    const patchDb: any = { resultado: novoValor };
+
+    if (vendaRealPatch) {
+      patchDb.situacao_analise = vendaRealPatch.situacao;
+    }
+
+    await db("historico").where({ id }).update(patchDb);
+
 
     return NextResponse.json({ ok: true, resultado: novoResultado });
   } catch (err: any) {

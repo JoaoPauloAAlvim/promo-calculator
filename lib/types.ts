@@ -91,3 +91,10 @@ export type HistoricoGetParams = {
   page: number;
   pageSize: number;
 };
+
+export type MonitoramentoItem = {
+  data: string;      
+  vendido: number;   
+  estoque: number;   
+  criadoEm: string; 
+};
