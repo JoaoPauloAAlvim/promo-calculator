@@ -56,17 +56,21 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
   useEffect(() => {
     if (!open || !item) return;
 
+    const jaCompleto = (item.resultado?.entrada as any)?.lucro_diario_hist !== undefined;
+    if (jaCompleto) {
+      setLoadingDetalhes(false);
+      return;
+    }
+
     let alive = true;
 
     setDreAberto(false);
     setAcompAberto(false);
-
     setLoadingDetalhes(true);
 
     (async () => {
       try {
         const full = await getHistoricoById(item.id);
-
         if (!alive) return;
 
         onUpdateItem({
@@ -81,39 +85,10 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
       }
     })();
 
-    const inicio = item.resultado?.entrada?.data_inicio_promocao as string | undefined;
-    setMonData(getAcompDateISO(inicio));
-    setMonVendido("");
-    setMonEstoque("");
-
-    const vendaReal = item.resultado?.metas?.venda_real as
-      | {
-        qtd_vendida?: number;
-        lucro_hist_periodo?: number;
-        lucro_real_promo?: number;
-        diff?: number;
-        situacao?: "ACIMA" | "ABAIXO" | "IGUAL";
-      }
-      | undefined;
-
-    if (vendaReal && vendaReal.qtd_vendida && !Number.isNaN(vendaReal.qtd_vendida)) {
-      setQtdVendida(String(vendaReal.qtd_vendida));
-      setAnalisePromo({
-        lucroHistPeriodo: Number(vendaReal.lucro_hist_periodo || 0),
-        lucroRealPromo: Number(vendaReal.lucro_real_promo || 0),
-        diff: Number(vendaReal.diff || 0),
-        situacao: (vendaReal.situacao as any) || "IGUAL",
-      });
-    } else {
-      setQtdVendida("");
-      setAnalisePromo(null);
-    }
-
     return () => {
       alive = false;
     };
-  }, [open, item?.id, onUpdateItem]);
-
+  }, [open, item?.id]);
 
   const entrada = item?.resultado?.entrada ?? {};
   const metas = item?.resultado?.metas ?? {};
