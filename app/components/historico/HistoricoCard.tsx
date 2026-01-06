@@ -37,7 +37,8 @@ export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
       onClick={onOpen}
       style={{
         borderRadius: 18,
-        width: 260,
+        width: "100%",
+        minHeight: 190,
         border: "1px solid #d1d5db",
         backgroundColor: "#ffffff",
         padding: "16px",

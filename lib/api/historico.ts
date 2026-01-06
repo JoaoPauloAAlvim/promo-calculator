@@ -6,8 +6,9 @@ export type HistoricoGetParams = {
   marca?: string;
   categoria?: string;
   comprador?: string;
-  statusPromo?: string;   
-  statusAnalise?: string; 
+  statusPromo?: string;
+  statusAnalise?: string;
+  sort?: HistoricoSort;   
   page: number;
   pageSize: number;
 };
@@ -20,6 +21,14 @@ export type HistoricoGetResponse = {
   totalCount: number;
 };
 
+export type HistoricoSort =
+  | "RECENTE"
+  | "ANTIGO"
+  | "PRODUTO_AZ"
+  | "PROMO_EM_ANDAMENTO"
+  | "ANALISE_PENDENTE";
+
+
 export async function getHistorico(params: HistoricoGetParams) {
   const sp = new URLSearchParams();
   if (params.produto) sp.set("produto", params.produto);
@@ -28,6 +37,8 @@ export async function getHistorico(params: HistoricoGetParams) {
   if (params.comprador) sp.set("comprador", params.comprador);
   if (params.statusPromo) sp.set("statusPromo", params.statusPromo);
   if (params.statusAnalise) sp.set("statusAnalise", params.statusAnalise);
+  if (params.sort) sp.set("sort", params.sort);
+
   sp.set("page", String(params.page));
   sp.set("pageSize", String(params.pageSize));
 

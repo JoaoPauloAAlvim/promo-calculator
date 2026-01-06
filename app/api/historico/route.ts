@@ -23,13 +23,15 @@ export async function GET(req: Request) {
       100
     );
 
+    const sort = (searchParams.get("sort") || "RECENTE").trim().toUpperCase();
+
     const hojeBR = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Sao_Paulo",
     }).format(new Date());
 
     const baseQuery = db("historico");
 
- 
+
     if (produto) {
       const like = `%${produto.toLowerCase()}%`;
       baseQuery.whereRaw(
@@ -103,12 +105,53 @@ export async function GET(req: Request) {
 
     const offset = (page - 1) * pageSize;
 
-    const rows = await baseQuery
-      .clone()
-      .select("id", "dataHora", "resultado")
-      .orderBy("dataHora", "desc")
-      .offset(offset)
-      .limit(pageSize + 1);
+    const inicioExpr = `resultado->'entrada'->>'data_inicio_promocao'`;
+    const fimExpr = `resultado->'entrada'->>'data_fim_promocao'`;
+    const inicioVal = `coalesce(${inicioExpr}, '')`;
+    const fimVal = `coalesce(${fimExpr}, '')`;
+
+    const sitExpr = `coalesce(resultado->'metas'->'venda_real'->>'situacao', '')`;
+
+    const produtoExpr = `
+  lower(coalesce(
+    resultado->'entrada'->>'produto_nome',
+    resultado->'entrada'->>'produto',
+    ''
+  ))
+`;
+
+    const isEmAndamentoExpr = `
+  CASE
+    WHEN (${inicioVal} <> '' AND ${fimVal} <> '' AND ${inicioExpr} <= ? AND ${fimExpr} >= ?)
+    THEN 1 ELSE 0
+  END
+`;
+
+    const isPendenteExpr = `
+  CASE
+    WHEN (${sitExpr} = '') THEN 1 ELSE 0
+  END
+`;
+
+    const q = baseQuery.clone().select("id", "dataHora", "resultado");
+
+    if (sort === "ANTIGO") {
+      q.orderBy("dataHora", "asc");
+    } else if (sort === "PRODUTO_AZ") {
+      q.orderByRaw(`${produtoExpr} asc nulls last`);
+      q.orderBy("dataHora", "desc");
+    } else if (sort === "PROMO_EM_ANDAMENTO") {
+      q.orderByRaw(`${isEmAndamentoExpr} desc`, [hojeBR, hojeBR]);
+      q.orderBy("dataHora", "desc");
+    } else if (sort === "ANALISE_PENDENTE") {
+      q.orderByRaw(`${isPendenteExpr} desc`);
+      q.orderBy("dataHora", "desc");
+    } else {
+      q.orderBy("dataHora", "desc");
+    }
+
+    const rows = await q.offset(offset).limit(pageSize + 1);
+
 
     const hasMore = rows.length > pageSize;
     const sliced = hasMore ? rows.slice(0, pageSize) : rows;

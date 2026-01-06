@@ -3,15 +3,15 @@
 import React from "react";
 
 type Props = {
-  // values
   filtroProdutoDigitado: string;
   filtroMarca: string;
   filtroCategoria: string;
   filtroComprador: string;
   filtroStatusPromo: string;
   filtroStatus: string;
+  sort: string;
 
-  // setters
+  setSort: (v: string) => void;
   setFiltroProdutoDigitado: (v: string) => void;
   setFiltroMarca: (v: string) => void;
   setFiltroCategoria: (v: string) => void;
@@ -19,15 +19,12 @@ type Props = {
   setFiltroStatusPromo: (v: string) => void;
   setFiltroStatus: (v: string) => void;
 
-  // options
   opcoesMarca: string[];
   opcoesCategoria: string[];
   opcoesComprador: string[];
 
-  // pagination reset
   setPage: (v: number) => void;
 
-  // clear
   onClear: () => void;
 };
 
@@ -38,6 +35,7 @@ export function HistoricoFilters({
   filtroComprador,
   filtroStatusPromo,
   filtroStatus,
+  sort,
 
   setFiltroProdutoDigitado,
   setFiltroMarca,
@@ -45,6 +43,7 @@ export function HistoricoFilters({
   setFiltroComprador,
   setFiltroStatusPromo,
   setFiltroStatus,
+  setSort,
 
   opcoesMarca,
   opcoesCategoria,
@@ -95,6 +94,8 @@ export function HistoricoFilters({
         </button>
       </div>
 
+
+
       <div
         style={{
           display: "grid",
@@ -121,7 +122,6 @@ export function HistoricoFilters({
             value={filtroProdutoDigitado}
             onChange={(e) => {
               setFiltroProdutoDigitado(e.target.value);
-              // debounce já volta pra página 1 via effect, mas manter aqui é ok:
               setPage(1);
             }}
             placeholder="Ex: creme dental"
@@ -229,10 +229,12 @@ export function HistoricoFilters({
             style={{
               width: "100%",
               borderRadius: "10px",
+              border: "1px solid #d1d5db",
               padding: "6px 10px",
               fontSize: "12px",
               backgroundColor: "#f9fafb",
             }}
+
           >
             <option value="">Todos</option>
             {opcoesComprador.map((c) => (
@@ -296,6 +298,32 @@ export function HistoricoFilters({
             <option value="ACIMA">ACIMA</option>
             <option value="IGUAL">IGUAL</option>
             <option value="ABAIXO">ABAIXO</option>
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280" }}>
+            Ordenar por
+          </label>
+          <select
+            value={sort}
+            onChange={(e) => {
+              setSort(e.target.value);
+              setPage(1);
+            }}
+            style={{
+              minWidth: "180px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              padding: "4px 10px",
+              fontSize: "12px",
+              backgroundColor: "#f9fafb",
+            }}
+          >
+            <option value="RECENTE">Mais recentes</option>
+            <option value="ANTIGO">Mais antigas</option>
+            <option value="PROMO_EM_ANDAMENTO">Em andamento primeiro</option>
+            <option value="ANALISE_PENDENTE">Pendentes primeiro</option>
+            <option value="PRODUTO_AZ">Produto A–Z</option>
           </select>
         </div>
       </div>

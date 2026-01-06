@@ -72,3 +72,22 @@ export type ResultadoLote = {
   erro?: string;
   resultado?: Resultado;
 };
+
+export type HistoricoSort =
+  | "RECENTE"
+  | "ANTIGO"
+  | "PRODUTO_AZ"
+  | "PROMO_EM_ANDAMENTO"
+  | "ANALISE_PENDENTE";
+
+export type HistoricoGetParams = {
+  produto?: string;
+  marca?: string;
+  categoria?: string;
+  comprador?: string;
+  statusPromo?: string;
+  statusAnalise?: string;
+  sort?: HistoricoSort;
+  page: number;
+  pageSize: number;
+};
