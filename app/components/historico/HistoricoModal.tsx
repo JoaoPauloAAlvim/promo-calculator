@@ -215,7 +215,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
 
   return (
     <>
-      {/* Modal principal */}
       <div
         style={{
           position: "fixed",
@@ -282,7 +281,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
             </p>
           </div>
 
-          {/* Cards principais */}
           <div
             style={{
               display: "grid",
@@ -381,7 +379,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
             </div>
           </div>
 
-          {/* Período + duração */}
           <div
             style={{
               display: "grid",
@@ -436,45 +433,60 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                 </p>
               )}
 
-              {promoStatus === "EM_ANDAMENTO" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // garante D-1 (travada) quando abrir
-                    setMonData(getAcompDateISO(inicioPromo));
-                    setMonVendido("");
-                    setMonEstoque("");
-                    setAcompAberto(true);
-                  }}
-                  style={{
-                    marginTop: "6px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    borderRadius: "10px",
-                    border: "1px solid #d1d5db",
-                    padding: "4px 10px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    backgroundColor: "#ffffff",
-                    color: "#4b5563",
-                    cursor: "pointer",
-                  }}
-                >
-                  Acompanhar promoção ▸
-                </button>
-              )}
+              {(() => {
+                const disabled = promoStatus !== "EM_ANDAMENTO";
+
+                const motivo =
+                  promoStatus === "ENCERRADA"
+                    ? "Promoção encerrada"
+                    : promoStatus === "NAO_INICIOU"
+                      ? "Promoção ainda não iniciou"
+                      : promoStatus === "SEM_DATAS"
+                        ? "Promoção sem datas"
+                        : "Indisponível";
+
+                return (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    title={disabled ? "Acompanhamento disponível apenas durante o período da promoção." : ""}
+                    onClick={() => {
+                      if (disabled) return;
+
+                      setMonData(getAcompDateISO(inicioPromo));
+                      setMonVendido("");
+                      setMonEstoque("");
+                      setAcompAberto(true);
+                    }}
+                    style={{
+                      marginTop: "6px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      padding: "4px 10px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
+                      color: disabled ? "#9ca3af" : "#4b5563",
+                      cursor: disabled ? "default" : "pointer",
+                    }}
+                  >
+                    {disabled ? `Acompanhamento: ${motivo}` : "Acompanhar promoção ▸"}
+                  </button>
+                );
+              })()}
+
             </div>
           </div>
 
-          {/* Dados informados */}
           <div style={{ marginTop: "6px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
               Dados informados na simulação
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px" }}>
-              {/* Produto */}
               <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
                   Produto
@@ -484,7 +496,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                 </p>
               </div>
 
-              {/* Categoria */}
               <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
                   Categoria do produto
@@ -494,7 +505,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                 </p>
               </div>
 
-              {/* Comprador */}
               <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
                   Comprador
@@ -504,7 +514,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                 </p>
               </div>
 
-              {/* Marca */}
               <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
                   Marca
@@ -514,7 +523,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                 </p>
               </div>
 
-              {/* Outros campos */}
               {entradaEntries.map(([chave, valor]) => {
                 const label = (entradaLabels as any)[chave] ?? chave.replace(/_/g, " ");
 
@@ -550,7 +558,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
             </div>
           </div>
 
-          {/* Análise após encerramento */}
           <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px dashed #e5e7eb" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
               Análise após encerramento da promoção

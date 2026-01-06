@@ -34,7 +34,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
   }, [m, lucroSemAdic, receitaAdic]);
 
   const markupComAdic = useMemo(() => {
-    // preferir o valor calculado no backend (se existir)
     if (m.markup_com_adicional !== undefined) return m.markup_com_adicional as number | null;
     return custoUnit > 0 ? lucroComAdic / custoUnit : null;
   }, [m, custoUnit, lucroComAdic]);
@@ -92,7 +91,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "8px" }}>
-          {/* Receita */}
           <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "10px" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "4px" }}>Receita</p>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#111827" }}>
@@ -101,7 +99,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
             </div>
           </div>
 
-          {/* Custos */}
           <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "10px" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "4px" }}>Custos</p>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#111827" }}>
@@ -110,7 +107,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
             </div>
           </div>
 
-          {/* Receitas adicionais */}
           <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "10px" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "4px" }}>Receitas adicionais</p>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
@@ -119,7 +115,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
             </div>
           </div>
 
-          {/* Resultado */}
           <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "10px" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "4px" }}>Resultado</p>
 
@@ -138,7 +133,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
             </div>
           </div>
 
-          {/* Markup (com adicional) */}
           <div
             style={{
               gridColumn: "1 / -1",

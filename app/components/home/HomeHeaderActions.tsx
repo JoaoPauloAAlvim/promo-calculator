@@ -4,7 +4,7 @@ import Link from "next/link";
 
 type Props = {
   onOpenImport: () => void;
-  onLogout: () => void; // aqui é "abrir confirmação"
+  onLogout: () => void; 
 };
 
 export function HomeHeaderActions({ onOpenImport, onLogout }: Props) {

@@ -59,8 +59,8 @@ export async function patchVendaReal(id: number, payload: {
 }
 
 export async function patchMonitoramento(id: number, payload: {
-  data: string;    // YYYY-MM-DD
-  vendido: number; // acumulado
+  data: string;    
+  vendido: number; 
   estoque: number;
 }) {
   return api<{ ok: boolean; resultado?: any }>(`/api/historico/${id}`, {

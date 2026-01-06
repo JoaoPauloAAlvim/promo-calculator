@@ -4,12 +4,14 @@ import React, { useMemo, useState } from "react";
 import type { HistoricoItem } from "@/lib/types";
 import { parseISODateLocal, formatDateBR, calcDiasPromoInclusivo } from "@/lib/date";
 import { formatBR } from "@/lib/format";
+import { getPromoStatus } from "@/lib/promoStatus";
+
 
 type Props = {
   open: boolean;
   item: HistoricoItem | null;
 
-  monData: string; // YYYY-MM-DD (fixa)
+  monData: string;
   monVendido: string;
   monEstoque: string;
   setMonVendido: (v: string) => void;
@@ -17,10 +19,8 @@ type Props = {
 
   onClose: () => void;
 
-  /** Atualiza o item selecionado com o resultado retornado pelo PATCH */
   onItemUpdated: (novo: HistoricoItem) => void;
 
-  /** opcional: para forçar recarga da lista */
   onReload?: () => void;
 };
 
@@ -49,7 +49,6 @@ export function AcompanhamentoModal({
     (entrada as any)?.produto ??
     "";
 
-  // Normaliza número BR
   const vendidoNum = useMemo(() => {
     return Number(monVendido.trim().replace(/\./g, "").replace(",", "."));
   }, [monVendido]);
@@ -58,7 +57,6 @@ export function AcompanhamentoModal({
     return Number(monEstoque.trim().replace(/\./g, "").replace(",", "."));
   }, [monEstoque]);
 
-  // Snapshot calculado (só para exibir)
   const snapshot = useMemo(() => {
     const D = calcDiasPromoInclusivo(inicio, fim);
     const d = calcDiasPromoInclusivo(inicio, monData);
@@ -109,6 +107,10 @@ export function AcompanhamentoModal({
 
   if (!open || !item) return null;
 
+  const status = getPromoStatus(inicio, fim);
+  if (status !== "EM_ANDAMENTO") return null;
+
+
   async function handleSave() {
     if (!item) return;
 
@@ -125,7 +127,6 @@ export function AcompanhamentoModal({
       return;
     }
 
-    // Data precisa estar dentro do período
     const dApur = parseISODateLocal(monData);
     const dIni = parseISODateLocal(inicio);
     const dFim = parseISODateLocal(fim);
@@ -225,7 +226,6 @@ export function AcompanhamentoModal({
           {nomeProduto || "Produto não informado"} • Período: {formatDateBR(inicio)} até {formatDateBR(fim)}
         </p>
 
-        {/* Inputs */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px" }}>
           <div>
             <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
@@ -292,7 +292,6 @@ export function AcompanhamentoModal({
           </div>
         </div>
 
-        {/* Salvar */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
           <button
             type="button"
@@ -314,7 +313,6 @@ export function AcompanhamentoModal({
           </button>
         </div>
 
-        {/* Cards */}
         {snapshot && (
           <div style={{ marginTop: "12px", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px" }}>
             <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
@@ -368,7 +366,6 @@ export function AcompanhamentoModal({
           </div>
         )}
 
-        {/* Lista */}
         <div style={{ marginTop: "12px" }}>
           <p style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "6px" }}>
             Acompanhamentos salvos

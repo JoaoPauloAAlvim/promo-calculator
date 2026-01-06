@@ -19,7 +19,7 @@ export function ActionModal({
   variant?: Variant;
   confirmLabel?: string;
   onClose: () => void;
-  autoCloseMs?: number; // ex.: 1500 para fechar sozinho
+  autoCloseMs?: number; 
 }) {
   useEffect(() => {
     if (!open) return;

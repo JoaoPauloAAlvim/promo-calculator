@@ -9,14 +9,14 @@ body {
 }
 
 body {
-  background-color: #e5e7eb; /* mesma cor do header ou a que você quiser */
+  background-color: #e5e7eb; 
 }
 
 .cards-historico-grid {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center; /* centraliza os cards */
-  gap: 16px;               /* espaçamento entre eles */
+  justify-content: center;
+  gap: 16px;               
   align-items: flex-start;
 }
 

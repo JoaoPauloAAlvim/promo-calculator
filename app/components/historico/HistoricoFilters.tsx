@@ -104,7 +104,6 @@ export function HistoricoFilters({
           alignItems: "end",
         }}
       >
-        {/* Produto */}
         <div>
           <label
             style={{
@@ -137,7 +136,6 @@ export function HistoricoFilters({
           />
         </div>
 
-        {/* Marca */}
         <div>
           <label
             style={{
@@ -174,7 +172,6 @@ export function HistoricoFilters({
           </select>
         </div>
 
-        {/* Categoria */}
         <div>
           <label
             style={{
@@ -211,7 +208,6 @@ export function HistoricoFilters({
           </select>
         </div>
 
-        {/* Comprador */}
         <div>
           <label
             style={{
@@ -248,7 +244,6 @@ export function HistoricoFilters({
         </div>
       </div>
 
-      {/* Status da promoção + (opcional) status da análise */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <label style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280" }}>

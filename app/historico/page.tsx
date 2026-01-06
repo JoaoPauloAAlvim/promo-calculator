@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Spinner } from "../components/Spinner";
 import { AppHeader } from "../components/AppHeader";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
@@ -21,29 +21,77 @@ import { deleteHistorico } from "@/lib/api/historico";
 export default function HistoricoPage() {
   const router = useRouter();
 
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function getParam(name: string) {
+    return (searchParams.get(name) ?? "").trim();
+  }
+
+  function getParamNumber(name: string, fallback: number) {
+    const raw = (searchParams.get(name) ?? "").trim();
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+  }
+
+  function buildSearchFromState(state: {
+    produto: string;
+    marca: string;
+    categoria: string;
+    comprador: string;
+    statusPromo: string;
+    statusAnalise: string;
+    page: number;
+  }) {
+    const p = new URLSearchParams();
+
+    if (state.produto) p.set("produto", state.produto);
+    if (state.marca) p.set("marca", state.marca);
+    if (state.categoria) p.set("categoria", state.categoria);
+    if (state.comprador) p.set("comprador", state.comprador);
+    if (state.statusPromo) p.set("statusPromo", state.statusPromo);
+    if (state.statusAnalise) p.set("statusAnalise", state.statusAnalise);
+
+    p.set("page", String(state.page));
+
+    return p.toString();
+  }
+
+  const initialProduto = getParam("produto");
+  const initialMarca = getParam("marca");
+  const initialCategoria = getParam("categoria");
+  const initialComprador = getParam("comprador");
+  const initialStatusPromo = getParam("statusPromo");
+  const initialStatusAnalise = getParam("statusAnalise");
+  const initialPage = getParamNumber("page", 1);
+
   const [selecionado, setSelecionado] = useState<HistoricoItem | null>(null);
   const [excluindoId, setExcluindoId] = useState<number | null>(null);
-  const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>("");
   const [reloadToken, setReloadToken] = useState(0);
 
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
+  const [filtroStatusPromo, setFiltroStatusPromo] = useState<string>(initialStatusPromo);
 
-  const [filtroProduto, setFiltroProduto] = useState("");
-  const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState("");
-  const [filtroMarca, setFiltroMarca] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("");
-  const [filtroComprador, setFiltroComprador] = useState("");
+  const [filtroProduto, setFiltroProduto] = useState(initialProduto);
+  const [filtroProdutoDigitado, setFiltroProdutoDigitado] = useState(initialProduto);
+
+  const [filtroMarca, setFiltroMarca] = useState(initialMarca);
+  const [filtroCategoria, setFiltroCategoria] = useState(initialCategoria);
+  const [filtroComprador, setFiltroComprador] = useState(initialComprador);
+
+  const [filtroStatus, setFiltroStatus] = useState<string>(initialStatusAnalise);
+
+  const [page, setPage] = useState(initialPage);
+
 
   const [opcoesMarca, setOpcoesMarca] = useState<string[]>([]);
   const [opcoesCategoria, setOpcoesCategoria] = useState<string[]>([]);
   const [opcoesComprador, setOpcoesComprador] = useState<string[]>([]);
 
-  const [filtroStatus, setFiltroStatus] = useState<string>("");
   const debouncedProduto = useDebouncedValue(filtroProdutoDigitado.trim(), 1000)
 
-  const [page, setPage] = useState(1);
   const pageSize = 10;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -71,9 +119,59 @@ export default function HistoricoPage() {
   }
 
   useEffect(() => {
+    const produto = getParam("produto");
+    const marca = getParam("marca");
+    const categoria = getParam("categoria");
+    const comprador = getParam("comprador");
+    const statusPromo = getParam("statusPromo");
+    const statusAnalise = getParam("statusAnalise");
+    const urlPage = getParamNumber("page", 1);
+
+    setFiltroProdutoDigitado((prev) => (prev !== produto ? produto : prev));
+    setFiltroProduto((prev) => (prev !== produto ? produto : prev));
+
+    setFiltroMarca((prev) => (prev !== marca ? marca : prev));
+    setFiltroCategoria((prev) => (prev !== categoria ? categoria : prev));
+    setFiltroComprador((prev) => (prev !== comprador ? comprador : prev));
+
+    setFiltroStatusPromo((prev) => (prev !== statusPromo ? statusPromo : prev));
+    setFiltroStatus((prev) => (prev !== statusAnalise ? statusAnalise : prev));
+
+    setPage((prev) => (prev !== urlPage ? urlPage : prev));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const next = buildSearchFromState({
+      produto: (filtroProduto || "").trim(),
+      marca: (filtroMarca || "").trim(),
+      categoria: (filtroCategoria || "").trim(),
+      comprador: (filtroComprador || "").trim(),
+      statusPromo: (filtroStatusPromo || "").trim(),
+      statusAnalise: (filtroStatus || "").trim(),
+      page,
+    });
+
+    const current = searchParams.toString();
+
+    if (next !== current) {
+      router.replace(`${pathname}?${next}`, { scroll: false });
+    }
+  }, [
+    filtroProduto,
+    filtroMarca,
+    filtroCategoria,
+    filtroComprador,
+    filtroStatusPromo,
+    filtroStatus,
+    page,
+    pathname,
+  ]);
+
+  useEffect(() => {
+    if (debouncedProduto === filtroProduto) return;
     setPage(1);
     setFiltroProduto(debouncedProduto);
-  }, [debouncedProduto]);
+  }, [debouncedProduto, filtroProduto]);
 
   useEffect(() => {
     let alive = true;
@@ -147,7 +245,12 @@ export default function HistoricoPage() {
   async function excluirItem(id: number) {
     try {
       setExcluindoId(id);
-      await deleteHistorico(id); 
+      await deleteHistorico(id);
+
+      if (page > 1 && itens.length === 1) {
+        setPage((p) => Math.max(1, p - 1));
+      }
+
       setReloadToken((t) => t + 1);
     } catch (err: any) {
       openActionModal({
@@ -158,8 +261,8 @@ export default function HistoricoPage() {
     } finally {
       setExcluindoId(null);
     }
-
   }
+
 
   async function handleLogout() {
     try {

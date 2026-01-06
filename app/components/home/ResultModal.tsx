@@ -126,7 +126,6 @@ export function ResultModal({ result, form, onClose }: Props) {
           </div>
         </div>
 
-        {/* DRE por unidade (igual ao bloco antigo) */}
         <div
           style={{
             marginTop: "8px",
@@ -230,7 +229,6 @@ export function ResultModal({ result, form, onClose }: Props) {
           })()}
         </div>
 
-        {/* Metas */}
         <div
           style={{
             display: "grid",
@@ -259,7 +257,7 @@ export function ResultModal({ result, form, onClose }: Props) {
           </div>
         </div>
 
-        {/* Dados informados */}
+        
         <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
           <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
             Dados informados na simulação

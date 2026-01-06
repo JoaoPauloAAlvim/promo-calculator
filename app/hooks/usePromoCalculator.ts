@@ -5,7 +5,6 @@ import type { FormState, Resultado } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
 import { calcularPromocao } from "@/lib/api/calculo";
 
-// parse BR local (evita depender de helpers espalhados)
 const parseBR = (valor: string): number => {
   if (!valor) return NaN;
   const limpo = valor.trim().replace(/\./g, "").replace(",", ".");
