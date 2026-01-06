@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -106,6 +107,14 @@ export default function HistoricoPage() {
 
     const [sort, setSort] = useState<string>(getParam("sort") || "RECENTE");
 
+    const handleUpdateItem = useCallback((novo: HistoricoItem) => {
+        setSelecionado(novo);
+    }, []);
+
+    const handleReload = useCallback(() => {
+        setReloadToken((t) => t + 1);
+    }, []);
+
 
     function openActionModal(opts: {
         title: string;
@@ -127,7 +136,6 @@ export default function HistoricoPage() {
         setSort(v);
         setPage(1);
     }
-
 
     useEffect(() => {
         const produto = getParam("produto");
@@ -423,9 +431,10 @@ export default function HistoricoPage() {
                     open={Boolean(selecionado)}
                     item={selecionado}
                     onClose={() => setSelecionado(null)}
-                    onUpdateItem={(novo) => setSelecionado(novo)}
-                    onReload={() => setReloadToken((t) => t + 1)}
+                    onUpdateItem={handleUpdateItem}
+                    onReload={handleReload}
                 />
+
 
             )}
 
