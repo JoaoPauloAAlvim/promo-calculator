@@ -118,7 +118,13 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
   const diasPromoFinal =
     diasPromoCalc ?? (Number.isFinite(diasPromoFallback) ? diasPromoFallback : null);
 
-  const podeAvaliar = !analisePromo && (promoStatus === "ENCERRADA" || promoStatus === "SEM_DATAS");
+  const podeAvaliar =
+  !analisePromo &&
+  promoStatus === "ENCERRADA" &&
+  Boolean(inicioPromo) &&
+  Boolean(fimPromo) &&
+  calcDiasPromoInclusivo(inicioPromo, fimPromo) !== null;
+
 
   const entradaEntries = useMemo(() => {
     const e = entrada ?? {};
@@ -138,6 +144,8 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
         chave !== "c"
     );
   }, [entrada]);
+
+  
 
   async function avaliarResultado() {
     if (!item) return;

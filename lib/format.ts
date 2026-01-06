@@ -8,9 +8,25 @@ export const formatPctBR = (v?: number | null): string => {
   return (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
 };
 
-export const  toNumberBR=(v: string): number => {
-  return Number(v.trim().replace(/\./g, "").replace(",", "."));
+export function toNumberBR(v: any): number {
+  if (v === null || v === undefined) return NaN;
+
+  if (typeof v === "number") return v;
+
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return NaN;
+
+    const limpo = s.replace(/\./g, "").replace(",", ".");
+    const n = Number(limpo);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  if (typeof v === "boolean") return v ? 1 : 0;
+
+  return NaN;
 }
+
 
 export const parseBR = (valor: string): number => {
     if (!valor) return NaN;

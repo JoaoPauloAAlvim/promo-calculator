@@ -136,7 +136,6 @@ export default function HistoricoPage() {
         setSelecionados(new Set());
     }
 
-    // ao sair do modo seleção, limpa seleção
     function toggleModoSelecao() {
         setModoSelecao((prev) => {
             const next = !prev;
@@ -444,7 +443,6 @@ export default function HistoricoPage() {
                             gap: "10px",
                         }}
                     >
-                        {/* ESQUERDA: toggle + status */}
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <button
                                 type="button"
