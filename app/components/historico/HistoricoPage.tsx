@@ -16,7 +16,7 @@ import { HistoricoModal } from "@/app/components/historico/HistoricoModal";
 import { ActionModal } from "@/app/components/ui/ActionModal";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { logout } from "@/lib/api/auth";
-import { deleteHistorico } from "@/lib/api/historico";
+import { deleteHistorico, deleteHistoricoMany } from "@/lib/api/historico";
 
 
 export default function HistoricoPage() {
@@ -107,6 +107,12 @@ export default function HistoricoPage() {
 
     const [sort, setSort] = useState<string>(getParam("sort") || "RECENTE");
 
+    const [modoSelecao, setModoSelecao] = useState(false);
+    const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
+
+    const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+
     const handleUpdateItem = useCallback((novo: HistoricoItem) => {
         setSelecionado(novo);
     }, []);
@@ -115,6 +121,29 @@ export default function HistoricoPage() {
         setReloadToken((t) => t + 1);
     }, []);
 
+
+
+    function toggleSelecionado(id: number) {
+        setSelecionados((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }
+
+    function limparSelecao() {
+        setSelecionados(new Set());
+    }
+
+    // ao sair do modo seleção, limpa seleção
+    function toggleModoSelecao() {
+        setModoSelecao((prev) => {
+            const next = !prev;
+            if (!next) limparSelecao();
+            return next;
+        });
+    }
 
     function openActionModal(opts: {
         title: string;
@@ -251,6 +280,12 @@ export default function HistoricoPage() {
     useEffect(() => {
         if (filtroComprador && opcoesComprador.length && !opcoesComprador.includes(filtroComprador)) setFiltroComprador("");
     }, [opcoesComprador]);
+
+    useEffect(() => {
+        if (!modoSelecao) return;
+        limparSelecao();
+    }, [modoSelecao, page, filtroProduto, filtroMarca, filtroCategoria, filtroComprador, filtroStatusPromo, filtroStatus, sort]);
+
 
     const filtros: HistoricoFiltros = {
         produto: filtroProduto || "",
@@ -396,18 +431,134 @@ export default function HistoricoPage() {
 
                     <br />
 
+                    <div
+                        style={{
+                            borderRadius: "12px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: modoSelecao ? "#fff7ed" : "#ffffff",
+                            padding: "10px 12px",
+                            boxShadow: "0 6px 18px rgba(15,23,42,0.06)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "10px",
+                        }}
+                    >
+                        {/* ESQUERDA: toggle + status */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <button
+                                type="button"
+                                onClick={toggleModoSelecao}
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "6px 12px",
+                                    borderRadius: "999px",
+                                    border: "1px solid #d1d5db",
+                                    backgroundColor: modoSelecao ? "#111827" : "#ffffff",
+                                    color: modoSelecao ? "#ffffff" : "#374151",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                }}
+                                title={modoSelecao ? "Clique para sair do modo seleção" : "Clique para selecionar múltiplos cards"}
+                            >
+                                <span
+                                    style={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 999,
+                                        backgroundColor: modoSelecao ? "#22c55e" : "#9ca3af",
+                                        display: "inline-block",
+                                    }}
+                                />
+                                Modo seleção
+                            </button>
+
+                            {modoSelecao ? (
+                                <span style={{ fontSize: "12px", color: "#92400e", fontWeight: 700 }}>
+                                    Selecione os cards para excluir
+                                </span>
+                            ) : (
+                                <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                                    Use para excluir vários cards de uma vez
+                                </span>
+                            )}
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span
+                                style={{
+                                    fontSize: "12px",
+                                    color: modoSelecao ? "#111827" : "#6b7280",
+                                    fontWeight: 700,
+                                    padding: "4px 10px",
+                                    borderRadius: "999px",
+                                    border: "1px solid #e5e7eb",
+                                    backgroundColor: "#f9fafb",
+                                }}
+                            >
+                                Selecionados: {selecionados.size}
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={() => setConfirmBulkOpen(true)}
+                                disabled={!modoSelecao || selecionados.size === 0}
+                                style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "10px",
+                                    border: "1px solid #d1d5db",
+                                    backgroundColor: !modoSelecao || selecionados.size === 0 ? "#f3f4f6" : "#dc2626",
+                                    color: !modoSelecao || selecionados.size === 0 ? "#9ca3af" : "#ffffff",
+                                    fontSize: "12px",
+                                    fontWeight: 800,
+                                    cursor: !modoSelecao || selecionados.size === 0 ? "default" : "pointer",
+                                    whiteSpace: "nowrap",
+                                }}
+                                title={!modoSelecao ? "Ative o modo seleção" : selecionados.size === 0 ? "Selecione ao menos 1 card" : ""}
+                            >
+                                Excluir
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={limparSelecao}
+                                disabled={!modoSelecao || selecionados.size === 0}
+                                style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "10px",
+                                    border: "1px solid #d1d5db",
+                                    backgroundColor: !modoSelecao || selecionados.size === 0 ? "#f3f4f6" : "#ffffff",
+                                    color: !modoSelecao || selecionados.size === 0 ? "#9ca3af" : "#4b5563",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    cursor: !modoSelecao || selecionados.size === 0 ? "default" : "pointer",
+                                }}
+                            >
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
+
+                    <br/>
                     {!erro && itens.length === 0 && (
                         <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
                     )}
 
                     {!erro && itens.length > 0 && (
-                        <>
+                        <>                             
                             <HistoricoGrid
                                 itens={itens}
                                 excluindoId={excluindoId}
                                 onOpen={(item) => abrirModal(item)}
                                 onDelete={(id) => pedirConfirmacaoExcluir(id)}
+                                modoSelecao={modoSelecao}
+                                selecionados={selecionados}
+                                onToggleSelect={toggleSelecionado}
                             />
+
 
 
                             <HistoricoPagination
@@ -473,6 +624,47 @@ export default function HistoricoPage() {
                 onClose={() => setActionModalOpen(false)}
                 autoCloseMs={actionModalVariant === "success" ? 3000 : undefined}
             />
+            <ConfirmModal
+                open={confirmBulkOpen}
+                title="Excluir simulações selecionadas?"
+                message={`Tem certeza que deseja apagar ${selecionados.size} registro(s)? Esta ação não pode ser desfeita.`}
+                confirmLabel="Sim, excluir"
+                cancelLabel="Cancelar"
+                danger
+                loading={bulkDeleting}
+                onClose={() => {
+                    if (bulkDeleting) return;
+                    setConfirmBulkOpen(false);
+                }}
+                onConfirm={async () => {
+                    const ids = Array.from(selecionados);
+                    if (ids.length === 0) return;
+
+                    try {
+                        setBulkDeleting(true);
+                        await deleteHistoricoMany(ids);
+
+                        // se apagar tudo da página atual e você estiver em page > 1, volta uma página
+                        if (page > 1 && ids.length >= itens.length) {
+                            setPage((p) => Math.max(1, p - 1));
+                        }
+
+                        limparSelecao();
+                        setModoSelecao(false);
+                        setReloadToken((t) => t + 1);
+                    } catch (e: any) {
+                        openActionModal({
+                            title: "Erro ao excluir",
+                            message: e?.message || "Falha ao excluir simulações selecionadas.",
+                            variant: "error",
+                        });
+                    } finally {
+                        setBulkDeleting(false);
+                        setConfirmBulkOpen(false);
+                    }
+                }}
+            />
+
             <ConfirmModal
                 open={confirmOpen}
                 title="Excluir simulação?"

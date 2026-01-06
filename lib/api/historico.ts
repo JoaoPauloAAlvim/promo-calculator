@@ -115,3 +115,12 @@ export async function getHistoricoById(id: number) {
     method: "GET",
   });
 }
+
+export async function deleteHistoricoMany(ids: number[]) {
+  return api<{ ok: boolean; deleted: number }>("/api/historico", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}
+

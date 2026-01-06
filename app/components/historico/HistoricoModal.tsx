@@ -52,6 +52,18 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
     setFeedbackOpen(true);
   }
 
+  useEffect(() => {
+    if (!open) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+
 
   useEffect(() => {
     if (!open || !item) return;
@@ -238,12 +250,12 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
             maxWidth: "720px",
             width: "100%",
             maxHeight: "85vh",
-            overflowY: "auto",
-            padding: "20px",
             position: "relative",
             border: "1px solid #e5e7eb",
             boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+            overflow: "hidden",
           }}
+          onClick={(ev) => ev.stopPropagation()}
         >
           <button
             onClick={() => {
@@ -266,476 +278,484 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
           >
             ✕
           </button>
+          <div
+            style={{
+              maxHeight: "85vh",
+              overflowY: "auto",
+              padding: "20px",
+              boxSizing: "border-box",
+            }}
+          >
 
-          <div style={{ marginBottom: "12px" }}>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "#6b7280",
-                marginBottom: "4px",
-              }}
-            >
-              Simulação realizada em {new Date(item.dataHora).toLocaleString("pt-BR")}
-            </p>
-            <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
-              {nomeProdutoSelecionado || "Produto não informado"}
-            </p>
-          </div>
-
-          {loadingDetalhes && (
-            <div
-              style={{
-                marginTop: "10px",
-                borderRadius: "12px",
-                border: "1px solid #e5e7eb",
-                backgroundColor: "#f9fafb",
-                padding: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <Spinner size={18} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#4b5563" }}>
-                Carregando detalhes…
-              </span>
-            </div>
-          )}
-
-          {!loadingDetalhes && (
-            <>
-              <div
+            <div style={{ marginBottom: "12px" }}>
+              <p
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: "8px",
-                  marginBottom: "14px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: "4px",
                 }}
               >
+                Simulação realizada em {new Date(item.dataHora).toLocaleString("pt-BR")}
+              </p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
+                {nomeProdutoSelecionado || "Produto não informado"}
+              </p>
+            </div>
+
+            {loadingDetalhes && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f9fafb",
+                  padding: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <Spinner size={18} />
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#4b5563" }}>
+                  Carregando detalhes…
+                </span>
+              </div>
+            )}
+
+            {!loadingDetalhes && (
+              <>
                 <div
                   style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "8px",
+                    marginBottom: "14px",
                   }}
                 >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Lucro diário histórico
-                  </p>
-                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                    {`R$ ${formatBR(Number((entrada as any).lucro_diario_hist))}`}
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
-                  }}
-                >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Lucro unitário na promoção
-                  </p>
-                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                    {metas?.lucro_unitario_promo !== undefined
-                      ? `R$ ${formatBR(Number(metas.lucro_unitario_promo))}`
-                      : "—"}
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => setDreAberto(true)}
+                  <div
                     style={{
-                      marginTop: "6px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      borderRadius: "10px",
-                      border: "1px solid #d1d5db",
-                      padding: "4px 10px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      backgroundColor: "#ffffff",
-                      color: "#4b5563",
-                      cursor: "pointer",
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
                     }}
                   >
-                    Ver detalhes ▸
-                  </button>
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Lucro diário histórico
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {`R$ ${formatBR(Number((entrada as any).lucro_diario_hist))}`}
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Lucro unitário na promoção
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {metas?.lucro_unitario_promo !== undefined
+                        ? `R$ ${formatBR(Number(metas.lucro_unitario_promo))}`
+                        : "—"}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setDreAberto(true)}
+                      style={{
+                        marginTop: "6px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        borderRadius: "10px",
+                        border: "1px solid #d1d5db",
+                        padding: "4px 10px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        backgroundColor: "#ffffff",
+                        color: "#4b5563",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Ver detalhes ▸
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Meta de unidades por dia
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {metas.meta_unid_dia ?? "—"}{" "}
+                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Meta de unidades no período
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {metas.meta_unid_total ?? "—"}{" "}
+                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
+                    </p>
+                  </div>
                 </div>
 
                 <div
                   style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "8px",
+                    marginBottom: "14px",
                   }}
                 >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Meta de unidades por dia
-                  </p>
-                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                    {metas.meta_unid_dia ?? "—"}{" "}
-                    <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
-                  </p>
-                </div>
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Período da promoção
+                    </p>
+                    <p style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>
+                      {formatDateBR(inicioPromo)}{" "}
+                      <span style={{ color: "#6b7280", fontWeight: 600 }}>até</span>{" "}
+                      {formatDateBR(fimPromo)}
+                    </p>
+                  </div>
 
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
-                  }}
-                >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Meta de unidades no período
-                  </p>
-                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                    {metas.meta_unid_total ?? "—"}{" "}
-                    <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
-                  </p>
-                </div>
-              </div>
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Duração da promoção
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {diasPromoFinal !== null ? (
+                        <>
+                          {Math.round(diasPromoFinal)}{" "}
+                          <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>dias</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </p>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: "8px",
-                  marginBottom: "14px",
-                }}
-              >
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
-                  }}
-                >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Período da promoção
-                  </p>
-                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>
-                    {formatDateBR(inicioPromo)}{" "}
-                    <span style={{ color: "#6b7280", fontWeight: 600 }}>até</span>{" "}
-                    {formatDateBR(fimPromo)}
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                    padding: "8px 10px",
-                  }}
-                >
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                    Duração da promoção
-                  </p>
-                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                    {diasPromoFinal !== null ? (
-                      <>
-                        {Math.round(diasPromoFinal)}{" "}
-                        <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>dias</span>
-                      </>
-                    ) : (
-                      "—"
+                    {inicioPromo && fimPromo && diasPromoCalc === null && (
+                      <p style={{ marginTop: "4px", fontSize: "10px", color: "#b91c1c", fontWeight: 600 }}>
+                        Datas inválidas (fim antes do início).
+                      </p>
                     )}
+
+                    {(() => {
+                      const disabled = promoStatus !== "EM_ANDAMENTO";
+
+                      const motivo =
+                        promoStatus === "ENCERRADA"
+                          ? "Promoção encerrada"
+                          : promoStatus === "NAO_INICIOU"
+                            ? "Promoção ainda não iniciou"
+                            : promoStatus === "SEM_DATAS"
+                              ? "Promoção sem datas"
+                              : "Indisponível";
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          title={disabled ? "Acompanhamento disponível apenas durante o período da promoção." : ""}
+                          onClick={() => {
+                            if (disabled) return;
+
+                            setMonData(getAcompDateISO(inicioPromo));
+                            setMonVendido("");
+                            setMonEstoque("");
+                            setAcompAberto(true);
+                          }}
+                          style={{
+                            marginTop: "6px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            borderRadius: "10px",
+                            border: "1px solid #d1d5db",
+                            padding: "4px 10px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
+                            color: disabled ? "#9ca3af" : "#4b5563",
+                            cursor: disabled ? "default" : "pointer",
+                          }}
+                        >
+                          {disabled ? `Acompanhamento: ${motivo}` : "Acompanhar promoção ▸"}
+                        </button>
+                      );
+                    })()}
+
+                  </div>
+                </div>
+
+                <div style={{ marginTop: "6px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
+                  <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
+                    Dados informados na simulação
                   </p>
 
-                  {inicioPromo && fimPromo && diasPromoCalc === null && (
-                    <p style={{ marginTop: "4px", fontSize: "10px", color: "#b91c1c", fontWeight: 600 }}>
-                      Datas inválidas (fim antes do início).
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px" }}>
+                    <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                        Produto
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                        {nomeProdutoSelecionado || "Produto não informado"}
+                      </p>
+                    </div>
+
+                    <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                        Categoria do produto
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                        {(entrada as any).categoria || "—"}
+                      </p>
+                    </div>
+
+                    <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                        Comprador
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                        {(entrada as any).comprador || "—"}
+                      </p>
+                    </div>
+
+                    <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                        Marca
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                        {(entrada as any).marca || "—"}
+                      </p>
+                    </div>
+
+                    {entradaEntries.map(([chave, valor]) => {
+                      const label = (entradaLabels as any)[chave] ?? chave.replace(/_/g, " ");
+
+                      const isNumero = typeof valor === "number";
+                      const valorFormatado =
+                        valor === undefined || valor === null
+                          ? "—"
+                          : isNumero
+                            ? chave === "A"
+                              ? String(Math.round(valor as number))
+                              : formatBR(Number(valor))
+                            : String(valor);
+
+                      return (
+                        <div
+                          key={chave}
+                          style={{
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            padding: "6px 8px",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                            {label}
+                          </p>
+                          <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                            {valorFormatado}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px dashed #e5e7eb" }}>
+                  <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
+                    Análise após encerramento da promoção
+                  </p>
+
+                  {promoStatus === "NAO_INICIOU" && (
+                    <p style={{ fontSize: "11px", color: "#6b7280", marginBottom: "6px" }}>
+                      Promoção ainda não começou. A análise só ficará disponível após a data de fim.
                     </p>
                   )}
 
-                  {(() => {
-                    const disabled = promoStatus !== "EM_ANDAMENTO";
-
-                    const motivo =
-                      promoStatus === "ENCERRADA"
-                        ? "Promoção encerrada"
-                        : promoStatus === "NAO_INICIOU"
-                          ? "Promoção ainda não iniciou"
-                          : promoStatus === "SEM_DATAS"
-                            ? "Promoção sem datas"
-                            : "Indisponível";
-
-                    return (
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        title={disabled ? "Acompanhamento disponível apenas durante o período da promoção." : ""}
-                        onClick={() => {
-                          if (disabled) return;
-
-                          setMonData(getAcompDateISO(inicioPromo));
-                          setMonVendido("");
-                          setMonEstoque("");
-                          setAcompAberto(true);
-                        }}
-                        style={{
-                          marginTop: "6px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          borderRadius: "10px",
-                          border: "1px solid #d1d5db",
-                          padding: "4px 10px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
-                          color: disabled ? "#9ca3af" : "#4b5563",
-                          cursor: disabled ? "default" : "pointer",
-                        }}
-                      >
-                        {disabled ? `Acompanhamento: ${motivo}` : "Acompanhar promoção ▸"}
-                      </button>
-                    );
-                  })()}
-
-                </div>
-              </div>
-
-              <div style={{ marginTop: "6px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
-                  Dados informados na simulação
-                </p>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px" }}>
-                  <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
-                      Produto
+                  {promoStatus === "EM_ANDAMENTO" && (
+                    <p style={{ fontSize: "11px", color: "#6b7280", marginBottom: "6px" }}>
+                      Promoção em andamento. Só é possível lançar o resultado após a data de fim.
                     </p>
-                    <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
-                      {nomeProdutoSelecionado || "Produto não informado"}
-                    </p>
-                  </div>
+                  )}
 
-                  <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
-                      Categoria do produto
-                    </p>
-                    <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
-                      {(entrada as any).categoria || "—"}
-                    </p>
-                  </div>
+                  {podeAvaliar && (
+                    <>
+                      <div style={{ marginBottom: "8px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: 500,
+                            color: "#6b7280",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          Quantidade TOTAL vendida na promoção
+                        </label>
 
-                  <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
-                      Comprador
-                    </p>
-                    <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
-                      {(entrada as any).comprador || "—"}
-                    </p>
-                  </div>
-
-                  <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
-                      Marca
-                    </p>
-                    <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
-                      {(entrada as any).marca || "—"}
-                    </p>
-                  </div>
-
-                  {entradaEntries.map(([chave, valor]) => {
-                    const label = (entradaLabels as any)[chave] ?? chave.replace(/_/g, " ");
-
-                    const isNumero = typeof valor === "number";
-                    const valorFormatado =
-                      valor === undefined || valor === null
-                        ? "—"
-                        : isNumero
-                          ? chave === "A"
-                            ? String(Math.round(valor as number))
-                            : formatBR(Number(valor))
-                          : String(valor);
-
-                    return (
-                      <div
-                        key={chave}
-                        style={{
-                          borderRadius: "10px",
-                          border: "1px solid #e5e7eb",
-                          padding: "6px 8px",
-                          backgroundColor: "#f9fafb",
-                        }}
-                      >
-                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
-                          {label}
-                        </p>
-                        <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
-                          {valorFormatado}
-                        </p>
+                        <input
+                          type="text"
+                          value={qtdVendida}
+                          onChange={(ev) => setQtdVendida(ev.target.value)}
+                          placeholder="Ex: 620"
+                          style={{
+                            width: "100%",
+                            borderRadius: "10px",
+                            border: "1px solid #d1d5db",
+                            padding: "6px 10px",
+                            fontSize: "12px",
+                            backgroundColor: "#f9fafb",
+                            boxSizing: "border-box",
+                          }}
+                        />
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px dashed #e5e7eb" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
-                  Análise após encerramento da promoção
-                </p>
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+                        <button
+                          type="button"
+                          onClick={avaliarResultado}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: "10px",
+                            border: "none",
+                            backgroundColor: "#4f46e5",
+                            color: "#ffffff",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Avaliar resultado da promoção
+                        </button>
+                      </div>
+                    </>
+                  )}
 
-                {promoStatus === "NAO_INICIOU" && (
-                  <p style={{ fontSize: "11px", color: "#6b7280", marginBottom: "6px" }}>
-                    Promoção ainda não começou. A análise só ficará disponível após a data de fim.
-                  </p>
-                )}
-
-                {promoStatus === "EM_ANDAMENTO" && (
-                  <p style={{ fontSize: "11px", color: "#6b7280", marginBottom: "6px" }}>
-                    Promoção em andamento. Só é possível lançar o resultado após a data de fim.
-                  </p>
-                )}
-
-                {podeAvaliar && (
-                  <>
-                    <div style={{ marginBottom: "8px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          color: "#6b7280",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Quantidade TOTAL vendida na promoção
-                      </label>
-
-                      <input
-                        type="text"
-                        value={qtdVendida}
-                        onChange={(ev) => setQtdVendida(ev.target.value)}
-                        placeholder="Ex: 620"
-                        style={{
-                          width: "100%",
-                          borderRadius: "10px",
-                          border: "1px solid #d1d5db",
-                          padding: "6px 10px",
-                          fontSize: "12px",
-                          backgroundColor: "#f9fafb",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-                      <button
-                        type="button"
-                        onClick={avaliarResultado}
-                        style={{
-                          padding: "6px 14px",
-                          borderRadius: "10px",
-                          border: "none",
-                          backgroundColor: "#4f46e5",
-                          color: "#ffffff",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Avaliar resultado da promoção
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {analisePromo && (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                      gap: "8px",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                        Lucro histórico no período
-                      </p>
-                      <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
-                        {`R$ ${formatBR(analisePromo.lucroHistPeriodo)}`}
-                      </p>
-                    </div>
-
-                    <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                        Lucro REAL na promoção
-                      </p>
-                      <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
-                        {`R$ ${formatBR(analisePromo.lucroRealPromo)}`}
-                      </p>
-                    </div>
-
-                    <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                        Diferença vs histórico
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "15px",
-                          fontWeight: 700,
-                          color: analisePromo.diff > 0 ? "#047857" : analisePromo.diff < 0 ? "#b91c1c" : "#111827",
-                        }}
-                      >
-                        {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(analisePromo.diff)}`}
-                      </p>
-                    </div>
-
+                  {analisePromo && (
                     <div
                       style={{
-                        gridColumn: "1 / -1",
-                        borderRadius: "12px",
-                        border: "1px solid #e5e7eb",
-                        backgroundColor:
-                          analisePromo.situacao === "ACIMA"
-                            ? "#ecfdf3"
-                            : analisePromo.situacao === "ABAIXO"
-                              ? "#fef2f2"
-                              : "#fffbeb",
-                        padding: "8px 10px",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                        gap: "8px",
                         marginTop: "4px",
                       }}
                     >
-                      <p
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                          Lucro histórico no período
+                        </p>
+                        <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
+                          {`R$ ${formatBR(analisePromo.lucroHistPeriodo)}`}
+                        </p>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                          Lucro REAL na promoção
+                        </p>
+                        <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
+                          {`R$ ${formatBR(analisePromo.lucroRealPromo)}`}
+                        </p>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#f9fafb", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                          Diferença vs histórico
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            color: analisePromo.diff > 0 ? "#047857" : analisePromo.diff < 0 ? "#b91c1c" : "#111827",
+                          }}
+                        >
+                          {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(analisePromo.diff)}`}
+                        </p>
+                      </div>
+
+                      <div
                         style={{
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          color:
+                          gridColumn: "1 / -1",
+                          borderRadius: "12px",
+                          border: "1px solid #e5e7eb",
+                          backgroundColor:
                             analisePromo.situacao === "ACIMA"
-                              ? "#047857"
+                              ? "#ecfdf3"
                               : analisePromo.situacao === "ABAIXO"
-                                ? "#b91c1c"
-                                : "#92400e",
+                                ? "#fef2f2"
+                                : "#fffbeb",
+                          padding: "8px 10px",
+                          marginTop: "4px",
                         }}
                       >
-                        {analisePromo.situacao === "ACIMA" && "📈 Promoção ACIMA do histórico de lucro."}
-                        {analisePromo.situacao === "ABAIXO" && "📉 Promoção ABAIXO do histórico de lucro."}
-                        {analisePromo.situacao === "IGUAL" && "⚖ Promoção IGUAL ao histórico de lucro."}
-                      </p>
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color:
+                              analisePromo.situacao === "ACIMA"
+                                ? "#047857"
+                                : analisePromo.situacao === "ABAIXO"
+                                  ? "#b91c1c"
+                                  : "#92400e",
+                          }}
+                        >
+                          {analisePromo.situacao === "ACIMA" && "📈 Promoção ACIMA do histórico de lucro."}
+                          {analisePromo.situacao === "ABAIXO" && "📉 Promoção ABAIXO do histórico de lucro."}
+                          {analisePromo.situacao === "IGUAL" && "⚖ Promoção IGUAL ao histórico de lucro."}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-            </>
-          )}
-
+              </>
+            )}
+          </div>
 
         </div>
       </div>

@@ -8,9 +8,21 @@ type Props = {
   excluindoId: number | null;
   onOpen: (item: HistoricoItem) => void;
   onDelete: (id: number) => void;
+
+  modoSelecao: boolean;
+  selecionados: Set<number>;
+  onToggleSelect: (id: number) => void;
 };
 
-export function HistoricoGrid({ itens, excluindoId, onOpen, onDelete }: Props) {
+export function HistoricoGrid({
+  itens,
+  excluindoId,
+  onOpen,
+  onDelete,
+  modoSelecao,
+  selecionados,
+  onToggleSelect,
+}: Props) {
   return (
     <div className="cards-historico-grid">
       {itens.map((item) => (
@@ -18,6 +30,9 @@ export function HistoricoGrid({ itens, excluindoId, onOpen, onDelete }: Props) {
           key={item.id}
           item={item}
           excluindoId={excluindoId}
+          modoSelecao={modoSelecao}
+          selecionado={selecionados.has(item.id)}
+          onToggleSelect={() => onToggleSelect(item.id)}
           onOpen={() => onOpen(item)}
           onDelete={() => onDelete(item.id)}
         />

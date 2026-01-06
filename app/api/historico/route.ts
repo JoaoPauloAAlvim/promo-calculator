@@ -190,26 +190,24 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const body = await req.json();
-    const id = Number(body.id);
+    const body = await req.json().catch(() => null);
 
-    if (!id || Number.isNaN(id)) {
-      return NextResponse.json(
-        { error: "ID inválido para exclusão." },
-        { status: 400 }
-      );
+    const ids = Array.isArray(body?.ids) ? body.ids.map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n) && n > 0) : [];
+
+    const id = Number(body?.id);
+    if (ids.length === 0 && (!id || Number.isNaN(id))) {
+      return NextResponse.json({ error: "ID inválido para exclusão." }, { status: 400 });
     }
 
-    const apagados = await db("historico").where({ id }).del();
+    const apagados = ids.length > 0
+      ? await db("historico").whereIn("id", ids).del()
+      : await db("historico").where({ id }).del();
 
     if (!apagados) {
-      return NextResponse.json(
-        { error: "Registro não encontrado." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Registro não encontrado." }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, deleted: apagados });
   } catch (err: any) {
     console.error("ERRO /api/historico DELETE:", err);
     return NextResponse.json(
@@ -218,3 +216,4 @@ export async function DELETE(req: Request) {
     );
   }
 }
+

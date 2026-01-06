@@ -7,16 +7,28 @@ import { getPromoChip, getAnaliseChip } from "@/lib/chips";
 type Props = {
   item: HistoricoItem;
   excluindoId: number | null;
+
+  modoSelecao: boolean;
+  selecionado: boolean;
+  onToggleSelect: () => void;
+
   onOpen: () => void;
   onDelete: () => void;
 };
 
-export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
+export function HistoricoCard({
+  item,
+  excluindoId,
+  modoSelecao,
+  selecionado,
+  onToggleSelect,
+  onOpen,
+  onDelete,
+}: Props) {
   const entrada = item.resultado?.entrada ?? {};
   const metas = item.resultado?.metas ?? {};
 
-  const nomeProduto =
-    (entrada as any)?.produto_nome ?? (entrada as any)?.produto ?? "";
+  const nomeProduto = (entrada as any)?.produto_nome ?? (entrada as any)?.produto ?? "";
 
   const lucroMedio = metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
   const metaDia = metas?.meta_unid_dia;
@@ -34,12 +46,15 @@ export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={() => {
+        if (modoSelecao) return onToggleSelect();
+        onOpen();
+      }}
       style={{
         borderRadius: 18,
         width: "100%",
         minHeight: 190,
-        border: "1px solid #d1d5db",
+        border: selecionado ? "2px solid #4f46e5" : "1px solid #d1d5db",
         backgroundColor: "#ffffff",
         padding: "16px",
         boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
@@ -48,26 +63,53 @@ export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
       }}
       className="card-historico flex flex-col gap-2 text-left focus:outline-none"
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        style={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          border: "none",
-          background: "transparent",
-          cursor: "pointer",
-          fontSize: "12px",
-          color: "#dc2626",
-          fontWeight: 700,
-        }}
-      >
-        {excluindoId === item.id ? "…" : "✕"}
-      </button>
+      {/* indicador de seleção (canto esquerdo) */}
+      {modoSelecao && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            width: 18,
+            height: 18,
+            borderRadius: 6,
+            border: selecionado ? "2px solid #4f46e5" : "2px solid #cbd5e1",
+            backgroundColor: selecionado ? "#4f46e5" : "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff",
+            fontSize: 12,
+            fontWeight: 800,
+          }}
+        >
+          {selecionado ? "✓" : ""}
+        </div>
+      )}
+
+      {/* X de excluir individual: ocultar no modo seleção (pra não confundir) */}
+      {!modoSelecao && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            fontSize: "12px",
+            color: "#dc2626",
+            fontWeight: 700,
+          }}
+        >
+          {excluindoId === item.id ? "…" : "✕"}
+        </button>
+      )}
 
       <div className="flex items-start justify-between gap-2 pr-5">
         <p className="text-xs font-semibold text-slate-900 line-clamp-2 flex-1">
@@ -90,7 +132,6 @@ export function HistoricoCard({ item, excluindoId, onOpen, onDelete }: Props) {
                   maximumFractionDigits: 2,
                 })}
               </strong>
-
             </span>
           </span>
         )}
