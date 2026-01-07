@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Variant = "success" | "error" | "info";
 
@@ -19,8 +20,17 @@ export function ActionModal({
   variant?: Variant;
   confirmLabel?: string;
   onClose: () => void;
-  autoCloseMs?: number; 
+  autoCloseMs?: number;
 }) {
+  const okRef = useRef<HTMLButtonElement | null>(null);
+
+  useModalA11y({
+    open,
+    focusRef: okRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
+
   useEffect(() => {
     if (!open) return;
     if (!autoCloseMs) return;
@@ -85,6 +95,7 @@ export function ActionModal({
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
             <button
+              ref={okRef}
               type="button"
               onClick={onClose}
               style={{

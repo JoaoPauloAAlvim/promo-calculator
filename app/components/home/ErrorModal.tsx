@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Props = {
   open: boolean;
@@ -9,22 +10,22 @@ type Props = {
 };
 
 export function ErrorModal({ open, message, onClose }: Props) {
+  const okRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useModalA11y({
+    open,
+    focusRef: okRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
 
   if (!open) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -48,9 +49,10 @@ export function ErrorModal({ open, message, onClose }: Props) {
           boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
           overflow: "hidden",
         }}
-        onClick={(ev) => ev.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
           style={{
             position: "absolute",
@@ -76,7 +78,6 @@ export function ErrorModal({ open, message, onClose }: Props) {
             boxSizing: "border-box",
           }}
         >
-
           <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
             <div
               style={{
@@ -114,6 +115,7 @@ export function ErrorModal({ open, message, onClose }: Props) {
 
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button
+                  ref={okRef}
                   type="button"
                   onClick={onClose}
                   style={{

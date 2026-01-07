@@ -1,15 +1,30 @@
 "use client";
 
+import { useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
+
 type Props = {
   erro: string | null;
   onClose: () => void;
 };
 
 export function LoginErrorModal({ erro, onClose }: Props) {
+  const okRef = useRef<HTMLButtonElement | null>(null);
+
+  useModalA11y({
+    open: Boolean(erro),
+    focusRef: okRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
+
   if (!erro) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -22,6 +37,7 @@ export function LoginErrorModal({ erro, onClose }: Props) {
       }}
     >
       <div
+        onMouseDown={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "#ffffff",
           borderRadius: "14px",
@@ -34,6 +50,7 @@ export function LoginErrorModal({ erro, onClose }: Props) {
         }}
       >
         <button
+          type="button"
           onClick={onClose}
           style={{
             position: "absolute",
@@ -68,28 +85,19 @@ export function LoginErrorModal({ erro, onClose }: Props) {
           >
             !
           </div>
+
           <div>
-            <p
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#991b1b",
-                marginBottom: "4px",
-              }}
-            >
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "#991b1b", marginBottom: "4px" }}>
               Não foi possível fazer login
             </p>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#4b5563",
-                marginBottom: "10px",
-              }}
-            >
+
+            <p style={{ fontSize: "12px", color: "#4b5563", marginBottom: "10px" }}>
               {erro}
             </p>
+
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
+                ref={okRef}
                 type="button"
                 onClick={onClose}
                 style={{

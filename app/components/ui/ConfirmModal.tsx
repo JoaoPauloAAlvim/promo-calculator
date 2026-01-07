@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 export function ConfirmModal({
   open,
@@ -23,13 +24,28 @@ export function ConfirmModal({
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
 }) {
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+
+  useModalA11y({
+    open,
+    focusRef: confirmRef,
+    onEnter: () => {
+      if (!loading) onConfirm();
+    },
+    onEscape: () => {
+      if (!loading) onClose();
+    },
+  });
+
   if (!open) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      onMouseDown={onClose}
+      onMouseDown={() => {
+        if (!loading) onClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -97,6 +113,7 @@ export function ConfirmModal({
             </button>
 
             <button
+              ref={confirmRef}
               type="button"
               onClick={onConfirm}
               disabled={loading}

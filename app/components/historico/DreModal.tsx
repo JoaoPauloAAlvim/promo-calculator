@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { formatBR, formatPctBR } from "@/lib/format";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Props = {
   open: boolean;
@@ -12,17 +13,14 @@ type Props = {
 };
 
 export function DreModal({ open, onClose, entrada, metas }: Props) {
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useModalA11y({
+    open,
+    focusRef: closeRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
 
   const e = entrada ?? {};
   const m = metas ?? {};
@@ -50,11 +48,11 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
 
   if (!open) return null;
 
-
   return (
     <div
       role="dialog"
       aria-modal="true"
+      onMouseDown={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -65,7 +63,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
         padding: "16px",
         zIndex: 80,
       }}
-      onClick={onClose}
     >
       <div
         style={{
@@ -79,8 +76,29 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
           boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
           overflow: "hidden",
         }}
-        onClick={(ev) => ev.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
       >
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "8px",
+            borderRadius: "999px",
+            border: "none",
+            padding: "4px 8px",
+            fontSize: "12px",
+            backgroundColor: "#f3f4f6",
+            color: "#4b5563",
+            cursor: "pointer",
+            zIndex: 2,
+          }}
+        >
+          ✕
+        </button>
+
         <div
           style={{
             maxHeight: "85vh",
@@ -89,25 +107,6 @@ export function DreModal({ open, onClose, entrada, metas }: Props) {
             boxSizing: "border-box",
           }}
         >
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              position: "absolute",
-              top: "8px",
-              right: "8px",
-              borderRadius: "999px",
-              border: "none",
-              padding: "4px 8px",
-              fontSize: "12px",
-              backgroundColor: "#f3f4f6",
-              color: "#4b5563",
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
-
           <p style={{ fontSize: "12px", fontWeight: 800, color: "#111827", marginBottom: "10px" }}>
             DRE unitário (por unidade)
           </p>

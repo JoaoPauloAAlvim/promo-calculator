@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useRef } from "react";
 import { Spinner } from "../Spinner";
 import type { ResultadoLote } from "@/lib/types";
 import { formatBR } from "@/lib/format";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Props = {
   open: boolean;
@@ -28,22 +29,22 @@ export function ImportModal({
   importError,
   importResults,
 }: Props) {
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useModalA11y({
+    open,
+    focusRef: closeRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
 
   if (!open) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -67,9 +68,11 @@ export function ImportModal({
           boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
           overflow: "hidden",
         }}
-        onClick={(ev) => ev.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
       >
         <button
+          ref={closeRef}
+          type="button"
           onClick={onClose}
           style={{
             position: "absolute",
@@ -83,10 +86,10 @@ export function ImportModal({
             color: "#4b5563",
             cursor: "pointer",
           }}
-          type="button"
         >
           ✕
         </button>
+
         <div
           style={{
             maxHeight: "85vh",
@@ -95,7 +98,6 @@ export function ImportModal({
             boxSizing: "border-box",
           }}
         >
-
           <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
             Importar planilha Excel
           </h3>
@@ -103,22 +105,13 @@ export function ImportModal({
           <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>
             Formato esperado: primeira aba com colunas{" "}
             <strong>
-              Produto, Categoria, Comprador, Marca, PeriodoHistorico,
-              LucroTotalHistorico, DataInicioPromocao, DataFimPromocao,
-              PrecoPromocional, CustoUnitario, ReceitaAdicional
+              Produto, Categoria, Comprador, Marca, PeriodoHistorico, LucroTotalHistorico, DataInicioPromocao,
+              DataFimPromocao, PrecoPromocional, CustoUnitario, ReceitaAdicional
             </strong>
             . Use datas como <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>.
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px",
-              marginBottom: "10px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 0" }}>
               <input
                 id="file-input-excel"
@@ -228,6 +221,7 @@ export function ImportModal({
                       <th className="border px-2 py-1 text-left">Erro</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {importResults.map((r) => {
                       const entrada = r.resultado?.entrada ?? {};
@@ -267,27 +261,27 @@ export function ImportModal({
               </div>
             </div>
           )}
-
-          {importLoading && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundColor: "rgba(255,255,255,0.7)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "16px",
-              }}
-            >
-              <Spinner size={32} />
-              <p style={{ marginTop: "8px", fontSize: "12px", fontWeight: 500, color: "#4b5563" }}>
-                Processando planilha…
-              </p>
-            </div>
-          )}
         </div>
+
+        {importLoading && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "rgba(255,255,255,0.7)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "16px",
+            }}
+          >
+            <Spinner size={32} />
+            <p style={{ marginTop: "8px", fontSize: "12px", fontWeight: 500, color: "#4b5563" }}>
+              Processando planilha…
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

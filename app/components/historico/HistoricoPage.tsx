@@ -60,7 +60,6 @@ export default function HistoricoPage() {
         return p.toString();
     }
 
-
     const initialProduto = getParam("produto");
     const initialMarca = getParam("marca");
     const initialCategoria = getParam("categoria");
@@ -122,7 +121,6 @@ export default function HistoricoPage() {
     }, []);
 
 
-
     function toggleSelecionado(id: number) {
         setSelecionados((prev) => {
             const next = new Set(prev);
@@ -139,10 +137,14 @@ export default function HistoricoPage() {
     function toggleModoSelecao() {
         setModoSelecao((prev) => {
             const next = !prev;
-            if (!next) limparSelecao();
+            if (!next) {
+                limparSelecao();
+                setConfirmBulkOpen(false);
+            }
             return next;
         });
     }
+
 
     function openActionModal(opts: {
         title: string;
@@ -285,7 +287,6 @@ export default function HistoricoPage() {
         limparSelecao();
     }, [modoSelecao, page, filtroProduto, filtroMarca, filtroCategoria, filtroComprador, filtroStatusPromo, filtroStatus, sort]);
 
-
     const filtros: HistoricoFiltros = {
         produto: filtroProduto || "",
         marca: filtroMarca || "",
@@ -302,6 +303,25 @@ export default function HistoricoPage() {
         pageSize,
         reloadToken,
     });
+
+    function selecionarTudoNaPagina() {
+        setSelecionados((prev) => {
+            const next = new Set(prev);
+            for (const it of itens) next.add(it.id);
+            return next;
+        });
+    }
+
+    function desmarcarTudoNaPagina() {
+        setSelecionados((prev) => {
+            const next = new Set(prev);
+            for (const it of itens) next.delete(it.id);
+            return next;
+        });
+    }
+
+    const selecionadosNaPagina = itens.filter((it) => selecionados.has(it.id)).length;
+    const tudoSelecionadoNaPagina = itens.length > 0 && selecionadosNaPagina === itens.length;
 
     async function excluirItem(id: number) {
         try {
@@ -485,59 +505,83 @@ export default function HistoricoPage() {
                             )}
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span
-                                style={{
-                                    fontSize: "12px",
-                                    color: modoSelecao ? "#111827" : "#6b7280",
-                                    fontWeight: 700,
-                                    padding: "4px 10px",
-                                    borderRadius: "999px",
-                                    border: "1px solid #e5e7eb",
-                                    backgroundColor: "#f9fafb",
-                                }}
-                            >
-                                Selecionados: {selecionados.size}
-                            </span>
+                        {modoSelecao && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "#111827",
+                                        fontWeight: 700,
+                                        padding: "4px 10px",
+                                        borderRadius: "999px",
+                                        border: "1px solid #e5e7eb",
+                                        backgroundColor: "#f9fafb",
+                                    }}
+                                >
+                                    Selecionados: {selecionados.size}
+                                </span>
 
-                            <button
-                                type="button"
-                                onClick={() => setConfirmBulkOpen(true)}
-                                disabled={!modoSelecao || selecionados.size === 0}
-                                style={{
-                                    padding: "6px 12px",
-                                    borderRadius: "10px",
-                                    border: "1px solid #d1d5db",
-                                    backgroundColor: !modoSelecao || selecionados.size === 0 ? "#f3f4f6" : "#dc2626",
-                                    color: !modoSelecao || selecionados.size === 0 ? "#9ca3af" : "#ffffff",
-                                    fontSize: "12px",
-                                    fontWeight: 800,
-                                    cursor: !modoSelecao || selecionados.size === 0 ? "default" : "pointer",
-                                    whiteSpace: "nowrap",
-                                }}
-                                title={!modoSelecao ? "Ative o modo seleção" : selecionados.size === 0 ? "Selecione ao menos 1 card" : ""}
-                            >
-                                Excluir
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (tudoSelecionadoNaPagina) desmarcarTudoNaPagina();
+                                        else selecionarTudoNaPagina();
+                                    }}
+                                    style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "10px",
+                                        border: "1px solid #d1d5db",
+                                        backgroundColor: "#ffffff",
+                                        color: "#4b5563",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {tudoSelecionadoNaPagina ? "Desmarcar página" : `Selecionar página (${itens.length})`}
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={limparSelecao}
-                                disabled={!modoSelecao || selecionados.size === 0}
-                                style={{
-                                    padding: "6px 12px",
-                                    borderRadius: "10px",
-                                    border: "1px solid #d1d5db",
-                                    backgroundColor: !modoSelecao || selecionados.size === 0 ? "#f3f4f6" : "#ffffff",
-                                    color: !modoSelecao || selecionados.size === 0 ? "#9ca3af" : "#4b5563",
-                                    fontSize: "12px",
-                                    fontWeight: 700,
-                                    cursor: !modoSelecao || selecionados.size === 0 ? "default" : "pointer",
-                                }}
-                            >
-                                Limpar
-                            </button>
-                        </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmBulkOpen(true)}
+                                    disabled={selecionados.size === 0}
+                                    style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "10px",
+                                        border: "1px solid #d1d5db",
+                                        backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#dc2626",
+                                        color: selecionados.size === 0 ? "#9ca3af" : "#ffffff",
+                                        fontSize: "12px",
+                                        fontWeight: 800,
+                                        cursor: selecionados.size === 0 ? "default" : "pointer",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                    title={selecionados.size === 0 ? "Selecione ao menos 1 card" : ""}
+                                >
+                                    Excluir
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={limparSelecao}
+                                    disabled={selecionados.size === 0}
+                                    style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "10px",
+                                        border: "1px solid #d1d5db",
+                                        backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#ffffff",
+                                        color: selecionados.size === 0 ? "#9ca3af" : "#4b5563",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                        cursor: selecionados.size === 0 ? "default" : "pointer",
+                                    }}
+                                >
+                                    Limpar
+                                </button>
+                            </div>
+                        )}
+
                     </div>
 
                     <br />
@@ -580,10 +624,11 @@ export default function HistoricoPage() {
                     open={Boolean(selecionado)}
                     item={selecionado}
                     onClose={() => setSelecionado(null)}
-                    onUpdateItem={(novo) => setSelecionado(novo)}
-                    onReload={() => setReloadToken((t) => t + 1)}
+                    onUpdateItem={handleUpdateItem}
+                    onReload={handleReload}
                     modoSelecao={modoSelecao}
                 />
+
 
 
 

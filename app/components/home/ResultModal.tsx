@@ -3,7 +3,8 @@
 import type { Resultado, FormState } from "@/lib/types";
 import { entradaLabels } from "@/lib/entradaLabels";
 import { formatBR } from "@/lib/format";
-import { useEffect } from "react";
+import { useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Props = {
   result: Resultado;
@@ -12,17 +13,14 @@ type Props = {
 };
 
 export function ResultModal({ result, form, onClose }: Props) {
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useModalA11y({
+    open: true,
+    focusRef: closeRef,
+    onEnter: onClose,
+    onEscape: onClose,
+  });
 
   const entrada = result?.entrada ?? {};
   const metas = result?.metas ?? {};
@@ -35,6 +33,9 @@ export function ResultModal({ result, form, onClose }: Props) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -58,9 +59,11 @@ export function ResultModal({ result, form, onClose }: Props) {
           boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
           overflow: "hidden",
         }}
-        onClick={(ev) => ev.stopPropagation()}
+        onMouseDown={(ev) => ev.stopPropagation()}
       >
         <button
+          ref={closeRef}
+          type="button"
           onClick={onClose}
           style={{
             position: "absolute",
@@ -77,6 +80,7 @@ export function ResultModal({ result, form, onClose }: Props) {
         >
           ✕
         </button>
+
         <div
           style={{
             maxHeight: "85vh",
@@ -85,7 +89,6 @@ export function ResultModal({ result, form, onClose }: Props) {
             boxSizing: "border-box",
           }}
         >
-
           <div style={{ marginBottom: "12px" }}>
             <p
               style={{
@@ -173,8 +176,8 @@ export function ResultModal({ result, form, onClose }: Props) {
                 (metas as any)?.lucro_unitario_com_adicional !== undefined
                   ? Number((metas as any).lucro_unitario_com_adicional)
                   : metas?.lucro_unitario_promo !== undefined
-                    ? Number(metas.lucro_unitario_promo)
-                    : lucroSemAdic + receitaAdic;
+                  ? Number(metas.lucro_unitario_promo)
+                  : lucroSemAdic + receitaAdic;
 
               return (
                 <div
@@ -278,19 +281,12 @@ export function ResultModal({ result, form, onClose }: Props) {
             </div>
           </div>
 
-
           <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
               Dados informados na simulação
             </p>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: "6px",
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px" }}>
               <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Produto</p>
                 <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
@@ -329,10 +325,10 @@ export function ResultModal({ result, form, onClose }: Props) {
                   raw === undefined || raw === null
                     ? "—"
                     : isNumero
-                      ? key === "A" || key === "C"
-                        ? String(Math.round(raw))
-                        : formatBR(raw)
-                      : String(raw);
+                    ? key === "A" || key === "C"
+                      ? String(Math.round(raw))
+                      : formatBR(raw)
+                    : String(raw);
 
                 return (
                   <div

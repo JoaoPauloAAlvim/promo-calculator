@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { AnalisePromo, HistoricoItem } from "@/lib/types";
 import { formatBR, toNumberBR } from "@/lib/format";
 import {
@@ -15,6 +15,9 @@ import { DreModal } from "@/app/components/historico/DreModal";
 import { AcompanhamentoModal } from "@/app/components/historico/AcompanhamentoModal";
 import { getHistoricoById, patchVendaReal } from "@/lib/api/historico";
 import { Spinner } from "../Spinner";
+import { useRef } from "react";
+import { useModalA11y } from "@/app/hooks/useModalA11y";
+
 
 type Props = {
   open: boolean;
@@ -54,16 +57,22 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
     setFeedbackOpen(true);
   }
 
-  useEffect(() => {
-    if (!open) return;
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const openMainModal = open && !dreAberto && !acompAberto;
 
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+  const closeAll = useCallback(() => {
+    setDreAberto(false);
+    setAcompAberto(false);
+    onClose();
+  }, [onClose]);
 
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useModalA11y({
+    open: openMainModal,
+    focusRef: dialogRef,
+    onEscape: closeAll,
+
+    onEnter: () => { },
+  });
 
 
 
@@ -254,6 +263,8 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
         }}
       >
         <div
+          ref={dialogRef}
+          tabIndex={-1}
           style={{
             backgroundColor: "#ffffff",
             borderRadius: "16px",
@@ -265,8 +276,9 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
             boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
             overflow: "hidden",
           }}
-          onClick={(ev) => ev.stopPropagation()}
+          onMouseDown={(ev) => ev.stopPropagation()}
         >
+
           <button
             onClick={() => {
               setDreAberto(false);
