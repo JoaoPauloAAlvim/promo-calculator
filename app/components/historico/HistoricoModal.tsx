@@ -24,9 +24,11 @@ type Props = {
   onUpdateItem: (novo: HistoricoItem) => void;
 
   onReload: () => void;
+
+  modoSelecao?: boolean;
 };
 
-export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: Props) {
+export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, modoSelecao = false }: Props) {
   const [dreAberto, setDreAberto] = useState(false);
   const [acompAberto, setAcompAberto] = useState(false);
 
@@ -119,11 +121,11 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
     diasPromoCalc ?? (Number.isFinite(diasPromoFallback) ? diasPromoFallback : null);
 
   const podeAvaliar =
-  !analisePromo &&
-  promoStatus === "ENCERRADA" &&
-  Boolean(inicioPromo) &&
-  Boolean(fimPromo) &&
-  calcDiasPromoInclusivo(inicioPromo, fimPromo) !== null;
+    !analisePromo &&
+    promoStatus === "ENCERRADA" &&
+    Boolean(inicioPromo) &&
+    Boolean(fimPromo) &&
+    calcDiasPromoInclusivo(inicioPromo, fimPromo) !== null;
 
 
   const entradaEntries = useMemo(() => {
@@ -145,7 +147,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
     );
   }, [entrada]);
 
-  
+
 
   async function avaliarResultado() {
     if (!item) return;
@@ -376,26 +378,29 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                         : "—"}
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={() => setDreAberto(true)}
-                      style={{
-                        marginTop: "6px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        borderRadius: "10px",
-                        border: "1px solid #d1d5db",
-                        padding: "4px 10px",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        backgroundColor: "#ffffff",
-                        color: "#4b5563",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Ver detalhes ▸
-                    </button>
+                    {!modoSelecao && (
+                      <button
+                        type="button"
+                        onClick={() => setDreAberto(true)}
+                        style={{
+                          marginTop: "6px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          borderRadius: "10px",
+                          border: "1px solid #d1d5db",
+                          padding: "4px 10px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          backgroundColor: "#ffffff",
+                          color: "#4b5563",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver detalhes ▸
+                      </button>
+                    )}
+
                   </div>
 
                   <div
@@ -487,50 +492,55 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload }: 
                       </p>
                     )}
 
-                    {(() => {
-                      const disabled = promoStatus !== "EM_ANDAMENTO";
+                    {!modoSelecao && (
+                      <>
+                        {(() => {
+                          const disabled = promoStatus !== "EM_ANDAMENTO";
 
-                      const motivo =
-                        promoStatus === "ENCERRADA"
-                          ? "Promoção encerrada"
-                          : promoStatus === "NAO_INICIOU"
-                            ? "Promoção ainda não iniciou"
-                            : promoStatus === "SEM_DATAS"
-                              ? "Promoção sem datas"
-                              : "Indisponível";
+                          const motivo =
+                            promoStatus === "ENCERRADA"
+                              ? "Promoção encerrada"
+                              : promoStatus === "NAO_INICIOU"
+                                ? "Promoção ainda não iniciou"
+                                : promoStatus === "SEM_DATAS"
+                                  ? "Promoção sem datas"
+                                  : "Indisponível";
 
-                      return (
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          title={disabled ? "Acompanhamento disponível apenas durante o período da promoção." : ""}
-                          onClick={() => {
-                            if (disabled) return;
+                          return (
+                            <button
+                              type="button"
+                              disabled={disabled}
+                              title={disabled ? "Acompanhamento disponível apenas durante o período da promoção." : ""}
+                              onClick={() => {
+                                if (disabled) return;
 
-                            setMonData(getAcompDateISO(inicioPromo));
-                            setMonVendido("");
-                            setMonEstoque("");
-                            setAcompAberto(true);
-                          }}
-                          style={{
-                            marginTop: "6px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            borderRadius: "10px",
-                            border: "1px solid #d1d5db",
-                            padding: "4px 10px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
-                            color: disabled ? "#9ca3af" : "#4b5563",
-                            cursor: disabled ? "default" : "pointer",
-                          }}
-                        >
-                          {disabled ? `Acompanhamento: ${motivo}` : "Acompanhar promoção ▸"}
-                        </button>
-                      );
-                    })()}
+                                setMonData(getAcompDateISO(inicioPromo));
+                                setMonVendido("");
+                                setMonEstoque("");
+                                setAcompAberto(true);
+                              }}
+                              style={{
+                                marginTop: "6px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                borderRadius: "10px",
+                                border: "1px solid #d1d5db",
+                                padding: "4px 10px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
+                                color: disabled ? "#9ca3af" : "#4b5563",
+                                cursor: disabled ? "default" : "pointer",
+                              }}
+                            >
+                              {disabled ? `Acompanhamento: ${motivo}` : "Acompanhar promoção ▸"}
+                            </button>
+                          );
+                        })()}
+                      </>
+                    )}
+
 
                   </div>
                 </div>

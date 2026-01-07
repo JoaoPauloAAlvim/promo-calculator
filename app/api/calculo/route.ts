@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
+import { requireAuth } from "@/lib/authGuard";
 export const runtime = "nodejs";
 
 
@@ -7,6 +8,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    const denied = requireAuth();
+    if (denied) return denied;
+
     const body = await req.json();
     let {
       produto,
@@ -209,16 +213,16 @@ export async function POST(req: Request) {
     const resultado = { entrada, metas };
 
     await db("historico").insert({
-  resultado: JSON.stringify(resultado),
+      resultado: JSON.stringify(resultado),
 
-  produto_nome_txt: produto,
-  marca_txt: marca || "",
-  categoria_txt: categoria || "",
-  comprador_txt: comprador || "",
-  data_inicio_promocao: dataInicio ? String(dataInicio) : null,
-  data_fim_promocao: dataFim ? String(dataFim) : null,
-  situacao_analise: null,
-});
+      produto_nome_txt: produto,
+      marca_txt: marca || "",
+      categoria_txt: categoria || "",
+      comprador_txt: comprador || "",
+      data_inicio_promocao: dataInicio ? String(dataInicio) : null,
+      data_fim_promocao: dataFim ? String(dataFim) : null,
+      situacao_analise: null,
+    });
 
     return NextResponse.json(resultado);
   } catch (err) {

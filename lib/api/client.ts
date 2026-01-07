@@ -23,6 +23,12 @@ type ApiOptions = RequestInit & {
 export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> {
   const res = await fetch(url, options);
 
+  if (res.status === 401) {
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+  }
+
   let payload: any = null;
   const ct = res.headers.get("content-type") || "";
 
@@ -45,3 +51,4 @@ export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> 
 
   return payload as T;
 }
+

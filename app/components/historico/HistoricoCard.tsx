@@ -181,9 +181,12 @@ export function HistoricoCard({
         </span>
       </div>
 
-      <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
-        ▸
-      </span>
+      {!modoSelecao && (
+        <span className="mt-1 ml-auto text-slate-400 text-sm transition-transform group-hover:translate-x-0.5">
+          ▸
+        </span>
+      )}
+
     </button>
   );
 }

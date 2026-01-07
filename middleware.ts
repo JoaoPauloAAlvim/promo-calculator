@@ -6,6 +6,10 @@ const PROTECTED_PATHS = ["/", "/historico"];
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  if (pathname.startsWith("/_next") || pathname === "/icon.png") {
+    return NextResponse.next();
+  }
+
   const isProtected = PROTECTED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(path + "/")
   );
@@ -31,5 +35,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/historico", "/login"],
+  matcher: ["/", "/login", "/historico/:path*"],
 };

@@ -34,10 +34,11 @@ export async function POST(req: Request) {
     res.cookies.set("simulador_auth", "ok", {
       httpOnly: true,
       path: "/",
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: lembrar ? 60 * 60 * 24 * 7 : 60 * 60 * 1,
     });
+
 
     return res;
   } catch (error) {

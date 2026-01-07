@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
+import { requireAuth } from "@/lib/authGuard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,9 @@ function clean(s?: string | null) {
 
 export async function GET(req: Request) {
   try {
+    const denied = requireAuth();
+    if (denied) return denied;
+
     const { searchParams } = new URL(req.url);
 
     const produto = clean(searchParams.get("produto"));

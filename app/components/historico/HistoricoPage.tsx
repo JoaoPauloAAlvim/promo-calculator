@@ -540,13 +540,13 @@ export default function HistoricoPage() {
                         </div>
                     </div>
 
-                    <br/>
+                    <br />
                     {!erro && itens.length === 0 && (
                         <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
                     )}
 
                     {!erro && itens.length > 0 && (
-                        <>                             
+                        <>
                             <HistoricoGrid
                                 itens={itens}
                                 excluindoId={excluindoId}
@@ -580,9 +580,11 @@ export default function HistoricoPage() {
                     open={Boolean(selecionado)}
                     item={selecionado}
                     onClose={() => setSelecionado(null)}
-                    onUpdateItem={handleUpdateItem}
-                    onReload={handleReload}
+                    onUpdateItem={(novo) => setSelecionado(novo)}
+                    onReload={() => setReloadToken((t) => t + 1)}
+                    modoSelecao={modoSelecao}
                 />
+
 
 
             )}
@@ -642,7 +644,6 @@ export default function HistoricoPage() {
                         setBulkDeleting(true);
                         await deleteHistoricoMany(ids);
 
-                        // se apagar tudo da página atual e você estiver em page > 1, volta uma página
                         if (page > 1 && ids.length >= itens.length) {
                             setPage((p) => Math.max(1, p - 1));
                         }

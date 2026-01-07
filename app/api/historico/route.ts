@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
+import { requireAuth } from "@/lib/authGuard";
+
 export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +9,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const denied = requireAuth();
+    if (denied) return denied;
+
+
     const { searchParams } = new URL(req.url);
 
     const produto = searchParams.get("produto")?.trim();
@@ -190,6 +196,9 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const denied = requireAuth();
+    if (denied) return denied;
+
     const body = await req.json().catch(() => null);
 
     const ids = Array.isArray(body?.ids) ? body.ids.map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n) && n > 0) : [];
