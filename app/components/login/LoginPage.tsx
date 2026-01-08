@@ -17,15 +17,19 @@ export default function LoginPage() {
             if (sessionStorage.getItem("simulador_session_expired") === "1") return true;
 
             const had = localStorage.getItem("simulador_had_session") === "1";
-            const from = sp.get("from");
+            const from = (sp.get("from") || "").trim();
             const alreadyShown = sessionStorage.getItem("simulador_expired_shown") === "1";
-            if (had && from && !alreadyShown) return true;
+
+            const shouldShowByFrom = from !== "" && from !== "/" && from !== "/login";
+
+            if (had && shouldShowByFrom && !alreadyShown) return true;
 
             return false;
         } catch {
             return false;
         }
     });
+
 
 
     useEffect(() => {
