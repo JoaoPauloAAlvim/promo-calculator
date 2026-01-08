@@ -345,6 +345,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                         categoria: String(entrada.categoria ?? ""),
                         comprador: String(entrada.comprador ?? ""),
                         marca: String(entrada.marca ?? ""),
+                        tipoPromocao: String(entrada.tipo_promocao ?? ""),
                         dataInicio: String(entrada.data_inicio_promocao ?? ""),
                         dataFim: String(entrada.data_fim_promocao ?? ""),
                         A: String(entrada.A ?? ""),

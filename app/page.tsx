@@ -80,6 +80,7 @@ export default function Home() {
         categoria: draft.categoria ?? prev.categoria,
         comprador: draft.comprador ?? prev.comprador,
         marca: draft.marca ?? prev.marca,
+        tipoPromocao: draft.tipoPromocao ?? prev.tipoPromocao,
         dataInicio: draft.dataInicio ?? prev.dataInicio,
         dataFim: draft.dataFim ?? prev.dataFim,
         A: draft.A ?? prev.A,
