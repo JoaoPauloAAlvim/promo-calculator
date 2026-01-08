@@ -6,6 +6,9 @@ import { parseISODateLocal, formatDateBR, calcDiasPromoInclusivo } from "@/lib/d
 import { formatBR } from "@/lib/format";
 import { getPromoStatus } from "@/lib/promoStatus";
 import { useModalA11y } from "@/app/hooks/useModalA11y";
+import { ActionModal } from "@/app/components/ui/ActionModal";
+import { patchMonitoramento } from "@/lib/api/historico";
+
 
 type Props = {
   open: boolean;
@@ -37,6 +40,18 @@ export function AcompanhamentoModal({
   onReload,
 }: Props) {
   const [saving, setSaving] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [feedbackVariant, setFeedbackVariant] = useState<"success" | "error" | "info">("info");
+
+  function showFeedback(opts: { title: string; message: string; variant?: "success" | "error" | "info" }) {
+    setFeedbackTitle(opts.title);
+    setFeedbackMsg(opts.message);
+    setFeedbackVariant(opts.variant || "info");
+    setFeedbackOpen(true);
+  }
+
 
   const vendidoRef = useRef<HTMLInputElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -123,15 +138,29 @@ export function AcompanhamentoModal({
     if (!item) return;
 
     if (!monData || !/^\d{4}-\d{2}-\d{2}$/.test(monData)) {
-      alert("Data de apuração inválida.");
+      showFeedback({
+        title: "Data inválida",
+        message: "Data de apuração inválida (use AAAA-MM-DD).",
+        variant: "error",
+      });
       return;
     }
+
     if (!Number.isFinite(vendidoNum) || vendidoNum < 0) {
-      alert("Informe um vendido acumulado válido (>= 0).");
+      showFeedback({
+        title: "Vendido inválido",
+        message: "Informe um vendido acumulado válido (>= 0).",
+        variant: "error",
+      });
       return;
     }
+
     if (!Number.isFinite(estoqueNum) || estoqueNum < 0) {
-      alert("Informe um estoque válido (>= 0).");
+      showFeedback({
+        title: "Estoque inválido",
+        message: "Informe um estoque válido (>= 0).",
+        variant: "error",
+      });
       return;
     }
 
@@ -140,42 +169,46 @@ export function AcompanhamentoModal({
     const dFim = parseISODateLocal(fim);
 
     if (!dApur || !dIni || !dFim || dApur < dIni || dApur > dFim) {
-      alert("A data de apuração precisa estar dentro do período da promoção.");
+      showFeedback({
+        title: "Data fora do período",
+        message: "A data de apuração precisa estar dentro do período da promoção.",
+        variant: "error",
+      });
       return;
     }
 
     try {
       setSaving(true);
 
-      const res = await fetch(`/api/historico/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monitoramento: {
-            data: monData,
-            vendido: Math.floor(vendidoNum),
-            estoque: Math.floor(estoqueNum),
-          },
-        }),
+      const resp = await patchMonitoramento(item.id, {
+        data: monData,
+        vendido: Math.floor(vendidoNum),
+        estoque: Math.floor(estoqueNum),
       });
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        alert(data?.error || "Erro ao salvar acompanhamento.");
-        return;
-      }
-
-      if (data?.resultado) {
-        onItemUpdated({ ...item, resultado: data.resultado });
+      if (resp?.resultado) {
+        onItemUpdated({ ...item, resultado: resp.resultado });
       }
 
       if (onReload) onReload();
 
-      alert("Acompanhamento salvo!");
+      showFeedback({
+        title: "Acompanhamento salvo",
+        message: "Registro salvo com sucesso.",
+        variant: "success",
+      });
+    } catch (e: any) {
+      console.error(e);
+      showFeedback({
+        title: "Erro ao salvar",
+        message: e?.message || "Erro ao salvar acompanhamento.",
+        variant: "error",
+      });
     } finally {
       setSaving(false);
     }
   }
+
 
   return (
     <div
@@ -426,6 +459,15 @@ export function AcompanhamentoModal({
           </div>
         </div>
       </div>
+      <ActionModal
+        open={feedbackOpen}
+        title={feedbackTitle}
+        message={feedbackMsg}
+        variant={feedbackVariant}
+        onClose={() => setFeedbackOpen(false)}
+        autoCloseMs={feedbackVariant === "success" ? 1500 : undefined}
+      />
+
     </div>
   );
 }

@@ -20,13 +20,26 @@ type ApiOptions = RequestInit & {
   allowEmptyJson?: boolean;
 };
 
+function isAuthEndpoint(url: string) {
+  return (
+    url.startsWith("/api/login") ||
+    url.startsWith("/api/logout")
+  );
+}
+
 export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> {
   const res = await fetch(url, options);
 
-  if (res.status === 401) {
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+  if (res.status === 401 && typeof window !== "undefined" && !isAuthEndpoint(url)) {
+    try {
+      sessionStorage.setItem("simulador_session_expired", "1");
+    } catch {}
+
+    if (!window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
+
+    return new Promise<T>(() => {});
   }
 
   let payload: any = null;
@@ -51,4 +64,5 @@ export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> 
 
   return payload as T;
 }
+
 

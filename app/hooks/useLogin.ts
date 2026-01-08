@@ -1,6 +1,7 @@
 "use client";
 
 import { login } from "@/lib/api/auth";
+import { ApiException } from "@/lib/api/client";
 import { useState } from "react";
 
 type UseLoginArgs = {
@@ -15,27 +16,37 @@ export function useLogin({ onSuccess }: UseLoginArgs) {
   const [erro, setErro] = useState<string | null>(null);
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setErro(null);
+  e.preventDefault();
+  setErro(null);
 
-    if (!email.trim() || !senha.trim()) {
-      setErro("Informe e-mail e senha.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await login({ email, senha, lembrar });
-      onSuccess();
-    } catch (err: any) {
-      console.error(err);
-      setErro(err?.message || "Erro inesperado ao tentar fazer login. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-
+  if (!email.trim() || !senha.trim()) {
+    setErro("Informe e-mail e senha.");
+    return;
   }
+
+  setLoading(true);
+
+  let navegou = false;
+
+  try {
+    await login({ email, senha, lembrar });
+
+    // ✅ mantém spinner até a rota / montar (não seta loading false)
+    navegou = true;
+    onSuccess();
+  } catch (err: any) {
+    console.error(err);
+
+    if (err instanceof ApiException) {
+      setErro(err.message);
+    } else {
+      setErro("Erro inesperado ao tentar fazer login. Tente novamente.");
+    }
+  } finally {
+    if (!navegou) setLoading(false);
+  }
+}
+
 
   function fecharErro() {
     setErro(null);

@@ -1,5 +1,4 @@
 import { api } from "./client";
-import type { Resultado } from "@/lib/types";
 
 export type CalculoPayload = {
   produto: string;
@@ -7,17 +6,22 @@ export type CalculoPayload = {
   comprador: string;
   marca: string;
   dataInicio: string;
-  dataFim: string;    
-  A: number | string;
-  B: number | string;
-  C: number | string;
-  D: number | string;
-  E: number | string;
-  F: number | string;
+  dataFim: string;
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  E: number;
+  F: number;
 };
 
-export async function calcularPromocao(payload: CalculoPayload) {
-  return api<Resultado>("/api/calculo", {
+export type CalculoResponse = {
+  entrada: Record<string, any>;
+  metas: Record<string, any>;
+};
+
+export async function postCalculo(payload: CalculoPayload) {
+  return api<CalculoResponse>("/api/calculo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

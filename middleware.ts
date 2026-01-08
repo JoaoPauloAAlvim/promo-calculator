@@ -21,8 +21,10 @@ export function middleware(req: NextRequest) {
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("from", pathname);
+    loginUrl.searchParams.set("reason", "expired");
     return NextResponse.redirect(loginUrl);
   }
+
 
   if (isLogin && hasAuth) {
     const homeUrl = req.nextUrl.clone();

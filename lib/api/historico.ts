@@ -8,7 +8,7 @@ export type HistoricoGetParams = {
   comprador?: string;
   statusPromo?: string;
   statusAnalise?: string;
-  sort?: HistoricoSort;   
+  sort?: HistoricoSort;
   page: number;
   pageSize: number;
 };
@@ -70,8 +70,8 @@ export async function patchVendaReal(id: number, payload: {
 }
 
 export async function patchMonitoramento(id: number, payload: {
-  data: string;    
-  vendido: number; 
+  data: string;
+  vendido: number;
   estoque: number;
 }) {
   return api<{ ok: boolean; resultado?: any }>(`/api/historico/${id}`, {
@@ -96,7 +96,7 @@ export type HistoricoOptionsResponse = {
   compradores: string[];
 };
 
-export async function getHistoricoOptions(params: HistoricoOptionsParams) {
+export async function getHistoricoOptions(params: HistoricoOptionsParams, signal?: AbortSignal) {
   const sp = new URLSearchParams();
   if (params.produto) sp.set("produto", params.produto);
   if (params.marca) sp.set("marca", params.marca);
@@ -107,8 +107,10 @@ export async function getHistoricoOptions(params: HistoricoOptionsParams) {
 
   return api<HistoricoOptionsResponse>(`/api/historico/options?${sp.toString()}`, {
     method: "GET",
+    signal,
   });
 }
+
 
 export async function getHistoricoById(id: number) {
   return api<{ id: number; dataHora: string; resultado: any }>(`/api/historico/${id}`, {

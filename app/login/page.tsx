@@ -1,14 +1,53 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "../components/AppHeader";
 
 import { useLogin } from "@/app/hooks/useLogin";
 import { LoginForm } from "../components/login/LoginForm";
 import { LoginErrorModal } from "../components/login/LoginErrorModal";
+import { useEffect, useState } from "react";
+import { ActionModal } from "../components/ui/ActionModal";
 
 export default function LoginPage() {
   const router = useRouter();
+  const sp = useSearchParams();
+
+  const [sessionModalOpen, setSessionModalOpen] = useState(() => {
+    try {
+      const byStorage = sessionStorage.getItem("simulador_session_expired") === "1";
+      return byStorage;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (sp.get("reason") === "expired") {
+      setSessionModalOpen(true);
+    }
+  }, [sp]);
+
+  useEffect(() => {
+    if (!sessionModalOpen) return;
+
+    try {
+      sessionStorage.removeItem("simulador_session_expired");
+    } catch { }
+
+    const from = sp.get("from");
+    const url = from ? `/login?from=${encodeURIComponent(from)}` : "/login";
+    router.replace(url);
+  }, [sessionModalOpen]);
+
+
+  useEffect(() => {
+    if (!sessionModalOpen) return;
+    try {
+      sessionStorage.removeItem("simulador_session_expired");
+    } catch { }
+  }, [sessionModalOpen]);
+
 
   const login = useLogin({
     onSuccess: () => router.push("/"),
@@ -39,6 +78,13 @@ export default function LoginPage() {
         setLembrar={login.setLembrar}
         loading={login.loading}
         onSubmit={login.handleLogin}
+      />
+      <ActionModal
+        open={sessionModalOpen}
+        title="Sessão expirada"
+        message="Sua sessão foi encerrada. Faça login novamente para continuar."
+        variant="info"
+        onClose={() => setSessionModalOpen(false)}
       />
 
       <LoginErrorModal erro={login.erro} onClose={login.fecharErro} />

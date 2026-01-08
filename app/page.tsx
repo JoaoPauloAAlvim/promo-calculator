@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { Spinner } from "./components/Spinner";
@@ -15,8 +14,9 @@ import { ResultModal } from "@/app/components/home/ResultModal";
 import { ImportModal } from "@/app/components/home/ImportModal";
 import { ErrorModal } from "@/app/components/home/ErrorModal";
 import { FormState, ImportRow, Resultado, ResultadoLote } from "@/lib/types";
-import { calcularPromocao } from "@/lib/api/calculo";
+import { postCalculo } from "@/lib/api/calculo";
 import { HomeHeaderActions } from "./components/home/HomeHeaderActions";
+import { api } from "@/lib/api/client";
 
 const initialForm: FormState = {
   produto: "",
@@ -68,6 +68,10 @@ export default function Home() {
 
   ];
 
+  async function ensureAuth() {
+  await api<{ ok: true }>("/api/auth/check", { method: "GET" });
+}
+
   function setField(id: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [id]: value }));
   }
@@ -85,6 +89,7 @@ export default function Home() {
   }
 
   async function calcular() {
+    await ensureAuth()
     setLoading(true);
     setError(null);
     setResult(null);
@@ -160,7 +165,7 @@ export default function Home() {
         return;
       }
 
-      const data = await calcularPromocao({
+      const data = await postCalculo({
         produto,
         categoria,
         comprador,
@@ -174,6 +179,9 @@ export default function Home() {
         E,
         F,
       });
+
+      setResult(data);
+
 
       setResult(data as Resultado);
 
@@ -197,7 +205,8 @@ export default function Home() {
     setError(null);
   }
 
-  function abrirModalImportacao() {
+  async function abrirModalImportacao() {
+    await ensureAuth()
     setShowImportModal(true);
     setImportFileName(null);
     setImportError(null);
@@ -211,7 +220,8 @@ export default function Home() {
     setImportResults([]);
   }
 
-  function gerarPlanilhaModelo() {
+  async function gerarPlanilhaModelo() {
+    await ensureAuth()
     const header = [
       "Produto",
       "Categoria",
@@ -382,7 +392,7 @@ export default function Home() {
         const C = String(diasPromo);
 
         try {
-          const data = await calcularPromocao({
+          const data = await postCalculo({
             produto,
             categoria,
             comprador,

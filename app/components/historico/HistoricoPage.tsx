@@ -16,11 +16,14 @@ import { HistoricoModal } from "@/app/components/historico/HistoricoModal";
 import { ActionModal } from "@/app/components/ui/ActionModal";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { logout } from "@/lib/api/auth";
-import { deleteHistorico, deleteHistoricoMany } from "@/lib/api/historico";
-
+import { deleteHistorico, deleteHistoricoMany, getHistoricoOptions } from "@/lib/api/historico";
+import { api } from "@/lib/api/client";
 
 export default function HistoricoPage() {
     const router = useRouter();
+    async function ensureAuth() {
+        await api<{ ok: true }>("/api/auth/check", { method: "GET" });
+    }
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -234,21 +237,17 @@ export default function HistoricoPage() {
 
         (async () => {
             try {
-                const params = new URLSearchParams();
-                if (filtroProduto) params.set("produto", filtroProduto);
-                if (filtroStatusPromo) params.set("statusPromo", filtroStatusPromo);
-                if (filtroStatus) params.set("statusAnalise", filtroStatus);
-
-                if (filtroMarca) params.set("marca", filtroMarca);
-                if (filtroCategoria) params.set("categoria", filtroCategoria);
-                if (filtroComprador) params.set("comprador", filtroComprador);
-
-                const res = await fetch(`/api/historico/options?${params.toString()}`, {
-                    signal: controller.signal,
-                });
-
-                const data = await res.json().catch(() => null);
-                if (!res.ok) return;
+                const data = await getHistoricoOptions(
+                    {
+                        produto: filtroProduto || undefined,
+                        marca: filtroMarca || undefined,
+                        categoria: filtroCategoria || undefined,
+                        comprador: filtroComprador || undefined,
+                        statusPromo: filtroStatusPromo || undefined,
+                        statusAnalise: filtroStatus || undefined,
+                    },
+                    controller.signal
+                );
 
                 setOpcoesMarca(Array.isArray(data?.marcas) ? data.marcas : []);
                 setOpcoesCategoria(Array.isArray(data?.categorias) ? data.categorias : []);
@@ -268,6 +267,7 @@ export default function HistoricoPage() {
         filtroCategoria,
         filtroComprador,
     ]);
+
 
 
     useEffect(() => {
@@ -358,7 +358,9 @@ export default function HistoricoPage() {
     }
 
 
-    function abrirModal(item: HistoricoItem) {
+    async function abrirModal(item: HistoricoItem) {
+        await ensureAuth()
+
         setSelecionado(item);
     }
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
