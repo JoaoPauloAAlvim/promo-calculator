@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { FormState, Resultado } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
-import { calcularPromocao } from "@/lib/api/calculo";
+import { postCalculo } from "@/lib/api/calculo";
 
 const parseBR = (valor: string): number => {
   if (!valor) return NaN;
@@ -80,7 +80,7 @@ export function usePromoCalculator(initialForm: FormState) {
         return;
       }
 
-      const data = await calcularPromocao({
+      const data = await postCalculo({
         produto,
         categoria,
         comprador,

@@ -4,8 +4,8 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import type { ImportRow, Resultado, ResultadoLote } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
-import { toNumericString } from "@/lib/format";
-import { calcularPromocao } from "@/lib/api/calculo";
+import { toNumberBR, toNumericString } from "@/lib/format";
+import { postCalculo } from "@/lib/api/calculo";
 
 export function usePromoImport() {
   const [open, setOpen] = useState(false);
@@ -173,19 +173,19 @@ export function usePromoImport() {
         const C = String(diasPromo);
 
         try {
-          const payload = await calcularPromocao({
+          const payload = await postCalculo({
             produto,
             categoria,
             comprador,
             marca,
             dataInicio,
             dataFim,
-            A,
-            B,
-            C,
-            D,
-            E,
-            F,
+            A:toNumberBR(A),
+            B:toNumberBR(B),
+            C:toNumberBR(C),
+            D:toNumberBR(D),
+            E:toNumberBR(E),
+            F:toNumberBR(F),
           });
 
           resultadosTemp.push({
