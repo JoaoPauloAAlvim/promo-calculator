@@ -23,7 +23,7 @@ export function usePromoCalculator(initialForm: FormState) {
     setResult(null);
 
     try {
-      const { produto, categoria, comprador, marca, dataInicio, dataFim } = form;
+      const { produto, categoria,tipoPromocao, comprador, marca, dataInicio, dataFim } = form;
 
       if (!produto.trim()) {
         setError("Informe o nome do produto.");
@@ -85,6 +85,7 @@ export function usePromoCalculator(initialForm: FormState) {
         categoria,
         comprador,
         marca,
+        tipoPromocao,
         dataInicio,
         dataFim,
         A,
