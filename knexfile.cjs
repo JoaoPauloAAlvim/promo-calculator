@@ -1,25 +1,24 @@
-require("dotenv").config({ path: ".env.local" });
+require("dotenv/config");
 
-const isProd = process.env.NODE_ENV === "production";
-
-const connectionString =
-  isProd
-    ? process.env.DATABASE_URL
-    : (process.env.DATABASE_URL_TEST || process.env.DATABASE_URL);
-
-if (!connectionString) {
-  throw new Error(
-    isProd
-      ? "DATABASE_URL não configurada."
-      : "DATABASE_URL_TEST (ou DATABASE_URL) não configurada para dev/test."
-  );
-}
+const DEV_URL = (process.env.DATABASE_URL_TEST || process.env.DATABASE_URL || "").trim();
+const PROD_URL = (process.env.DATABASE_URL || "").trim();
 
 module.exports = {
-  client: "pg",
-  connection: {
-    connectionString,
-    ssl: { rejectUnauthorized: false },
+  development: {
+    client: "pg",
+    connection: {
+      connectionString: DEV_URL,
+      ssl: { rejectUnauthorized: false },
+    },
+    migrations: { directory: "./migrations" },
   },
-  migrations: { directory: "./migrations" },
+
+  production: {
+    client: "pg",
+    connection: {
+      connectionString: PROD_URL,
+      ssl: { rejectUnauthorized: false },
+    },
+    migrations: { directory: "./migrations" },
+  },
 };

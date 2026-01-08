@@ -6,8 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:migrate": "knex migrate:latest --knexfile knexfile.cjs",
-    "predev": "npm run db:migrate"
+    "db:migrate:dev": "knex --knexfile knexfile.cjs migrate:latest --env development",
+    "db:rollback:dev": "knex --knexfile knexfile.cjs migrate:rollback --env development",
+    "db:migrate:prod": "knex --knexfile knexfile.cjs migrate:latest --env production",
+    "predev": "npm run db:migrate:dev"
   },
   "dependencies": {
     "autoprefixer": "latest",

@@ -6,6 +6,7 @@ export type HistoricoGetParams = {
   marca?: string;
   categoria?: string;
   comprador?: string;
+  tipoPromocao?: string;
   statusPromo?: string;
   statusAnalise?: string;
   sort?: HistoricoSort;
@@ -35,6 +36,7 @@ export async function getHistorico(params: HistoricoGetParams) {
   if (params.marca) sp.set("marca", params.marca);
   if (params.categoria) sp.set("categoria", params.categoria);
   if (params.comprador) sp.set("comprador", params.comprador);
+  if (params.tipoPromocao) sp.set("tipoPromocao", params.tipoPromocao);
   if (params.statusPromo) sp.set("statusPromo", params.statusPromo);
   if (params.statusAnalise) sp.set("statusAnalise", params.statusAnalise);
   if (params.sort) sp.set("sort", params.sort);
@@ -86,6 +88,7 @@ export type HistoricoOptionsParams = {
   marca?: string;
   categoria?: string;
   comprador?: string;
+  tipoPromocao?:string;
   statusPromo?: string;
   statusAnalise?: string;
 };
@@ -101,6 +104,7 @@ export async function getHistoricoOptions(params: HistoricoOptionsParams, signal
   if (params.produto) sp.set("produto", params.produto);
   if (params.marca) sp.set("marca", params.marca);
   if (params.categoria) sp.set("categoria", params.categoria);
+  if (params.tipoPromocao) sp.set("tipoPromocao", params.tipoPromocao);
   if (params.comprador) sp.set("comprador", params.comprador);
   if (params.statusPromo) sp.set("statusPromo", params.statusPromo);
   if (params.statusAnalise) sp.set("statusAnalise", params.statusAnalise);

@@ -34,6 +34,7 @@ export function usePromoImport() {
       "Categoria",
       "Comprador",
       "Marca",
+      "TipoPromocao",
       "PeriodoHistorico",
       "LucroTotalHistorico",
       "DataInicioPromocao",
@@ -48,6 +49,7 @@ export function usePromoImport() {
       "HIGIENE ORAL",
       "FLÁVIA",
       "COLGATE",
+      "INTERNA", 
       30,
       12450,
       "10/01/2026",
@@ -87,8 +89,6 @@ export function usePromoImport() {
     return null;
   };
 
-
-
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     setResults([]);
@@ -119,12 +119,16 @@ export function usePromoImport() {
 
       for (let i = 0; i < json.length; i++) {
         const linha = i + 2;
-        const row = json[i];
+        const row: any = json[i];
 
         const produto = String(row.Produto || "").trim();
         const categoria = String(row.Categoria || "").trim();
         const comprador = String(row.Comprador || "").trim();
         const marca = String(row.Marca || "").trim();
+
+        const tipoRaw = String(row.TipoPromocao || "").trim().toUpperCase();
+        const tipoPromocao =
+          tipoRaw === "SCANNTECH" || tipoRaw === "INTERNA" ? tipoRaw : "INTERNA";
 
         if (!produto) {
           resultadosTemp.push({ linha, produto: "", ok: false, erro: "Produto em branco." });
@@ -178,25 +182,20 @@ export function usePromoImport() {
             categoria,
             comprador,
             marca,
+            tipoPromocao, 
             dataInicio,
             dataFim,
-            A:toNumberBR(A),
-            B:toNumberBR(B),
-            C:toNumberBR(C),
-            D:toNumberBR(D),
-            E:toNumberBR(E),
-            F:toNumberBR(F),
+            A: toNumberBR(A),
+            B: toNumberBR(B),
+            C: toNumberBR(C),
+            D: toNumberBR(D),
+            E: toNumberBR(E),
+            F: toNumberBR(F),
           });
 
-          resultadosTemp.push({
-            linha,
-            produto,
-            ok: true,
-            resultado: payload as Resultado,
-          });
+          resultadosTemp.push({ linha, produto, ok: true, resultado: payload as Resultado });
         } catch (err: any) {
           console.error(err);
-
           resultadosTemp.push({
             linha,
             produto,
@@ -204,7 +203,6 @@ export function usePromoImport() {
             erro: err?.message || "Erro ao calcular para esta linha.",
           });
         }
-
       }
 
       setResults(resultadosTemp);

@@ -122,6 +122,8 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
 
   const nomeProdutoSelecionado =
     (entrada as any)?.produto_nome ?? (entrada as any)?.produto ?? "";
+  const tipoPromo = (entrada as any)?.tipo_promocao ?? "";
+
 
   const inicioPromo = (entrada as any)?.data_inicio_promocao as string | undefined;
   const fimPromo = (entrada as any)?.data_fim_promocao as string | undefined;
@@ -153,6 +155,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
         chave !== "categoria" &&
         chave !== "comprador" &&
         chave !== "marca" &&
+        chave !== "tipo_promocao" &&
         chave !== "data_inicio_promocao" &&
         chave !== "data_fim_promocao" &&
         chave !== "C" &&
@@ -330,7 +333,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
               <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
                 {nomeProdutoSelecionado || "Produto não informado"}
               </p>
-              {!modoSelecao && (
+              {!modoSelecao && !loadingDetalhes && (
                 <button
                   type="button"
                   onClick={() => {
@@ -621,6 +624,23 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                       </p>
                     </div>
 
+                    <div
+                      style={{
+                        borderRadius: "10px",
+                        border: "1px solid #e5e7eb",
+                        padding: "6px 8px",
+                        backgroundColor: "#f9fafb",
+                      }}
+                    >
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
+                        Tipo da promoção
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                        {tipoPromo || "—"}
+                      </p>
+                    </div>
+
+
                     <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                       <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>
                         Categoria do produto
@@ -647,7 +667,6 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                         {(entrada as any).marca || "—"}
                       </p>
                     </div>
-
                     {entradaEntries.map(([chave, valor]) => {
                       const label = (entradaLabels as any)[chave] ?? chave.replace(/_/g, " ");
 

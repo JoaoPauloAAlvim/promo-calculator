@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       categoria,
       comprador,
       marca,
+      tipoPromocao,
       dataInicio,
       dataFim,
       A,
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     comprador = typeof comprador === "string" ? comprador.trim() : "";
     marca = typeof marca === "string" ? marca.trim() : "";
+    tipoPromocao = typeof tipoPromocao === "string" ? tipoPromocao.trim().toUpperCase() : "";
 
     if (!produto) {
       return NextResponse.json(
@@ -45,6 +47,14 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    if (!["INTERNA", "SCANNTECH"].includes(tipoPromocao)) {
+      return NextResponse.json(
+        { error: "Informe o tipo da promoção (INTERNA ou SCANNTECH)." },
+        { status: 400 }
+      );
+    }
+
 
     const toNumber = (v: any) =>
       typeof v === "number"
@@ -186,6 +196,7 @@ export async function POST(req: Request) {
       categoria: categoria || "",
       comprador: comprador || "",
       marca: marca || "",
+      tipo_promocao: tipoPromocao,
       data_inicio_promocao: typeof dataInicio === "string" ? dataInicio : "",
       data_fim_promocao: typeof dataFim === "string" ? dataFim : "",
       A,
@@ -214,15 +225,15 @@ export async function POST(req: Request) {
 
     await db("historico").insert({
       resultado: JSON.stringify(resultado),
-
       produto_nome_txt: produto,
-      marca_txt: marca || "",
-      categoria_txt: categoria || "",
-      comprador_txt: comprador || "",
-      data_inicio_promocao: dataInicio ? String(dataInicio) : null,
-      data_fim_promocao: dataFim ? String(dataFim) : null,
-      situacao_analise: null,
+      categoria_txt: categoria || null,
+      comprador_txt: comprador || null,
+      marca_txt: marca || null,
+      data_inicio_promocao: dataInicio || null,
+      data_fim_promocao: dataFim || null,
+      tipo_promocao_txt: tipoPromocao,
     });
+
 
     return NextResponse.json(resultado);
   } catch (err) {

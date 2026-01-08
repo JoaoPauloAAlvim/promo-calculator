@@ -115,6 +115,29 @@ export function PromoForm({ form, campos, loading, onChange, onCalculate }: Prop
               }}
             />
           </div>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
+              Tipo da promoção
+            </label>
+
+            <select
+              value={form.tipoPromocao}
+              onChange={(e) => onChange("tipoPromocao", e.target.value)}
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "12px",
+                padding: "8px 12px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "#f9fafb",
+              }}
+            >
+              <option value="">Selecione</option>
+              <option value="INTERNA">INTERNA</option>
+              <option value="SCANNTECH">SCANNTECH</option>
+            </select>
+          </div>
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>

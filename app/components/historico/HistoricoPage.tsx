@@ -43,6 +43,7 @@ export default function HistoricoPage() {
         marca: string;
         categoria: string;
         comprador: string;
+        tipoPromocao:string;
         statusPromo: string;
         statusAnalise: string;
         sort: string;
@@ -54,6 +55,7 @@ export default function HistoricoPage() {
         if (state.marca) p.set("marca", state.marca);
         if (state.categoria) p.set("categoria", state.categoria);
         if (state.comprador) p.set("comprador", state.comprador);
+        if(state.tipoPromocao)p.set("tipoPromocao",state.tipoPromocao)
         if (state.statusPromo) p.set("statusPromo", state.statusPromo);
         if (state.statusAnalise) p.set("statusAnalise", state.statusAnalise);
 
@@ -67,6 +69,7 @@ export default function HistoricoPage() {
     const initialMarca = getParam("marca");
     const initialCategoria = getParam("categoria");
     const initialComprador = getParam("comprador");
+    const initialTipoPromo = getParam ("tipoPromocao")
     const initialStatusPromo = getParam("statusPromo");
     const initialStatusAnalise = getParam("statusAnalise");
     const initialPage = getParamNumber("page", 1);
@@ -86,6 +89,7 @@ export default function HistoricoPage() {
     const [filtroMarca, setFiltroMarca] = useState(initialMarca);
     const [filtroCategoria, setFiltroCategoria] = useState(initialCategoria);
     const [filtroComprador, setFiltroComprador] = useState(initialComprador);
+    const [filtroTipoPromocao, setFiltroTipoPromocao] = useState(initialTipoPromo)
 
     const [filtroStatus, setFiltroStatus] = useState<string>(initialStatusAnalise);
 
@@ -175,6 +179,7 @@ export default function HistoricoPage() {
         const marca = getParam("marca");
         const categoria = getParam("categoria");
         const comprador = getParam("comprador");
+        const tipoPromocao = getParam("tipoPromocao")
         const statusPromo = getParam("statusPromo");
         const statusAnalise = getParam("statusAnalise");
         const urlSort = getParam("sort") || "RECENTE";
@@ -186,7 +191,7 @@ export default function HistoricoPage() {
         setFiltroMarca((prev) => (prev !== marca ? marca : prev));
         setFiltroCategoria((prev) => (prev !== categoria ? categoria : prev));
         setFiltroComprador((prev) => (prev !== comprador ? comprador : prev));
-
+        setFiltroTipoPromocao((prev) => (prev !== tipoPromocao ? tipoPromocao : prev));
         setFiltroStatusPromo((prev) => (prev !== statusPromo ? statusPromo : prev));
         setFiltroStatus((prev) => (prev !== statusAnalise ? statusAnalise : prev));
 
@@ -201,6 +206,7 @@ export default function HistoricoPage() {
             marca: (filtroMarca || "").trim(),
             categoria: (filtroCategoria || "").trim(),
             comprador: (filtroComprador || "").trim(),
+            tipoPromocao:(filtroTipoPromocao || "").trim(),
             statusPromo: (filtroStatusPromo || "").trim(),
             statusAnalise: (filtroStatus || "").trim(),
             sort: (sort || "RECENTE").trim(),
@@ -217,6 +223,7 @@ export default function HistoricoPage() {
         filtroMarca,
         filtroCategoria,
         filtroComprador,
+        filtroTipoPromocao,
         filtroStatusPromo,
         filtroStatus,
         sort,
@@ -243,6 +250,7 @@ export default function HistoricoPage() {
                         marca: filtroMarca || undefined,
                         categoria: filtroCategoria || undefined,
                         comprador: filtroComprador || undefined,
+                        tipoPromocao:filtroTipoPromocao || undefined,
                         statusPromo: filtroStatusPromo || undefined,
                         statusAnalise: filtroStatus || undefined,
                     },
@@ -266,6 +274,7 @@ export default function HistoricoPage() {
         filtroMarca,
         filtroCategoria,
         filtroComprador,
+        filtroTipoPromocao
     ]);
 
 
@@ -292,6 +301,7 @@ export default function HistoricoPage() {
         marca: filtroMarca || "",
         categoria: filtroCategoria || "",
         comprador: filtroComprador || "",
+        tipoPromocao: filtroTipoPromocao || "",
         statusPromo: (filtroStatusPromo || "") as any,
         statusAnalise: (filtroStatus || "") as any,
     };
@@ -431,11 +441,13 @@ export default function HistoricoPage() {
                         filtroCategoria={filtroCategoria}
                         filtroComprador={filtroComprador}
                         filtroStatusPromo={filtroStatusPromo}
+                        filtroTipoPromocao={filtroTipoPromocao}
                         filtroStatus={filtroStatus}
                         setFiltroProdutoDigitado={setFiltroProdutoDigitado}
                         setFiltroMarca={setFiltroMarca}
                         setFiltroCategoria={setFiltroCategoria}
                         setFiltroComprador={setFiltroComprador}
+                        setFiltroTipoPromocao={setFiltroTipoPromocao}
                         setFiltroStatusPromo={setFiltroStatusPromo}
                         setFiltroStatus={setFiltroStatus}
                         opcoesMarca={opcoesMarca}
@@ -450,6 +462,7 @@ export default function HistoricoPage() {
                             setFiltroMarca("");
                             setFiltroCategoria("");
                             setFiltroComprador("");
+                            setFiltroTipoPromocao("");
                             setFiltroStatus("");
                             setFiltroStatusPromo("");
                             setPage(1);

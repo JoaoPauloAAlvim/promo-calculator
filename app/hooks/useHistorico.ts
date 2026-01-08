@@ -9,9 +9,10 @@ export type UseHistoricoArgs = {
   marca?: string;
   categoria?: string;
   comprador?: string;
+  tipoPromocao?: string
   statusPromo?: string;
   statusAnalise?: string;
-  sort?: string;       
+  sort?: string;
   page: number;
   pageSize: number;
   reloadToken: number;
@@ -23,6 +24,7 @@ export function useHistorico({
   marca,
   categoria,
   comprador,
+  tipoPromocao,
   statusPromo,
   statusAnalise,
   page,
@@ -37,19 +39,20 @@ export function useHistorico({
   const [erro, setErro] = useState<string | null>(null);
 
   const params = useMemo(
-  () => ({
-    produto: produto || "",
-    marca: marca || "",
-    categoria: categoria || "",
-    comprador: comprador || "",
-    statusPromo: statusPromo || "",
-    statusAnalise: statusAnalise || "",
-    sort: sort || "RECENTE",
-    page,
-    pageSize,
-  }),
-  [produto, marca, categoria, comprador, statusPromo, statusAnalise, sort, page, pageSize]
-);
+    () => ({
+      produto: produto || "",
+      marca: marca || "",
+      categoria: categoria || "",
+      comprador: comprador || "",
+      tipoPromocao : tipoPromocao || "",
+      statusPromo: statusPromo || "",
+      statusAnalise: statusAnalise || "",
+      sort: sort || "RECENTE",
+      page,
+      pageSize,
+    }),
+    [produto, marca, categoria, comprador,tipoPromocao, statusPromo, statusAnalise, sort, page, pageSize]
+  );
 
 
   useEffect(() => {
@@ -61,16 +64,17 @@ export function useHistorico({
         setErro(null);
 
         const data = await getHistorico({
-  produto: params.produto || undefined,
-  marca: params.marca || undefined,
-  categoria: params.categoria || undefined,
-  comprador: params.comprador || undefined,
-  statusPromo: params.statusPromo || undefined,
-  statusAnalise: params.statusAnalise || undefined,
-  sort: (params.sort as any) || "RECENTE",   
-  page: params.page,
-  pageSize: params.pageSize,
-});
+          produto: params.produto || undefined,
+          marca: params.marca || undefined,
+          categoria: params.categoria || undefined,
+          comprador: params.comprador || undefined,
+          tipoPromocao: params.tipoPromocao || undefined,
+          statusPromo: params.statusPromo || undefined,
+          statusAnalise: params.statusAnalise || undefined,
+          sort: (params.sort as any) || "RECENTE",
+          page: params.page,
+          pageSize: params.pageSize,
+        });
 
 
         if (!alive) return;

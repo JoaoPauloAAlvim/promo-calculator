@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const marca = searchParams.get("marca")?.trim();
     const categoria = searchParams.get("categoria")?.trim();
     const comprador = searchParams.get("comprador")?.trim();
+    const tipoPromocao = searchParams.get("tipoPromocao")?.trim().toUpperCase();
 
     const statusPromo = (searchParams.get("statusPromo") ?? "").trim().toUpperCase();
     const statusAnalise = (searchParams.get("statusAnalise") ?? "").trim().toUpperCase();
@@ -56,6 +57,11 @@ export async function GET(req: Request) {
     if (comprador) {
       baseQuery.where("comprador_txt", comprador);
     }
+
+    if (tipoPromocao && ["INTERNA", "SCANNTECH"].includes(tipoPromocao)) {
+      baseQuery.where("tipo_promocao_txt", tipoPromocao);
+    }
+
 
 
     if (statusPromo) {
@@ -133,6 +139,7 @@ export async function GET(req: Request) {
   'marca', marca_txt,
   'categoria', categoria_txt,
   'comprador', comprador_txt,
+  'tipo_promocao', tipo_promocao_txt,
   'data_inicio_promocao', to_char(data_inicio_promocao, 'YYYY-MM-DD'),
   'data_fim_promocao', to_char(data_fim_promocao, 'YYYY-MM-DD')
 ),

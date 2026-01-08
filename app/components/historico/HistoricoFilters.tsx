@@ -10,7 +10,9 @@ type Props = {
   filtroStatusPromo: string;
   filtroStatus: string;
   sort: string;
+  filtroTipoPromocao: string;
 
+  setFiltroTipoPromocao: (v: string) => void;
   setSort: (v: string) => void;
   setFiltroProdutoDigitado: (v: string) => void;
   setFiltroMarca: (v: string) => void;
@@ -33,11 +35,13 @@ export function HistoricoFilters({
   filtroMarca,
   filtroCategoria,
   filtroComprador,
+  filtroTipoPromocao,
   filtroStatusPromo,
   filtroStatus,
   sort,
 
   setFiltroProdutoDigitado,
+  setFiltroTipoPromocao,
   setFiltroMarca,
   setFiltroCategoria,
   setFiltroComprador,
@@ -247,6 +251,25 @@ export function HistoricoFilters({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <label style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280" }}>Tipo</label>
+          <select
+            value={filtroTipoPromocao}
+            onChange={(e) => { setFiltroTipoPromocao(e.target.value); setPage(1); }}
+            style={{
+              minWidth: "180px",
+              borderRadius: "10px",
+              border: "1px solid #d1d5db",
+              padding: "4px 10px",
+              fontSize: "12px",
+              backgroundColor: "#f9fafb",
+            }}
+          >
+            <option value="">Todas</option>
+            <option value="INTERNA">INTERNA</option>
+            <option value="SCANNTECH">SCANNTECH</option>
+          </select>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <label style={{ fontSize: "11px", fontWeight: 500, color: "#6b7280" }}>
             Status da promoção

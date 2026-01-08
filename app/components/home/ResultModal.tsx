@@ -317,6 +317,13 @@ export function ResultModal({ result, form, onClose }: Props) {
                 </p>
               </div>
 
+             <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Tipo:</p>
+                <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
+                  {(entrada as any).tipo_promocao || "—"}
+                </p>
+              </div>
+
               {(["A", "B", "C", "D", "E", "F"] as const).map((key) => {
                 const raw = (entrada as any)[key];
                 const label = (entradaLabels as any)[key] ?? key;

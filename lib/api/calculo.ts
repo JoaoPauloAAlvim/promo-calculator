@@ -5,6 +5,7 @@ export type CalculoPayload = {
   categoria: string;
   comprador: string;
   marca: string;
+  tipoPromocao:string;
   dataInicio: string;
   dataFim: string;
   A: number;

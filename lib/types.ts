@@ -19,6 +19,7 @@ export type HistoricoFiltros = {
   comprador?: string;
   statusPromo?: PromoStatus | "";
   statusAnalise?: AnaliseStatus | "";
+  tipoPromocao?: string;
 };
 
 export type ChipStyle = {
@@ -40,6 +41,7 @@ export type FormState = {
   categoria: string;
   comprador: string;
   marca: string;
+  tipoPromocao: "INTERNA" | "SCANNTECH" | "";
   dataInicio: string;
   dataFim: string;
   A: string;
@@ -55,6 +57,8 @@ export type ImportRow = {
   Categoria?: string;
   Comprador?: string;
   Marca?: string;
+  TipoPromocao?: string;
+
   PeriodoHistorico?: number | string;
   LucroTotalHistorico?: number | string;
   DataInicioPromocao?: string | number;
@@ -93,8 +97,8 @@ export type HistoricoGetParams = {
 };
 
 export type MonitoramentoItem = {
-  data: string;      
-  vendido: number;   
-  estoque: number;   
-  criadoEm: string; 
+  data: string;
+  vendido: number;
+  estoque: number;
+  criadoEm: string;
 };

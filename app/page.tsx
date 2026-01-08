@@ -18,12 +18,14 @@ import { postCalculo } from "@/lib/api/calculo";
 import { HomeHeaderActions } from "./components/home/HomeHeaderActions";
 import { api } from "@/lib/api/client";
 import { ActionModal } from "./components/ui/ActionModal";
+import { usePromoImport } from "./hooks/usePromoImport";
 
 const initialForm: FormState = {
   produto: "",
   categoria: "",
   comprador: "",
   marca: "",
+  tipoPromocao: "",
   dataInicio: "",
   dataFim: "",
   A: "",
@@ -35,6 +37,7 @@ const initialForm: FormState = {
 
 export default function Home() {
   const router = useRouter();
+  const promoImport = usePromoImport();
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<Resultado | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,12 +45,7 @@ export default function Home() {
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [draftModalOpen, setDraftModalOpen] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importFileName, setImportFileName] = useState<string | null>(null);
-  const [importLoading, setImportLoading] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importResults, setImportResults] = useState<ResultadoLote[]>([]);
-
+  
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
     {
@@ -132,11 +130,17 @@ export default function Home() {
     setResult(null);
 
     try {
-      const { produto, categoria, comprador, marca, dataInicio, dataFim } = form;
+      const { produto, categoria, comprador, marca, dataInicio, dataFim, tipoPromocao } = form;
 
       if (!produto.trim()) {
         setResult(null);
         setError("Informe o nome do produto.");
+        return;
+      }
+
+      if (!tipoPromocao) {
+        setResult(null)
+        setError("Informe o tipo da promoção.")
         return;
       }
 
@@ -207,6 +211,7 @@ export default function Home() {
         categoria,
         comprador,
         marca,
+        tipoPromocao,
         dataInicio,
         dataFim,
         A,
@@ -242,230 +247,11 @@ export default function Home() {
     setError(null);
   }
 
-  async function abrirModalImportacao() {
-    await ensureAuth()
-    setShowImportModal(true);
-    setImportFileName(null);
-    setImportError(null);
-    setImportResults([]);
-  }
+  async function abrirImportComAuth() {
+  await ensureAuth();
+  promoImport.abrir();
+}
 
-  function fecharModalImportacao() {
-    setShowImportModal(false);
-    setImportFileName(null);
-    setImportError(null);
-    setImportResults([]);
-  }
-
-  async function gerarPlanilhaModelo() {
-    await ensureAuth()
-    const header = [
-      "Produto",
-      "Categoria",
-      "Comprador",
-      "Marca",
-      "PeriodoHistorico",
-      "LucroTotalHistorico",
-      "DataInicioPromocao",
-      "DataFimPromocao",
-      "PrecoPromocional",
-      "CustoUnitario",
-      "ReceitaAdicional",
-    ];
-
-
-    const exemplo = [
-      "CREME DENTAL COLGATE 120G",
-      "HIGIENE ORAL",
-      "FLÁVIA",
-      "COLGATE",
-      30,
-      12450,
-      "10/01/2025",
-      "20/01/2025",
-      4.79,
-      4.45,
-      0.42,
-    ];
-
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([header, exemplo]);
-    XLSX.utils.book_append_sheet(wb, ws, "PROMOCOES");
-    XLSX.writeFile(wb, "modelo_promocoes.xlsx");
-  }
-
-  async function handleImportFileChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const file = e.target.files?.[0];
-    setImportResults([]);
-    setImportError(null);
-
-    if (!file) {
-      setImportFileName(null);
-      return;
-    }
-
-    setImportFileName(file.name);
-    setImportLoading(true);
-
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-
-      const json: ImportRow[] = XLSX.utils.sheet_to_json(sheet, {
-        defval: "",
-      });
-
-      if (!json.length) {
-        setImportError(
-          "A planilha está vazia ou a primeira aba não contém dados para importar."
-        );
-        return;
-      }
-
-      const resultadosTemp: ResultadoLote[] = [];
-
-
-
-      const parseDateFromCell = (v: any): string | null => {
-        if (!v && v !== 0) return null;
-
-        if (typeof v === "string") {
-          const s = v.trim();
-
-          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-          if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-            const [d, m, y] = s.split("/");
-            return `${y}-${m}-${d}`;
-          }
-
-          return null;
-        }
-
-        if (typeof v === "number") {
-          const dateObj = (XLSX.SSF as any).parse_date_code?.(v);
-          if (!dateObj) return null;
-          const y = dateObj.y;
-          const m = dateObj.m;
-          const d = dateObj.d;
-
-          if (!y || !m || !d) return null;
-
-          const mm = String(m).padStart(2, "0");
-          const dd = String(d).padStart(2, "0");
-          return `${y}-${mm}-${dd}`;
-        }
-
-        return null;
-      };
-
-      for (let i = 0; i < json.length; i++) {
-        const linha = i + 2;
-        const row = json[i];
-
-        const produto = String(row.Produto || "").trim();
-        const categoria = String(row.Categoria || "").trim();
-        const comprador = String(row.Comprador || "").trim();
-        const marca = String(row.Marca || "").trim();
-
-        if (!produto) {
-          resultadosTemp.push({
-            linha,
-            produto: "",
-            ok: false,
-            erro: "Produto em branco.",
-          });
-          continue;
-        }
-
-        const A = toNumericString(row.PeriodoHistorico);
-        const B = toNumericString(row.LucroTotalHistorico);
-        const D = toNumericString(row.PrecoPromocional);
-        const E = toNumericString(row.CustoUnitario);
-        const F = toNumericString(row.ReceitaAdicional);
-
-        const dataInicio = parseDateFromCell(row.DataInicioPromocao);
-        const dataFim = parseDateFromCell(row.DataFimPromocao);
-
-        if (!dataInicio || !dataFim) {
-          resultadosTemp.push({
-            linha,
-            produto,
-            ok: false,
-            erro:
-              "DataInicioPromocao ou DataFimPromocao inválida(s). Use data ou texto no formato DD/MM/AAAA ou AAAA-MM-DD.",
-          });
-          continue;
-        }
-
-        const inicioDia = parseISODateLocal(dataInicio);
-        const fimDia = parseISODateLocal(dataFim);
-
-        if (!inicioDia || !fimDia) {
-          setResult(null);
-          setError("Data de início ou fim inválida.");
-          return;
-        }
-
-
-        const diffMs = fimDia.getTime() - inicioDia.getTime();
-        if (diffMs < 0) {
-          resultadosTemp.push({
-            linha,
-            produto,
-            ok: false,
-            erro:
-              "DataFimPromocao deve ser maior ou igual à DataInicioPromocao na planilha.",
-          });
-          continue;
-        }
-
-        const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1;
-        const C = String(diasPromo);
-
-        try {
-          const data = await postCalculo({
-            produto,
-            categoria,
-            comprador,
-            marca,
-            dataInicio,
-            dataFim,
-            A: Number(A),
-            B: Number(B),
-            C: Number(C),
-            D: Number(D),
-            E: Number(E),
-            F: Number(F),
-          });
-
-          resultadosTemp.push({ linha, produto, ok: true, resultado: data as Resultado });
-        } catch (err: any) {
-          resultadosTemp.push({
-            linha,
-            produto,
-            ok: false,
-            erro: err?.message || "Erro ao calcular para esta linha.",
-          });
-        }
-
-      }
-
-      setImportResults(resultadosTemp);
-    } catch (err: any) {
-      console.error(err);
-      setImportError(
-        "Erro ao ler a planilha. Verifique se o arquivo é um .xlsx válido."
-      );
-    } finally {
-      setImportLoading(false);
-    }
-  }
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -473,7 +259,7 @@ export default function Home() {
         title="Simulador de Promoções"
         rightSlot={
           <HomeHeaderActions
-            onOpenImport={abrirModalImportacao}
+            onOpenImport={() => abrirImportComAuth()}
             onLogout={() => setConfirmLogoutOpen(true)}
           />
         }
@@ -501,15 +287,16 @@ export default function Home() {
       />
 
       <ImportModal
-        open={showImportModal}
-        onClose={fecharModalImportacao}
-        onGenerateModel={gerarPlanilhaModelo}
-        onFileChange={handleImportFileChange}
-        importFileName={importFileName}
-        importLoading={importLoading}
-        importError={importError}
-        importResults={importResults as any}
+        open={promoImport.open}
+        onClose={promoImport.fechar}
+        onGenerateModel={promoImport.gerarModelo}
+        onFileChange={promoImport.onFileChange}
+        importFileName={promoImport.fileName}
+        importLoading={promoImport.loading}
+        importError={promoImport.error}
+        importResults={promoImport.results}
       />
+
 
       {loading && (
         <div
