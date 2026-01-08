@@ -353,9 +353,15 @@ export default function HistoricoPage() {
             console.error(e);
         } finally {
             setLogoutLoading(false);
-            router.push("/login");
+            try {
+                localStorage.removeItem("simulador_had_session");
+                sessionStorage.removeItem("simulador_expired_shown");
+                sessionStorage.removeItem("simulador_session_expired");
+            } catch { }
+            router.replace("/login");
         }
     }
+
 
 
     async function abrirModal(item: HistoricoItem) {

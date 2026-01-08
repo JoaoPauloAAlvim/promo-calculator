@@ -69,8 +69,8 @@ export default function Home() {
   ];
 
   async function ensureAuth() {
-  await api<{ ok: true }>("/api/auth/check", { method: "GET" });
-}
+    await api<{ ok: true }>("/api/auth/check", { method: "GET" });
+  }
 
   function setField(id: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [id]: value }));
@@ -84,9 +84,15 @@ export default function Home() {
       console.error(e);
     } finally {
       setLogoutLoading(false);
-      router.push("/login");
+      try {
+        localStorage.removeItem("simulador_had_session");
+        sessionStorage.removeItem("simulador_expired_shown");
+        sessionStorage.removeItem("simulador_session_expired");
+      } catch { }
+      router.replace("/login");
     }
   }
+
 
   async function calcular() {
     await ensureAuth()
