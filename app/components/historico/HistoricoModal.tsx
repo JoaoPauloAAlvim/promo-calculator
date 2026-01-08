@@ -17,6 +17,8 @@ import { getHistoricoById, patchVendaReal } from "@/lib/api/historico";
 import { Spinner } from "../Spinner";
 import { useRef } from "react";
 import { useModalA11y } from "@/app/hooks/useModalA11y";
+import { useRouter } from "next/navigation";
+
 
 
 type Props = {
@@ -32,6 +34,8 @@ type Props = {
 };
 
 export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, modoSelecao = false }: Props) {
+  const router = useRouter();
+
   const [dreAberto, setDreAberto] = useState(false);
   const [acompAberto, setAcompAberto] = useState(false);
 
@@ -300,6 +304,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
           >
             ✕
           </button>
+
           <div
             style={{
               maxHeight: "85vh",
@@ -325,6 +330,50 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
               <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
                 {nomeProdutoSelecionado || "Produto não informado"}
               </p>
+              {!modoSelecao && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const entrada = (item.resultado?.entrada ?? {}) as any;
+
+                      const draft = {
+                        produto: String(entrada.produto_nome ?? entrada.produto ?? ""),
+                        categoria: String(entrada.categoria ?? ""),
+                        comprador: String(entrada.comprador ?? ""),
+                        marca: String(entrada.marca ?? ""),
+                        dataInicio: String(entrada.data_inicio_promocao ?? ""),
+                        dataFim: String(entrada.data_fim_promocao ?? ""),
+                        A: String(entrada.A ?? ""),
+                        B: String(entrada.B ?? ""),
+                        D: String(entrada.D ?? ""),
+                        E: String(entrada.E ?? ""),
+                        F: String(entrada.F ?? ""),
+                      };
+
+                      sessionStorage.setItem("simulador_draft", JSON.stringify(draft));
+                    } catch { }
+
+                    router.replace("/");
+                  }}
+                  style={{
+                    marginTop: "6px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    borderRadius: "10px",
+                    border: "1px solid #d1d5db",
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    backgroundColor: "#ffffff",
+                    color: "#4b5563",
+                    cursor: "pointer",
+                  }}
+                >
+                  Duplicar no simulador
+                </button>
+              )}
             </div>
 
             {loadingDetalhes && (

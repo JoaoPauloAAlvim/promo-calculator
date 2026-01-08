@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { Spinner } from "./components/Spinner";
@@ -17,6 +17,7 @@ import { FormState, ImportRow, Resultado, ResultadoLote } from "@/lib/types";
 import { postCalculo } from "@/lib/api/calculo";
 import { HomeHeaderActions } from "./components/home/HomeHeaderActions";
 import { api } from "@/lib/api/client";
+import { ActionModal } from "./components/ui/ActionModal";
 
 const initialForm: FormState = {
   produto: "",
@@ -40,7 +41,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
-
+  const [draftModalOpen, setDraftModalOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -67,6 +68,36 @@ export default function Home() {
     },
 
   ];
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("simulador_draft");
+      if (!raw) return;
+
+      const draft = JSON.parse(raw);
+
+      setForm((prev) => ({
+        ...prev,
+        produto: draft.produto ?? prev.produto,
+        categoria: draft.categoria ?? prev.categoria,
+        comprador: draft.comprador ?? prev.comprador,
+        marca: draft.marca ?? prev.marca,
+        dataInicio: draft.dataInicio ?? prev.dataInicio,
+        dataFim: draft.dataFim ?? prev.dataFim,
+        A: draft.A ?? prev.A,
+        B: draft.B ?? prev.B,
+        D: draft.D ?? prev.D,
+        E: draft.E ?? prev.E,
+        F: draft.F ?? prev.F,
+      }));
+
+      sessionStorage.removeItem("simulador_draft");
+      setDraftModalOpen(true)
+    } catch {
+      try { sessionStorage.removeItem("simulador_draft"); } catch { }
+    }
+  }, []);
+
 
   async function ensureAuth() {
     await api<{ ok: true }>("/api/auth/check", { method: "GET" });
@@ -506,6 +537,15 @@ export default function Home() {
           </p>
         </div>
       )}
+      <ActionModal
+        open={draftModalOpen}
+        title="Simulação carregada"
+        message="Os dados foram preenchidos com base no histórico. Ajuste o que precisar e clique em Calcular."
+        variant="success"
+        onClose={() => setDraftModalOpen(false)}
+        autoCloseMs={3000}
+      />
+
       <ConfirmModal
         open={confirmLogoutOpen}
         title="Sair do sistema?"
