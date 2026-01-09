@@ -2,23 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import { Spinner } from "./components/Spinner";
 import { AppHeader } from "./components/AppHeader";
 import { logout } from "@/lib/api/auth";
 import { parseISODateLocal } from "@/lib/date";
-import { parseBR, toNumericString } from "@/lib/format";
+import { parseBR } from "@/lib/format";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { PromoForm } from "@/app/components/home/PromoForm";
 import { ResultModal } from "@/app/components/home/ResultModal";
 import { ImportModal } from "@/app/components/home/ImportModal";
 import { ErrorModal } from "@/app/components/home/ErrorModal";
-import { FormState, ImportRow, Resultado, ResultadoLote } from "@/lib/types";
+import { FormState, Resultado } from "@/lib/types";
 import { postCalculo } from "@/lib/api/calculo";
 import { HomeHeaderActions } from "./components/home/HomeHeaderActions";
 import { api } from "@/lib/api/client";
 import { ActionModal } from "./components/ui/ActionModal";
 import { usePromoImport } from "./hooks/usePromoImport";
+import { getCompradores } from "@/lib/api/meta";
 
 const initialForm: FormState = {
   produto: "",
@@ -45,7 +45,11 @@ export default function Home() {
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [draftModalOpen, setDraftModalOpen] = useState(false);
-  
+  const [opcoesComprador, setOpcoesComprador] = useState<string[]>([]);
+  const [modoComprador, setModoComprador] = useState<"LISTA" | "OUTRO">("LISTA");
+  const [compradorOutro, setCompradorOutro] = useState("");
+
+
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
     {
@@ -66,6 +70,7 @@ export default function Home() {
     },
 
   ];
+
 
   useEffect(() => {
     try {
@@ -89,6 +94,9 @@ export default function Home() {
         E: draft.E ?? prev.E,
         F: draft.F ?? prev.F,
       }));
+      setModoComprador("LISTA");
+      setCompradorOutro("");
+
 
       sessionStorage.removeItem("simulador_draft");
       setDraftModalOpen(true)
@@ -96,6 +104,23 @@ export default function Home() {
       try { sessionStorage.removeItem("simulador_draft"); } catch { }
     }
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        await ensureAuth();
+        const data = await getCompradores(controller.signal);
+        setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+
+    return () => controller.abort();
+  }, []);
+
 
 
   async function ensureAuth() {
@@ -125,12 +150,12 @@ export default function Home() {
 
 
   async function calcular() {
-    await ensureAuth()
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
+      await ensureAuth()
       const { produto, categoria, comprador, marca, dataInicio, dataFim, tipoPromocao } = form;
 
       if (!produto.trim()) {
@@ -223,11 +248,6 @@ export default function Home() {
         F,
       });
 
-      setResult(data);
-
-
-      setResult(data as Resultado);
-
       setResult(data as Resultado);
     } catch (e) {
       console.error(e);
@@ -249,9 +269,9 @@ export default function Home() {
   }
 
   async function abrirImportComAuth() {
-  await ensureAuth();
-  promoImport.abrir();
-}
+    await ensureAuth();
+    promoImport.abrir();
+  }
 
 
   return (
@@ -260,7 +280,7 @@ export default function Home() {
         title="Simulador de Promoções"
         rightSlot={
           <HomeHeaderActions
-            onOpenImport={() => abrirImportComAuth()}
+            onOpenImport={abrirImportComAuth}
             onLogout={() => setConfirmLogoutOpen(true)}
           />
         }
@@ -271,7 +291,13 @@ export default function Home() {
         loading={loading}
         onChange={setField}
         onCalculate={calcular}
+        opcoesComprador={opcoesComprador}
+        modoComprador={modoComprador}
+        setModoComprador={setModoComprador}
+        compradorOutro={compradorOutro}
+        setCompradorOutro={setCompradorOutro}
       />
+
 
       {result && (
         <ResultModal

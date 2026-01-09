@@ -10,9 +10,18 @@ type Props = {
   loading: boolean;
   onChange: (id: keyof FormState, value: string) => void;
   onCalculate: () => void;
+  opcoesComprador: string[];
+  modoComprador: "LISTA" | "OUTRO";
+  setModoComprador: (v: "LISTA" | "OUTRO") => void;
+  compradorOutro: string;
+  setCompradorOutro: (v: string) => void;
+
 };
 
-export function PromoForm({ form, campos, loading, onChange, onCalculate }: Props) {
+export function PromoForm({
+  form, campos, loading, onChange, onCalculate,
+  opcoesComprador, modoComprador, setModoComprador, compradorOutro, setCompradorOutro
+}: Props) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <section
@@ -78,21 +87,84 @@ export function PromoForm({ form, campos, loading, onChange, onCalculate }: Prop
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Comprador
             </label>
-            <input
-              type="text"
-              placeholder="Ex: FLÁVIA / JÉSSICA"
-              value={form.comprador}
-              onChange={(e) => onChange("comprador", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+            {modoComprador === "LISTA" ? (
+              <select
+                value={form.comprador}
+                onChange={(e) => {
+                  const v = e.target.value;
+
+                  if (v === "__OUTRO__") {
+                    setModoComprador("OUTRO");
+                    setCompradorOutro("");
+                    onChange("comprador", "");
+                    return;
+                  }
+
+                  onChange("comprador", v);
+                }}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              >
+                <option value="">Selecione</option>
+                {opcoesComprador.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+                <option value="__OUTRO__">Outro…</option>
+              </select>
+            ) : (
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder="Digite o nome do comprador"
+                  value={compradorOutro}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCompradorOutro(v);
+                    onChange("comprador", v);
+                  }}
+                  style={{
+                    flex: "1 1 0",
+                    width: "100%",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "12px",
+                    padding: "8px 12px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    backgroundColor: "#f9fafb",
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModoComprador("LISTA");
+                    setCompradorOutro("");
+                    onChange("comprador", "");
+                  }}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "12px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "#ffffff",
+                    color: "#4b5563",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Voltar
+                </button>
+              </div>
+            )}
+
           </div>
 
           <div style={{ marginBottom: "16px" }}>
