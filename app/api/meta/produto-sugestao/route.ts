@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const produto = (searchParams.get("produto") || "").trim();
 
     if (!produto || produto.length < 3) {
-      return NextResponse.json({ sugestao: null, candidatos: [] });
+      return NextResponse.json({ sugestao: null, candidatos: [], confidence: "LOW", matchType: "CONTAINS" });
     }
 
     const like = `%${produto.toLowerCase()}%`;
@@ -26,23 +26,39 @@ export async function GET(req: Request) {
       .limit(20);
 
     if (!rows.length) {
-      return NextResponse.json({ sugestao: null, candidatos: [] });
+      return NextResponse.json({ sugestao: null, candidatos: [], confidence: "LOW", matchType: "CONTAINS" });
     }
 
-    const prodLower = produto.toLowerCase();
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
 
-    let best =
-      rows.find((r: any) => String(r.produto_nome_txt || "").toLowerCase() === prodLower) ||
-      rows.find((r: any) => String(r.produto_nome_txt || "").toLowerCase().startsWith(prodLower)) ||
-      rows[0];
+    const qNorm = normalize(produto);
+
+    const exact = rows.find((r: any) => normalize(String(r.produto_nome_txt || "")) === qNorm);
+    const prefix = rows.find((r: any) => normalize(String(r.produto_nome_txt || "")).startsWith(qNorm));
+    const contains = rows[0];
+
+    const best = exact || prefix || contains;
+
+    const matchType: "EXACT" | "PREFIX" | "CONTAINS" =
+      exact ? "EXACT" : prefix ? "PREFIX" : "CONTAINS";
+
+    const confidence: "HIGH" | "LOW" =
+      matchType === "EXACT" || (matchType === "PREFIX" && qNorm.length >= 4)
+        ? "HIGH"
+        : "LOW";
+
 
     const sugestao =
       best && (best.marca_txt || best.categoria_txt)
         ? {
-            produto: String(best.produto_nome_txt || ""),
-            marca: String(best.marca_txt || ""),
-            categoria: String(best.categoria_txt || ""),
-          }
+          produto: String(best.produto_nome_txt || ""),
+          marca: String(best.marca_txt || ""),
+          categoria: String(best.categoria_txt || ""),
+        }
         : null;
 
     const seen = new Set<string>();
@@ -59,7 +75,7 @@ export async function GET(req: Request) {
         return true;
       });
 
-    return NextResponse.json({ sugestao, candidatos });
+    return NextResponse.json({ sugestao, candidatos, confidence, matchType });
   } catch (err: any) {
     console.error("ERRO /api/meta/produto-sugestao:", err);
     return NextResponse.json(

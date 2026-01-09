@@ -21,6 +21,7 @@ import { usePromoImport } from "./hooks/usePromoImport";
 import { getCompradores } from "@/lib/api/meta";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { getProdutoSugestao } from "@/lib/api/meta";
+import { useRef } from "react";
 
 
 const initialForm: FormState = {
@@ -57,6 +58,10 @@ export default function Home() {
   const debouncedProdutoForm = useDebouncedValue((form.produto || "").trim(), 600);
   const [hintOpen, setHintOpen] = useState(false);
   const [hintText, setHintText] = useState("");
+  const [pendingSugestao, setPendingSugestao] = useState<null | { marca: string; categoria: string }>(null);
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHintKeyRef = useRef<string>("");
 
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
@@ -134,11 +139,30 @@ export default function Home() {
     await api<{ ok: true }>("/api/auth/check", { method: "GET" });
   }
 
+  function showHint(text: string, key: string) {
+    if (lastHintKeyRef.current === key) return;
+
+    lastHintKeyRef.current = key;
+
+    setHintText(text);
+    setHintOpen(true);
+
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => setHintOpen(false), 2000);
+  }
+
+
   function setField(id: keyof FormState, value: string) {
     if (id === "marca") setMarcaTouched(true);
     if (id === "categoria") setCategoriaTouched(true);
 
     if (id === "produto") {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+      lastHintKeyRef.current = "";
+      setHintOpen(false);
+      setPendingSugestao(null);
+      setPendingOpen(false);
       setMarcaTouched(false);
       setCategoriaTouched(false);
       setLastSugestao(null);
@@ -146,6 +170,37 @@ export default function Home() {
 
     setForm((prev) => ({ ...prev, [id]: value }));
   }
+
+  function aplicarSugestaoManual() {
+    if (!pendingSugestao) return;
+
+    setForm((prev) => {
+      const next = { ...prev };
+
+      const marcaAtual = (prev.marca || "").trim();
+      const catAtual = (prev.categoria || "").trim();
+
+      if ((!marcaTouched || !marcaAtual) && pendingSugestao.marca) next.marca = pendingSugestao.marca;
+      if ((!categoriaTouched || !catAtual) && pendingSugestao.categoria) next.categoria = pendingSugestao.categoria;
+
+      return next;
+    });
+
+    setLastSugestao({
+      marca: pendingSugestao.marca || "",
+      categoria: pendingSugestao.categoria || "",
+    });
+
+    setPendingSugestao(null);
+    setPendingOpen(false);
+
+    showHint(
+      "Sugestão do histórico aplicada (marca/categoria).",
+      `APPLY|${debouncedProdutoForm}|${pendingSugestao.categoria}|${pendingSugestao.marca}`
+    );
+
+  }
+
 
 
   async function handleLogout() {
@@ -292,7 +347,11 @@ export default function Home() {
   useEffect(() => {
     const produto = debouncedProdutoForm;
 
-    if (!produto || produto.length < 3) return;
+    if (!produto || produto.length < 3) {
+      setPendingSugestao(null);
+      setPendingOpen(false);
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -301,31 +360,53 @@ export default function Home() {
         const data = await getProdutoSugestao(produto, controller.signal);
 
         const s = data?.sugestao;
-        if (!s) return;
+        if (!s) {
+          setPendingSugestao(null);
+          setPendingOpen(false);
+          return;
+        }
 
-        setForm((prev) => {
-          const marcaAtual = (prev.marca || "").trim();
-          const catAtual = (prev.categoria || "").trim();
+        if (data?.confidence === "HIGH") {
+          setPendingSugestao(null);
+          setPendingOpen(false);
 
-          const podeSetMarca =
-            !marcaTouched || !marcaAtual || (lastSugestao && marcaAtual === lastSugestao.marca);
+          setForm((prev) => {
+            const marcaAtual = (prev.marca || "").trim();
+            const catAtual = (prev.categoria || "").trim();
 
-          const podeSetCategoria =
-            !categoriaTouched || !catAtual || (lastSugestao && catAtual === lastSugestao.categoria);
+            const podeSetMarca =
+              !marcaTouched || !marcaAtual || (lastSugestao && marcaAtual === lastSugestao.marca);
 
-          const next = { ...prev };
+            const podeSetCategoria =
+              !categoriaTouched || !catAtual || (lastSugestao && catAtual === lastSugestao.categoria);
 
-          if (podeSetMarca && s.marca) next.marca = s.marca;
-          if (podeSetCategoria && s.categoria) next.categoria = s.categoria;
+            const next = { ...prev };
 
-          return next;
-        });
+            if (podeSetMarca && s.marca) next.marca = s.marca;
+            if (podeSetCategoria && s.categoria) next.categoria = s.categoria;
 
-        setLastSugestao({ marca: s.marca || "", categoria: s.categoria || "" });
-        setHintText("Sugestão do histórico aplicada (marca/categoria).");
-        setHintOpen(true);
+            return next;
+          });
 
-        setTimeout(() => setHintOpen(false), 2000);
+          setLastSugestao({ marca: s.marca || "", categoria: s.categoria || "" });
+
+          showHint(
+            "Sugestão do histórico aplicada (marca/categoria).",
+            `HIGH|${produto}|${s.categoria}|${s.marca}`
+          );
+
+
+          return;
+        }
+
+        setPendingSugestao({ marca: s.marca || "", categoria: s.categoria || "" });
+        setPendingOpen(true);
+
+        showHint(
+          "Sugestão do histórico disponível (clique em Aplicar).",
+          `LOW|${produto}|${s.categoria}|${s.marca}`
+        );
+
 
       } catch (e: any) {
         if (e?.name === "AbortError") return;
@@ -334,8 +415,7 @@ export default function Home() {
     })();
 
     return () => controller.abort();
-  }, [debouncedProdutoForm]);
-
+  }, [debouncedProdutoForm, marcaTouched, categoriaTouched, lastSugestao]);
 
 
   return (
@@ -344,7 +424,7 @@ export default function Home() {
         title="Simulador de Promoções"
         rightSlot={
           <HomeHeaderActions
-            onOpenImport={abrirImportComAuth}
+            onOpenImport={() => void abrirImportComAuth()}
             onLogout={() => setConfirmLogoutOpen(true)}
           />
         }
@@ -360,11 +440,19 @@ export default function Home() {
         setModoComprador={setModoComprador}
         compradorOutro={compradorOutro}
         setCompradorOutro={setCompradorOutro}
+
         hintOpen={hintOpen}
-        setHintOpen={setHintOpen}
         hintText={hintText}
-        setHintText={setHintText}
+
+        pendingOpen={pendingOpen}
+        pendingSugestao={pendingSugestao}
+        onApplySugestao={aplicarSugestaoManual}
+        onIgnoreSugestao={() => {
+          setPendingSugestao(null);
+          setPendingOpen(false);
+        }}
       />
+
 
 
       {result && (

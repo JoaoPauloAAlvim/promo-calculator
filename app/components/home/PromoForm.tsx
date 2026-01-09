@@ -10,21 +10,40 @@ type Props = {
   loading: boolean;
   onChange: (id: keyof FormState, value: string) => void;
   onCalculate: () => void;
+
+  
   opcoesComprador: string[];
   modoComprador: "LISTA" | "OUTRO";
   setModoComprador: (v: "LISTA" | "OUTRO") => void;
   compradorOutro: string;
   setCompradorOutro: (v: string) => void;
-  hintOpen: boolean;
-  setHintOpen: (v: boolean) => void;
-  hintText: string;
-  setHintText: (v: string) => void;
 
+  hintOpen: boolean;
+  hintText: string;
+
+  pendingOpen: boolean;
+  pendingSugestao: null | { marca: string; categoria: string };
+  onApplySugestao: () => void;
+  onIgnoreSugestao: () => void;
 };
 
 export function PromoForm({
-  form, campos, loading, onChange, onCalculate,
-  opcoesComprador, modoComprador, setModoComprador, compradorOutro, setCompradorOutro, hintOpen, setHintOpen, hintText, setHintText
+  form,
+  campos,
+  loading,
+  onChange,
+  onCalculate,
+  opcoesComprador,
+  modoComprador,
+  setModoComprador,
+  compradorOutro,
+  setCompradorOutro,
+  hintOpen,
+  hintText,
+  pendingOpen,
+  pendingSugestao,
+  onApplySugestao,
+  onIgnoreSugestao,
 }: Props) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -64,25 +83,85 @@ export function PromoForm({
                 backgroundColor: "#f9fafb",
               }}
             />
+
+            {pendingOpen && pendingSugestao && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#ffffff",
+                  padding: "8px 10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  boxShadow: "0 4px 14px rgba(15,23,42,0.06)",
+                }}
+              >
+                <div style={{ fontSize: "12px", color: "#4b5563", fontWeight: 600 }}>
+                  Sugestão do histórico:{" "}
+                  <strong>{pendingSugestao.marca || "—"}</strong>{" "}
+                  /{" "}
+                  <strong>{pendingSugestao.categoria || "—"}</strong>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={onApplySugestao}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "10px",
+                      border: "none",
+                      backgroundColor: "#4f46e5",
+                      color: "#ffffff",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Aplicar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onIgnoreSugestao}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid #d1d5db",
+                      backgroundColor: "#ffffff",
+                      color: "#4b5563",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Ignorar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {hintOpen && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  borderRadius: "10px",
+                  border: "1px solid #bfdbfe",
+                  backgroundColor: "#eff6ff",
+                  padding: "6px 10px",
+                  fontSize: "12px",
+                  color: "#1d4ed8",
+                  fontWeight: 600,
+                }}
+              >
+                {hintText}
+              </div>
+            )}
           </div>
-
-          {hintOpen && (
-            <div
-              style={{
-                marginTop: "8px",
-                borderRadius: "10px",
-                border: "1px solid #bfdbfe",
-                backgroundColor: "#eff6ff",
-                padding: "6px 10px",
-                fontSize: "12px",
-                color: "#1d4ed8",
-                fontWeight: 600,
-              }}
-            >
-              {hintText}
-            </div>
-          )}
-
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
@@ -109,6 +188,7 @@ export function PromoForm({
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Comprador
             </label>
+
             {modoComprador === "LISTA" ? (
               <select
                 value={form.comprador}
@@ -121,7 +201,6 @@ export function PromoForm({
                     onChange("comprador", "");
                     return;
                   }
-
                   onChange("comprador", v);
                 }}
                 style={{
@@ -186,7 +265,6 @@ export function PromoForm({
                 </button>
               </div>
             )}
-
           </div>
 
           <div style={{ marginBottom: "16px" }}>
@@ -209,6 +287,7 @@ export function PromoForm({
               }}
             />
           </div>
+
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Tipo da promoção

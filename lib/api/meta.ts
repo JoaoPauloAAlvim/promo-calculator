@@ -12,6 +12,7 @@ export async function getCompradores(signal?: AbortSignal) {
 }
 
 export type ProdutoSugestaoResponse = {
+  confidence: "HIGH" | "LOW";
   sugestao: null | { produto: string; marca: string; categoria: string };
   candidatos: Array<{ produto: string; marca: string; categoria: string }>;
 };
