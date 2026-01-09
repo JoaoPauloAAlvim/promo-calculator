@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "./components/Spinner";
 import { AppHeader } from "./components/AppHeader";
@@ -21,7 +21,6 @@ import { usePromoImport } from "./hooks/usePromoImport";
 import { getCompradores } from "@/lib/api/meta";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { getProdutoSugestao } from "@/lib/api/meta";
-import { useRef } from "react";
 
 
 const initialForm: FormState = {
@@ -62,7 +61,10 @@ export default function Home() {
   const [pendingOpen, setPendingOpen] = useState(false);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastHintKeyRef = useRef<string>("");
+  const AUTO_DRAFT_KEY = "simulador_autodraft";
 
+  const didHydrateDraftRef = useRef(false);
+  const debouncedForm = useDebouncedValue(form, 700);
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
@@ -85,13 +87,121 @@ export default function Home() {
 
   ];
 
+  const formCheck = useMemo(() => {
+    const missing: string[] = [];
+    const invalid: string[] = [];
+
+    const produto = (form.produto || "").trim();
+    const comprador = (form.comprador || "").trim();
+    const tipo = (form.tipoPromocao || "").trim();
+    const di = (form.dataInicio || "").trim();
+    const df = (form.dataFim || "").trim();
+    const marca = (form.marca || "").trim();
+    const categoria = (form.categoria || "").trim();
+
+    if (!produto) missing.push("Produto");
+    if (!comprador) missing.push("Comprador");
+    if (!tipo) missing.push("Tipo da promoção");
+    if (!di) missing.push("Data início");
+    if (!df) missing.push("Data fim");
+    if (!marca) missing.push("Marca");
+    if (!categoria) missing.push("Categoria");
+
+
+    if (di && df) {
+      const ini = parseISODateLocal(di);
+      const fim = parseISODateLocal(df);
+
+      if (!ini || !fim) {
+        invalid.push("Datas inválidas");
+      } else if (fim.getTime() < ini.getTime()) {
+        invalid.push("Data fim menor que início");
+      }
+    }
+
+    const numericFields: Array<{ key: keyof FormState; label: string; mustBeInt?: boolean; mustBePositive?: boolean }> = [
+      { key: "A", label: "Período histórico (A)", mustBeInt: true, mustBePositive: true },
+      { key: "B", label: "Lucro total histórico (B)" },
+      { key: "D", label: "Preço promocional (D)" },
+      { key: "E", label: "Custo unitário (E)" },
+      { key: "F", label: "Receita adicional (F)" },
+    ];
+
+    for (const f of numericFields) {
+      const raw = String(form[f.key] ?? "").trim();
+      if (!raw) {
+        missing.push(f.label);
+        continue;
+      }
+
+      const n = parseBR(raw);
+      if (!Number.isFinite(n)) {
+        invalid.push(`${f.label} inválido`);
+        continue;
+      }
+
+      if (f.mustBePositive && n <= 0) invalid.push(`${f.label} deve ser > 0`);
+      if (f.mustBeInt && !Number.isInteger(n)) invalid.push(`${f.label} deve ser inteiro`);
+      if (!f.mustBePositive && n < 0) invalid.push(`${f.label} não pode ser negativo`);
+    }
+
+    const canCalculate = missing.length === 0 && invalid.length === 0;
+
+    let message = "";
+    if (!canCalculate) {
+      if (missing.length) message += `Falta preencher: ${missing.join(", ")}.`;
+      if (invalid.length) message += `${message ? " " : ""}Corrija: ${invalid.join(", ")}.`;
+    }
+
+    return { canCalculate, message };
+  }, [form, parseBR, parseISODateLocal]);
+
+
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("simulador_draft");
-      if (!raw) return;
 
-      const draft = JSON.parse(raw);
+      if (raw) {
+        const draft = JSON.parse(raw);
+
+        setForm((prev) => ({
+          ...prev,
+          produto: draft.produto ?? prev.produto,
+          categoria: draft.categoria ?? prev.categoria,
+          comprador: draft.comprador ?? prev.comprador,
+          marca: draft.marca ?? prev.marca,
+          tipoPromocao: draft.tipoPromocao ?? prev.tipoPromocao,
+          dataInicio: draft.dataInicio ?? prev.dataInicio,
+          dataFim: draft.dataFim ?? prev.dataFim,
+          A: draft.A ?? prev.A,
+          B: draft.B ?? prev.B,
+          D: draft.D ?? prev.D,
+          E: draft.E ?? prev.E,
+          F: draft.F ?? prev.F,
+        }));
+
+        setModoComprador("LISTA");
+        setCompradorOutro("");
+
+        sessionStorage.removeItem("simulador_draft");
+        setDraftModalOpen(true);
+
+        didHydrateDraftRef.current = true;
+        return; 
+      }
+    } catch {
+      try { sessionStorage.removeItem("simulador_draft"); } catch { }
+    }
+
+    try {
+      const rawLocal = localStorage.getItem(AUTO_DRAFT_KEY);
+      if (!rawLocal) {
+        didHydrateDraftRef.current = true;
+        return;
+      }
+
+      const draft = JSON.parse(rawLocal);
 
       setForm((prev) => ({
         ...prev,
@@ -108,16 +218,38 @@ export default function Home() {
         E: draft.E ?? prev.E,
         F: draft.F ?? prev.F,
       }));
+
       setModoComprador("LISTA");
       setCompradorOutro("");
 
-
-      sessionStorage.removeItem("simulador_draft");
-      setDraftModalOpen(true)
+      didHydrateDraftRef.current = true;
     } catch {
-      try { sessionStorage.removeItem("simulador_draft"); } catch { }
+      try { localStorage.removeItem(AUTO_DRAFT_KEY); } catch { }
+      didHydrateDraftRef.current = true;
     }
   }, []);
+
+
+  useEffect(() => {
+    if (!didHydrateDraftRef.current) return;
+
+    const f = debouncedForm;
+
+    const hasAny =
+      Object.values(f).some((v) => String(v ?? "").trim() !== "");
+
+    if (!hasAny) {
+      try { localStorage.removeItem(AUTO_DRAFT_KEY); } catch { }
+      return;
+    }
+
+    try {
+      localStorage.setItem(AUTO_DRAFT_KEY, JSON.stringify(f));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [debouncedForm]);
+
 
   useEffect(() => {
     const controller = new AbortController();
@@ -213,6 +345,7 @@ export default function Home() {
       setLogoutLoading(false);
       try {
         localStorage.removeItem("simulador_had_session");
+        localStorage.removeItem(AUTO_DRAFT_KEY);
         sessionStorage.removeItem("simulador_expired_shown");
         sessionStorage.removeItem("simulador_session_expired");
       } catch { }
@@ -334,6 +467,7 @@ export default function Home() {
     setResult(null);
     setError(null);
     setForm(initialForm);
+    try { localStorage.removeItem(AUTO_DRAFT_KEY); } catch { }
   }
 
   function fecharModalErro() {
@@ -440,10 +574,8 @@ export default function Home() {
         setModoComprador={setModoComprador}
         compradorOutro={compradorOutro}
         setCompradorOutro={setCompradorOutro}
-
         hintOpen={hintOpen}
         hintText={hintText}
-
         pendingOpen={pendingOpen}
         pendingSugestao={pendingSugestao}
         onApplySugestao={aplicarSugestaoManual}
@@ -451,9 +583,10 @@ export default function Home() {
           setPendingSugestao(null);
           setPendingOpen(false);
         }}
+
+        canCalculate={formCheck.canCalculate}
+        validationMessage={formCheck.message}
       />
-
-
 
       {result && (
         <ResultModal

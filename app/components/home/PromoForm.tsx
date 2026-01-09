@@ -11,7 +11,7 @@ type Props = {
   onChange: (id: keyof FormState, value: string) => void;
   onCalculate: () => void;
 
-  
+
   opcoesComprador: string[];
   modoComprador: "LISTA" | "OUTRO";
   setModoComprador: (v: "LISTA" | "OUTRO") => void;
@@ -25,6 +25,10 @@ type Props = {
   pendingSugestao: null | { marca: string; categoria: string };
   onApplySugestao: () => void;
   onIgnoreSugestao: () => void;
+
+  canCalculate: boolean;
+  validationMessage: string;
+
 };
 
 export function PromoForm({
@@ -44,6 +48,8 @@ export function PromoForm({
   pendingSugestao,
   onApplySugestao,
   onIgnoreSugestao,
+  canCalculate,
+  validationMessage,
 }: Props) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -380,7 +386,7 @@ export function PromoForm({
           <button
             type="button"
             onClick={onCalculate}
-            disabled={loading}
+            disabled={loading || !canCalculate}
             style={{
               marginTop: "20px",
               padding: "8px 32px",
@@ -390,14 +396,32 @@ export function PromoForm({
               fontWeight: 600,
               fontSize: "14px",
               border: "none",
-              cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.7 : 1,
+              opacity: loading || !canCalculate ? 0.6 : 1,
+              cursor: loading || !canCalculate ? "default" : "pointer",
+
               boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
             }}
           >
             {loading ? "Calculando..." : "Calcular ➜"}
           </button>
         </div>
+        {!canCalculate && validationMessage && (
+          <div
+            style={{
+              marginTop: "10px",
+              borderRadius: "10px",
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+              padding: "8px 10px",
+              fontSize: "12px",
+              color: "#4b5563",
+              fontWeight: 600,
+              lineHeight: 1.4,
+            }}
+          >
+            {validationMessage}
+          </div>
+        )}
       </section>
     </main>
   );
