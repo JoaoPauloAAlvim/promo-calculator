@@ -55,6 +55,9 @@ export default function Home() {
   const [categoriaTouched, setCategoriaTouched] = useState(false);
   const [lastSugestao, setLastSugestao] = useState<{ marca: string; categoria: string } | null>(null);
   const debouncedProdutoForm = useDebouncedValue((form.produto || "").trim(), 600);
+  const [hintOpen, setHintOpen] = useState(false);
+  const [hintText, setHintText] = useState("");
+
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
@@ -319,6 +322,11 @@ export default function Home() {
         });
 
         setLastSugestao({ marca: s.marca || "", categoria: s.categoria || "" });
+        setHintText("Sugestão do histórico aplicada (marca/categoria).");
+        setHintOpen(true);
+
+        setTimeout(() => setHintOpen(false), 2000);
+
       } catch (e: any) {
         if (e?.name === "AbortError") return;
         console.error(e);
@@ -352,6 +360,10 @@ export default function Home() {
         setModoComprador={setModoComprador}
         compradorOutro={compradorOutro}
         setCompradorOutro={setCompradorOutro}
+        hintOpen={hintOpen}
+        setHintOpen={setHintOpen}
+        hintText={hintText}
+        setHintText={setHintText}
       />
 
 

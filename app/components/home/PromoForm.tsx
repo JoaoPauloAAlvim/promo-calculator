@@ -15,12 +15,16 @@ type Props = {
   setModoComprador: (v: "LISTA" | "OUTRO") => void;
   compradorOutro: string;
   setCompradorOutro: (v: string) => void;
+  hintOpen: boolean;
+  setHintOpen: (v: boolean) => void;
+  hintText: string;
+  setHintText: (v: string) => void;
 
 };
 
 export function PromoForm({
   form, campos, loading, onChange, onCalculate,
-  opcoesComprador, modoComprador, setModoComprador, compradorOutro, setCompradorOutro
+  opcoesComprador, modoComprador, setModoComprador, compradorOutro, setCompradorOutro, hintOpen, setHintOpen, hintText, setHintText
 }: Props) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -61,6 +65,24 @@ export function PromoForm({
               }}
             />
           </div>
+
+          {hintOpen && (
+            <div
+              style={{
+                marginTop: "8px",
+                borderRadius: "10px",
+                border: "1px solid #bfdbfe",
+                backgroundColor: "#eff6ff",
+                padding: "6px 10px",
+                fontSize: "12px",
+                color: "#1d4ed8",
+                fontWeight: 600,
+              }}
+            >
+              {hintText}
+            </div>
+          )}
+
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
