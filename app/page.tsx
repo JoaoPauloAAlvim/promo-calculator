@@ -19,6 +19,9 @@ import { api } from "@/lib/api/client";
 import { ActionModal } from "./components/ui/ActionModal";
 import { usePromoImport } from "./hooks/usePromoImport";
 import { getCompradores } from "@/lib/api/meta";
+import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
+import { getProdutoSugestao } from "@/lib/api/meta";
+
 
 const initialForm: FormState = {
   produto: "",
@@ -48,7 +51,10 @@ export default function Home() {
   const [opcoesComprador, setOpcoesComprador] = useState<string[]>([]);
   const [modoComprador, setModoComprador] = useState<"LISTA" | "OUTRO">("LISTA");
   const [compradorOutro, setCompradorOutro] = useState("");
-
+  const [marcaTouched, setMarcaTouched] = useState(false);
+  const [categoriaTouched, setCategoriaTouched] = useState(false);
+  const [lastSugestao, setLastSugestao] = useState<{ marca: string; categoria: string } | null>(null);
+  const debouncedProdutoForm = useDebouncedValue((form.produto || "").trim(), 600);
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
@@ -121,15 +127,23 @@ export default function Home() {
     return () => controller.abort();
   }, []);
 
-
-
   async function ensureAuth() {
     await api<{ ok: true }>("/api/auth/check", { method: "GET" });
   }
 
   function setField(id: keyof FormState, value: string) {
+    if (id === "marca") setMarcaTouched(true);
+    if (id === "categoria") setCategoriaTouched(true);
+
+    if (id === "produto") {
+      setMarcaTouched(false);
+      setCategoriaTouched(false);
+      setLastSugestao(null);
+    }
+
     setForm((prev) => ({ ...prev, [id]: value }));
   }
+
 
   async function handleLogout() {
     try {
@@ -272,6 +286,48 @@ export default function Home() {
     await ensureAuth();
     promoImport.abrir();
   }
+  useEffect(() => {
+    const produto = debouncedProdutoForm;
+
+    if (!produto || produto.length < 3) return;
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const data = await getProdutoSugestao(produto, controller.signal);
+
+        const s = data?.sugestao;
+        if (!s) return;
+
+        setForm((prev) => {
+          const marcaAtual = (prev.marca || "").trim();
+          const catAtual = (prev.categoria || "").trim();
+
+          const podeSetMarca =
+            !marcaTouched || !marcaAtual || (lastSugestao && marcaAtual === lastSugestao.marca);
+
+          const podeSetCategoria =
+            !categoriaTouched || !catAtual || (lastSugestao && catAtual === lastSugestao.categoria);
+
+          const next = { ...prev };
+
+          if (podeSetMarca && s.marca) next.marca = s.marca;
+          if (podeSetCategoria && s.categoria) next.categoria = s.categoria;
+
+          return next;
+        });
+
+        setLastSugestao({ marca: s.marca || "", categoria: s.categoria || "" });
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.error(e);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [debouncedProdutoForm]);
+
 
 
   return (
