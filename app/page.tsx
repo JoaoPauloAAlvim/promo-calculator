@@ -21,6 +21,10 @@ import { usePromoImport } from "./hooks/usePromoImport";
 import { getCompradores } from "@/lib/api/meta";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { getProdutoSugestao } from "@/lib/api/meta";
+import { LS_KEYS, type DefaultBuyer } from "../lib/storageKeys";
+import { useLocalStorageState } from "../app/hooks/useLocalStorage";
+
+const DEFAULT: DefaultBuyer = { mode: "LISTA", value: "" };
 
 
 const initialForm: FormState = {
@@ -65,6 +69,8 @@ export default function Home() {
 
   const didHydrateDraftRef = useRef(false);
   const debouncedForm = useDebouncedValue(form, 700);
+  const { value: defaultBuyer, setValue: setDefaultBuyer, hydrated } =
+    useLocalStorageState<DefaultBuyer>(LS_KEYS.DEFAULT_BUYER, DEFAULT);
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
@@ -188,7 +194,7 @@ export default function Home() {
         setDraftModalOpen(true);
 
         didHydrateDraftRef.current = true;
-        return; 
+        return;
       }
     } catch {
       try { sessionStorage.removeItem("simulador_draft"); } catch { }
@@ -252,20 +258,22 @@ export default function Home() {
 
 
   useEffect(() => {
-    const controller = new AbortController();
+  const controller = new AbortController();
 
-    (async () => {
-      try {
-        await ensureAuth();
-        const data = await getCompradores(controller.signal);
-        setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
+  (async () => {
+    try {
+      await ensureAuth();
+      const data = await getCompradores(controller.signal);
+      setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.error(e);
+    }
+  })();
 
-    return () => controller.abort();
-  }, []);
+  return () => controller.abort();
+}, []);
+
 
   async function ensureAuth() {
     await api<{ ok: true }>("/api/auth/check", { method: "GET" });
@@ -583,9 +591,11 @@ export default function Home() {
           setPendingSugestao(null);
           setPendingOpen(false);
         }}
-
         canCalculate={formCheck.canCalculate}
         validationMessage={formCheck.message}
+        defaultBuyer={defaultBuyer}
+        onDefaultBuyerChange={setDefaultBuyer}
+        hydrated={hydrated}
       />
 
       {result && (

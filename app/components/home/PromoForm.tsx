@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { FormState } from "@/lib/types";
+import type { DefaultBuyer } from "@/lib/storageKeys";
 
 type Campo = { id: keyof FormState; label: string; placeholder?: string };
-
 type Props = {
   form: FormState;
   campos: Campo[];
@@ -11,6 +12,9 @@ type Props = {
   onChange: (id: keyof FormState, value: string) => void;
   onCalculate: () => void;
 
+  defaultBuyer: DefaultBuyer;
+  onDefaultBuyerChange: (next: DefaultBuyer) => void;
+  hydrated: boolean;
 
   opcoesComprador: string[];
   modoComprador: "LISTA" | "OUTRO";
@@ -28,7 +32,6 @@ type Props = {
 
   canCalculate: boolean;
   validationMessage: string;
-
 };
 
 export function PromoForm({
@@ -37,11 +40,13 @@ export function PromoForm({
   loading,
   onChange,
   onCalculate,
+
   opcoesComprador,
   modoComprador,
   setModoComprador,
   compradorOutro,
   setCompradorOutro,
+
   hintOpen,
   hintText,
   pendingOpen,
@@ -50,7 +55,43 @@ export function PromoForm({
   onIgnoreSugestao,
   canCalculate,
   validationMessage,
+
+  defaultBuyer,
+  onDefaultBuyerChange,
+  hydrated,
 }: Props) {
+  const appliedDefaultRef = useRef(false);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const formHasBuyer = String(form.comprador || "").trim().length > 0;
+    if (formHasBuyer) return;
+
+    const savedMode = defaultBuyer?.mode;
+    const savedValue = String(defaultBuyer?.value || "").trim();
+    if (!savedValue) return;
+
+    if (savedMode === "OUTRO") {
+      setModoComprador("OUTRO");
+      setCompradorOutro(savedValue);
+      onChange("comprador", savedValue);
+      return;
+    }
+
+    setModoComprador("LISTA");
+    setCompradorOutro("");
+    onChange("comprador", savedValue);
+  }, [
+    hydrated,
+    defaultBuyer?.mode,
+    defaultBuyer?.value,
+    form.comprador,
+    onChange,
+    setModoComprador,
+    setCompradorOutro,
+  ]);
+
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <section
@@ -207,7 +248,11 @@ export function PromoForm({
                     onChange("comprador", "");
                     return;
                   }
+
                   onChange("comprador", v);
+
+                  const vv = String(v || "").trim();
+                  if (vv) onDefaultBuyerChange({ mode: "LISTA", value: vv });
                 }}
                 style={{
                   width: "100%",
@@ -220,11 +265,17 @@ export function PromoForm({
                 }}
               >
                 <option value="">Selecione</option>
+
+                {form.comprador && !opcoesComprador.includes(form.comprador) && (
+                  <option value={form.comprador}>{form.comprador}</option>
+                )}
+
                 {opcoesComprador.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
                 <option value="__OUTRO__">Outro…</option>
               </select>
+
             ) : (
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <input
@@ -235,6 +286,10 @@ export function PromoForm({
                     const v = e.target.value;
                     setCompradorOutro(v);
                     onChange("comprador", v);
+
+                    // Salva como padrão (só se tiver valor)
+                    const vv = String(v || "").trim();
+                    if (vv) onDefaultBuyerChange({ mode: "OUTRO", value: vv });
                   }}
                   style={{
                     flex: "1 1 0",
@@ -254,6 +309,7 @@ export function PromoForm({
                     setModoComprador("LISTA");
                     setCompradorOutro("");
                     onChange("comprador", "");
+                    // Não zera o default salvo aqui; ele será atualizado quando selecionar da lista.
                   }}
                   style={{
                     padding: "8px 12px",
@@ -398,13 +454,13 @@ export function PromoForm({
               border: "none",
               opacity: loading || !canCalculate ? 0.6 : 1,
               cursor: loading || !canCalculate ? "default" : "pointer",
-
               boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
             }}
           >
             {loading ? "Calculando..." : "Calcular ➜"}
           </button>
         </div>
+
         {!canCalculate && validationMessage && (
           <div
             style={{
