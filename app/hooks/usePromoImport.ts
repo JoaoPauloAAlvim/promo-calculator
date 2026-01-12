@@ -4,7 +4,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import type { ImportRow, Resultado, ResultadoLote } from "@/lib/types";
 import { parseISODateLocal } from "@/lib/date";
-import { toNumberBR, toNumericString } from "@/lib/format";
+import { parseNumberFromXlsx, toNumberBR } from "@/lib/format";
 import { postCalculo } from "@/lib/api/calculo";
 
 export function usePromoImport() {
@@ -49,7 +49,7 @@ export function usePromoImport() {
       "HIGIENE ORAL",
       "FLÁVIA",
       "COLGATE",
-      "INTERNA", 
+      "INTERNA",
       30,
       12450,
       "10/01/2026",
@@ -108,7 +108,7 @@ export function usePromoImport() {
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
 
-      const json: ImportRow[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      const json: ImportRow[] = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
 
       if (!json.length) {
         setError("A planilha está vazia ou a primeira aba não contém dados para importar.");
@@ -135,11 +135,12 @@ export function usePromoImport() {
           continue;
         }
 
-        const A = toNumericString(row.PeriodoHistorico);
-        const B = toNumericString(row.LucroTotalHistorico);
-        const D = toNumericString(row.PrecoPromocional);
-        const E = toNumericString(row.CustoUnitario);
-        const F = toNumericString(row.ReceitaAdicional);
+        const A = parseNumberFromXlsx(row.PeriodoHistorico);
+        const B = parseNumberFromXlsx(row.LucroTotalHistorico);
+        const D = parseNumberFromXlsx(row.PrecoPromocional);
+        const E = parseNumberFromXlsx(row.CustoUnitario);
+        const F = parseNumberFromXlsx(row.ReceitaAdicional);
+
 
         const dataInicio = parseDateFromCell(row.DataInicioPromocao);
         const dataFim = parseDateFromCell(row.DataFimPromocao);
@@ -173,6 +174,17 @@ export function usePromoImport() {
           continue;
         }
 
+        if (A === null || B === null || D === null || E === null || F === null) {
+          resultadosTemp.push({
+            linha,
+            produto,
+            ok: false,
+            erro: "Valores numéricos inválidos (Periodo/Lucro/Preço/Custo/Receita). Verifique se não estão como texto.",
+          });
+          continue;
+        }
+
+
         const diasPromo = diffMs / (1000 * 60 * 60 * 24) + 1;
         const C = String(diasPromo);
 
@@ -182,16 +194,17 @@ export function usePromoImport() {
             categoria,
             comprador,
             marca,
-            tipoPromocao, 
+            tipoPromocao,
             dataInicio,
             dataFim,
-            A: toNumberBR(A),
-            B: toNumberBR(B),
-            C: toNumberBR(C),
-            D: toNumberBR(D),
-            E: toNumberBR(E),
-            F: toNumberBR(F),
+            A: A ?? 0,
+            B: B ?? 0,
+            C: Number(C),
+            D: D ?? 0,
+            E: E ?? 0,
+            F: F ?? 0,
           });
+
 
           resultadosTemp.push({ linha, produto, ok: true, resultado: payload as Resultado });
         } catch (err: any) {

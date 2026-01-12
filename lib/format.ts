@@ -39,3 +39,34 @@ export const toNumericString = (v: any): string => {
     if (typeof v === "string") return v;
     return "";
   };
+
+export function parseNumberFromXlsx(v: any): number | null {
+  if (v === null || v === undefined || v === "") return null;
+
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+
+  let s = String(v).trim();
+  if (!s) return null;
+
+  s = s.replace(/\s+/g, "").replace(/R\$/gi, "");
+
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(",");
+    const lastDot = s.lastIndexOf(".");
+
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else {
+  }
+
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
