@@ -44,59 +44,69 @@ export function useHistorico({
       marca: marca || "",
       categoria: categoria || "",
       comprador: comprador || "",
-      tipoPromocao : tipoPromocao || "",
+      tipoPromocao: tipoPromocao || "",
       statusPromo: statusPromo || "",
       statusAnalise: statusAnalise || "",
       sort: sort || "RECENTE",
       page,
       pageSize,
     }),
-    [produto, marca, categoria, comprador,tipoPromocao, statusPromo, statusAnalise, sort, page, pageSize]
+    [produto, marca, categoria, comprador, tipoPromocao, statusPromo, statusAnalise, sort, page, pageSize]
   );
 
 
   useEffect(() => {
     const controller = new AbortController();
+    let aborted = false;
 
     (async () => {
       try {
         setLoading(true);
         setErro(null);
 
-                const data = await getHistorico({
-           produto: params.produto || undefined,
-           marca: params.marca || undefined,
-           categoria: params.categoria || undefined,
-           comprador: params.comprador || undefined,
-           tipoPromocao: params.tipoPromocao || undefined,
-           statusPromo: params.statusPromo || undefined,
-           statusAnalise: params.statusAnalise || undefined,
-           sort: (params.sort as any) || "RECENTE",
-           page: params.page,
-           pageSize: params.pageSize,
-        }, controller.signal);
-
+        const data = await getHistorico(
+          {
+            produto: params.produto || undefined,
+            marca: params.marca || undefined,
+            categoria: params.categoria || undefined,
+            comprador: params.comprador || undefined,
+            tipoPromocao: params.tipoPromocao || undefined,
+            statusPromo: params.statusPromo || undefined,
+            statusAnalise: params.statusAnalise || undefined,
+            sort: (params.sort as any) || "RECENTE",
+            page: params.page,
+            pageSize: params.pageSize,
+          },
+          controller.signal
+        );
 
         setItens(Array.isArray(data.itens) ? data.itens : []);
         setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
         setHasMore(Boolean(data.hasMore));
       } catch (err: any) {
-        if (err?.name === "AbortError") return;
-+        console.error(err);
+        if (err?.name === "AbortError") {
+          aborted = true;
+          return;
+        }
 
+        console.error(err);
         setErro(err?.message || "Erro ao buscar histórico. Verifique a conexão.");
         setItens([]);
         setTotalCount(0);
         setHasMore(false);
       } finally {
-        setLoading(false);
+        if (!aborted && !controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
+      aborted = true;
       controller.abort();
     };
   }, [params, reloadToken]);
+
 
   return { itens, totalCount, hasMore, loading, erro };
 }

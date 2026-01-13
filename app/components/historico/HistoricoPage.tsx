@@ -4,7 +4,6 @@ import { useCallback } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Spinner } from "../Spinner";
 import { AppHeader } from "../AppHeader";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { useHistorico } from "@/app/hooks/useHistorico";
@@ -18,6 +17,7 @@ import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { logout } from "@/lib/api/auth";
 import { deleteHistorico, deleteHistoricoMany, getHistoricoOptions } from "@/lib/api/historico";
 import { api } from "@/lib/api/client";
+import { Spinner } from "../Spinner";
 
 export default function HistoricoPage() {
     const router = useRouter();
@@ -626,8 +626,19 @@ export default function HistoricoPage() {
             </main>
 
             {!erro && loading && (
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                    Carregando histórico…
+                <div
+                    className=" bg-white px-4 py-3"
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                    }}
+                >
+                    <Spinner size={30} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563" }}>
+                        Carregando…
+                    </span>
                 </div>
             )}
 
