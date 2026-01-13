@@ -87,23 +87,14 @@ export async function GET(req: Request) {
 
     if (statusAnalise) {
       if (statusAnalise === "PENDENTE") {
-        baseQuery.whereNull("situacao_analise");
+        baseQuery.where((q) => q.whereNull("situacao_analise").orWhere("situacao_analise", ""));
       } else if (["ACIMA", "ABAIXO", "IGUAL"].includes(statusAnalise)) {
         baseQuery.where("situacao_analise", statusAnalise);
       }
     }
 
 
-    const countRow = await baseQuery
-      .clone()
-      .count<{ total: string | number }>({ total: "*" })
-      .first();
-
-    const totalCount = countRow
-      ? typeof countRow.total === "string"
-        ? parseInt(countRow.total, 10) || 0
-        : Number(countRow.total) || 0
-      : 0;
+    const countQuery = baseQuery.clone().count<{ total: string | number }>({ total: "*" }).first();
 
     const offset = (page - 1) * pageSize;
 
@@ -122,7 +113,7 @@ export async function GET(req: Request) {
 
     const isPendenteExpr = `
   CASE
-    WHEN (situacao_analise is null) THEN 1 ELSE 0
+     WHEN (situacao_analise is null OR situacao_analise = '') THEN 1 ELSE 0
   END
 `;
 
@@ -171,7 +162,15 @@ export async function GET(req: Request) {
       q.orderBy("dataHora", "desc");
     }
 
-    const rows = await q.offset(offset).limit(pageSize + 1);
+    const rowsQuery = q.offset(offset).limit(pageSize + 1);
+
+    const [countRow, rows] = await Promise.all([countQuery, rowsQuery]);
+
+    const totalCount = countRow
+      ? typeof countRow.total === "string"
+        ? parseInt(countRow.total, 10) || 0
+        : Number(countRow.total) || 0
+      : 0;
 
 
     const hasMore = rows.length > pageSize;

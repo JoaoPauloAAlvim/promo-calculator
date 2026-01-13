@@ -43,7 +43,7 @@ export default function HistoricoPage() {
         marca: string;
         categoria: string;
         comprador: string;
-        tipoPromocao:string;
+        tipoPromocao: string;
         statusPromo: string;
         statusAnalise: string;
         sort: string;
@@ -55,7 +55,7 @@ export default function HistoricoPage() {
         if (state.marca) p.set("marca", state.marca);
         if (state.categoria) p.set("categoria", state.categoria);
         if (state.comprador) p.set("comprador", state.comprador);
-        if(state.tipoPromocao)p.set("tipoPromocao",state.tipoPromocao)
+        if (state.tipoPromocao) p.set("tipoPromocao", state.tipoPromocao)
         if (state.statusPromo) p.set("statusPromo", state.statusPromo);
         if (state.statusAnalise) p.set("statusAnalise", state.statusAnalise);
 
@@ -69,7 +69,7 @@ export default function HistoricoPage() {
     const initialMarca = getParam("marca");
     const initialCategoria = getParam("categoria");
     const initialComprador = getParam("comprador");
-    const initialTipoPromo = getParam ("tipoPromocao")
+    const initialTipoPromo = getParam("tipoPromocao")
     const initialStatusPromo = getParam("statusPromo");
     const initialStatusAnalise = getParam("statusAnalise");
     const initialPage = getParamNumber("page", 1);
@@ -118,6 +118,7 @@ export default function HistoricoPage() {
 
     const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [readyForOptions, setReadyForOptions] = useState(false);
 
     const handleUpdateItem = useCallback((novo: HistoricoItem) => {
         setSelecionado(novo);
@@ -206,7 +207,7 @@ export default function HistoricoPage() {
             marca: (filtroMarca || "").trim(),
             categoria: (filtroCategoria || "").trim(),
             comprador: (filtroComprador || "").trim(),
-            tipoPromocao:(filtroTipoPromocao || "").trim(),
+            tipoPromocao: (filtroTipoPromocao || "").trim(),
             statusPromo: (filtroStatusPromo || "").trim(),
             statusAnalise: (filtroStatus || "").trim(),
             sort: (sort || "RECENTE").trim(),
@@ -240,19 +241,29 @@ export default function HistoricoPage() {
     }, [debouncedProduto, filtroProduto]);
 
     useEffect(() => {
+        if (!readyForOptions) return;
+
         const controller = new AbortController();
+
+        const produto = (debouncedProduto || "").trim();
+        const marca = (filtroMarca || "").trim();
+        const categoria = (filtroCategoria || "").trim();
+        const comprador = (filtroComprador || "").trim();
+        const tipoPromocao = (filtroTipoPromocao || "").trim();
+        const statusPromo = (filtroStatusPromo || "").trim();
+        const statusAnalise = (filtroStatus || "").trim();
 
         (async () => {
             try {
                 const data = await getHistoricoOptions(
                     {
-                        produto: filtroProduto || undefined,
-                        marca: filtroMarca || undefined,
-                        categoria: filtroCategoria || undefined,
-                        comprador: filtroComprador || undefined,
-                        tipoPromocao:filtroTipoPromocao || undefined,
-                        statusPromo: filtroStatusPromo || undefined,
-                        statusAnalise: filtroStatus || undefined,
+                        produto: produto ? produto : undefined,
+                        marca: marca ? marca : undefined,
+                        categoria: categoria ? categoria : undefined,
+                        comprador: comprador ? comprador : undefined,
+                        tipoPromocao: tipoPromocao ? tipoPromocao : undefined,
+                        statusPromo: statusPromo ? statusPromo : undefined,
+                        statusAnalise: statusAnalise ? statusAnalise : undefined,
                     },
                     controller.signal
                 );
@@ -268,13 +279,14 @@ export default function HistoricoPage() {
 
         return () => controller.abort();
     }, [
-        filtroProduto,
-        filtroStatusPromo,
-        filtroStatus,
+        readyForOptions,
+        debouncedProduto,
         filtroMarca,
         filtroCategoria,
         filtroComprador,
-        filtroTipoPromocao
+        filtroTipoPromocao,
+        filtroStatusPromo,
+        filtroStatus,
     ]);
 
 
@@ -313,6 +325,10 @@ export default function HistoricoPage() {
         pageSize,
         reloadToken,
     });
+
+    useEffect(() => {
+        if (!loading) setReadyForOptions(true);
+    }, [loading]);
 
     function selecionarTudoNaPagina() {
         setSelecionados((prev) => {
@@ -427,218 +443,226 @@ export default function HistoricoPage() {
                 }
             />
 
-            {!loading && (
-                <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
-                    {erro && (
-                        <div className="rounded-xl border border-red-400 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            ⚠ {erro}
-                        </div>
-                    )}
 
-                    <HistoricoFilters
-                        filtroProdutoDigitado={filtroProdutoDigitado}
-                        filtroMarca={filtroMarca}
-                        filtroCategoria={filtroCategoria}
-                        filtroComprador={filtroComprador}
-                        filtroStatusPromo={filtroStatusPromo}
-                        filtroTipoPromocao={filtroTipoPromocao}
-                        filtroStatus={filtroStatus}
-                        setFiltroProdutoDigitado={setFiltroProdutoDigitado}
-                        setFiltroMarca={setFiltroMarca}
-                        setFiltroCategoria={setFiltroCategoria}
-                        setFiltroComprador={setFiltroComprador}
-                        setFiltroTipoPromocao={setFiltroTipoPromocao}
-                        setFiltroStatusPromo={setFiltroStatusPromo}
-                        setFiltroStatus={setFiltroStatus}
-                        opcoesMarca={opcoesMarca}
-                        opcoesCategoria={opcoesCategoria}
-                        opcoesComprador={opcoesComprador}
-                        sort={sort}
-                        setSort={handleSortChange}
-                        setPage={setPage}
-                        onClear={() => {
-                            setFiltroProduto("");
-                            setFiltroProdutoDigitado("");
-                            setFiltroMarca("");
-                            setFiltroCategoria("");
-                            setFiltroComprador("");
-                            setFiltroTipoPromocao("");
-                            setFiltroStatus("");
-                            setFiltroStatusPromo("");
-                            setPage(1);
-                        }}
-                    />
+            <main className="max-w-5xl mx-auto px-4 pt-8 pb-16 space-y-6">
+                {erro && (
+                    <div className="rounded-xl border border-red-400 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        ⚠ {erro}
+                    </div>
+                )}
 
-                    <br />
+                <HistoricoFilters
+                    filtroProdutoDigitado={filtroProdutoDigitado}
+                    filtroMarca={filtroMarca}
+                    filtroCategoria={filtroCategoria}
+                    filtroComprador={filtroComprador}
+                    filtroStatusPromo={filtroStatusPromo}
+                    filtroTipoPromocao={filtroTipoPromocao}
+                    filtroStatus={filtroStatus}
+                    setFiltroProdutoDigitado={setFiltroProdutoDigitado}
+                    setFiltroMarca={setFiltroMarca}
+                    setFiltroCategoria={setFiltroCategoria}
+                    setFiltroComprador={setFiltroComprador}
+                    setFiltroTipoPromocao={setFiltroTipoPromocao}
+                    setFiltroStatusPromo={setFiltroStatusPromo}
+                    setFiltroStatus={setFiltroStatus}
+                    opcoesMarca={opcoesMarca}
+                    opcoesCategoria={opcoesCategoria}
+                    opcoesComprador={opcoesComprador}
+                    sort={sort}
+                    setSort={handleSortChange}
+                    setPage={setPage}
+                    onClear={() => {
+                        setFiltroProduto("");
+                        setFiltroProdutoDigitado("");
+                        setFiltroMarca("");
+                        setFiltroCategoria("");
+                        setFiltroComprador("");
+                        setFiltroTipoPromocao("");
+                        setFiltroStatus("");
+                        setFiltroStatusPromo("");
+                        setPage(1);
+                    }}
+                />
 
-                    <div
-                        style={{
-                            borderRadius: "12px",
-                            border: "1px solid #e5e7eb",
-                            backgroundColor: modoSelecao ? "#fff7ed" : "#ffffff",
-                            padding: "10px 12px",
-                            boxShadow: "0 6px 18px rgba(15,23,42,0.06)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "10px",
-                        }}
-                    >
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <br />
+
+                <div
+                    style={{
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: modoSelecao ? "#fff7ed" : "#ffffff",
+                        padding: "10px 12px",
+                        boxShadow: "0 6px 18px rgba(15,23,42,0.06)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <button
+                            type="button"
+                            onClick={toggleModoSelecao}
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "6px 12px",
+                                borderRadius: "999px",
+                                border: "1px solid #d1d5db",
+                                backgroundColor: modoSelecao ? "#111827" : "#ffffff",
+                                color: modoSelecao ? "#ffffff" : "#374151",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                            title={modoSelecao ? "Clique para sair do modo seleção" : "Clique para selecionar múltiplos cards"}
+                        >
+                            <span
+                                style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 999,
+                                    backgroundColor: modoSelecao ? "#22c55e" : "#9ca3af",
+                                    display: "inline-block",
+                                }}
+                            />
+                            Modo seleção
+                        </button>
+
+                        {modoSelecao ? (
+                            <span style={{ fontSize: "12px", color: "#92400e", fontWeight: 700 }}>
+                                Selecione os cards para excluir
+                            </span>
+                        ) : (
+                            <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                                Use para excluir vários cards de uma vez
+                            </span>
+                        )}
+                    </div>
+
+                    {modoSelecao && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span
+                                style={{
+                                    fontSize: "12px",
+                                    color: "#111827",
+                                    fontWeight: 700,
+                                    padding: "4px 10px",
+                                    borderRadius: "999px",
+                                    border: "1px solid #e5e7eb",
+                                    backgroundColor: "#f9fafb",
+                                }}
+                            >
+                                Selecionados: {selecionados.size}
+                            </span>
+
                             <button
                                 type="button"
-                                onClick={toggleModoSelecao}
+                                onClick={() => {
+                                    if (tudoSelecionadoNaPagina) desmarcarTudoNaPagina();
+                                    else selecionarTudoNaPagina();
+                                }}
                                 style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "8px",
                                     padding: "6px 12px",
-                                    borderRadius: "999px",
+                                    borderRadius: "10px",
                                     border: "1px solid #d1d5db",
-                                    backgroundColor: modoSelecao ? "#111827" : "#ffffff",
-                                    color: modoSelecao ? "#ffffff" : "#374151",
+                                    backgroundColor: "#ffffff",
+                                    color: "#4b5563",
                                     fontSize: "12px",
                                     fontWeight: 700,
                                     cursor: "pointer",
+                                    whiteSpace: "nowrap",
                                 }}
-                                title={modoSelecao ? "Clique para sair do modo seleção" : "Clique para selecionar múltiplos cards"}
                             >
-                                <span
-                                    style={{
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: 999,
-                                        backgroundColor: modoSelecao ? "#22c55e" : "#9ca3af",
-                                        display: "inline-block",
-                                    }}
-                                />
-                                Modo seleção
+                                {tudoSelecionadoNaPagina ? "Desmarcar página" : `Selecionar página (${itens.length})`}
                             </button>
 
-                            {modoSelecao ? (
-                                <span style={{ fontSize: "12px", color: "#92400e", fontWeight: 700 }}>
-                                    Selecione os cards para excluir
-                                </span>
-                            ) : (
-                                <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                                    Use para excluir vários cards de uma vez
-                                </span>
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setConfirmBulkOpen(true)}
+                                disabled={selecionados.size === 0}
+                                style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "10px",
+                                    border: "1px solid #d1d5db",
+                                    backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#dc2626",
+                                    color: selecionados.size === 0 ? "#9ca3af" : "#ffffff",
+                                    fontSize: "12px",
+                                    fontWeight: 800,
+                                    cursor: selecionados.size === 0 ? "default" : "pointer",
+                                    whiteSpace: "nowrap",
+                                }}
+                                title={selecionados.size === 0 ? "Selecione ao menos 1 card" : ""}
+                            >
+                                Excluir
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={limparSelecao}
+                                disabled={selecionados.size === 0}
+                                style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "10px",
+                                    border: "1px solid #d1d5db",
+                                    backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#ffffff",
+                                    color: selecionados.size === 0 ? "#9ca3af" : "#4b5563",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    cursor: selecionados.size === 0 ? "default" : "pointer",
+                                }}
+                            >
+                                Limpar
+                            </button>
                         </div>
-
-                        {modoSelecao && (
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span
-                                    style={{
-                                        fontSize: "12px",
-                                        color: "#111827",
-                                        fontWeight: 700,
-                                        padding: "4px 10px",
-                                        borderRadius: "999px",
-                                        border: "1px solid #e5e7eb",
-                                        backgroundColor: "#f9fafb",
-                                    }}
-                                >
-                                    Selecionados: {selecionados.size}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (tudoSelecionadoNaPagina) desmarcarTudoNaPagina();
-                                        else selecionarTudoNaPagina();
-                                    }}
-                                    style={{
-                                        padding: "6px 12px",
-                                        borderRadius: "10px",
-                                        border: "1px solid #d1d5db",
-                                        backgroundColor: "#ffffff",
-                                        color: "#4b5563",
-                                        fontSize: "12px",
-                                        fontWeight: 700,
-                                        cursor: "pointer",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {tudoSelecionadoNaPagina ? "Desmarcar página" : `Selecionar página (${itens.length})`}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setConfirmBulkOpen(true)}
-                                    disabled={selecionados.size === 0}
-                                    style={{
-                                        padding: "6px 12px",
-                                        borderRadius: "10px",
-                                        border: "1px solid #d1d5db",
-                                        backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#dc2626",
-                                        color: selecionados.size === 0 ? "#9ca3af" : "#ffffff",
-                                        fontSize: "12px",
-                                        fontWeight: 800,
-                                        cursor: selecionados.size === 0 ? "default" : "pointer",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                    title={selecionados.size === 0 ? "Selecione ao menos 1 card" : ""}
-                                >
-                                    Excluir
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={limparSelecao}
-                                    disabled={selecionados.size === 0}
-                                    style={{
-                                        padding: "6px 12px",
-                                        borderRadius: "10px",
-                                        border: "1px solid #d1d5db",
-                                        backgroundColor: selecionados.size === 0 ? "#f3f4f6" : "#ffffff",
-                                        color: selecionados.size === 0 ? "#9ca3af" : "#4b5563",
-                                        fontSize: "12px",
-                                        fontWeight: 700,
-                                        cursor: selecionados.size === 0 ? "default" : "pointer",
-                                    }}
-                                >
-                                    Limpar
-                                </button>
-                            </div>
-                        )}
-
-                    </div>
-
-                    <br />
-                    {!erro && itens.length === 0 && (
-                        <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
                     )}
 
-                    {!erro && itens.length > 0 && (
-                        <>
-                            <HistoricoGrid
-                                itens={itens}
-                                excluindoId={excluindoId}
-                                onOpen={(item) => abrirModal(item)}
-                                onDelete={(id) => pedirConfirmacaoExcluir(id)}
-                                modoSelecao={modoSelecao}
-                                selecionados={selecionados}
-                                onToggleSelect={toggleSelecionado}
-                            />
+                </div>
 
+                <br />
 
+            </main>
 
-                            <HistoricoPagination
-                                totalCount={totalCount}
-                                page={page}
-                                pageSize={pageSize}
-                                totalPages={totalPages}
-                                itensNaPagina={itens.length}
-                                onFirst={() => setPage(1)}
-                                onPrev={() => setPage((p) => Math.max(1, p - 1))}
-                                onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                onLast={() => setPage(totalPages)}
-                            />
-                        </>
-                    )}
-                </main>
+            {!erro && loading && (
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                    Carregando histórico…
+                </div>
             )}
+
+            {!erro && !loading && itens.length === 0 && (
+                <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
+            )}
+
+            {!erro && itens.length > 0 && (
+                <>
+                    <HistoricoGrid
+                        itens={itens}
+                        excluindoId={excluindoId}
+                        onOpen={(item) => abrirModal(item)}
+                        onDelete={(id) => pedirConfirmacaoExcluir(id)}
+                        modoSelecao={modoSelecao}
+                        selecionados={selecionados}
+                        onToggleSelect={toggleSelecionado}
+                    />
+
+
+
+                    <HistoricoPagination
+                        totalCount={totalCount}
+                        page={page}
+                        pageSize={pageSize}
+                        totalPages={totalPages}
+                        itensNaPagina={itens.length}
+                        onFirst={() => setPage(1)}
+                        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        onLast={() => setPage(totalPages)}
+                    />
+                </>
+            )}
+
 
             {selecionado && (
                 <HistoricoModal
@@ -655,32 +679,7 @@ export default function HistoricoPage() {
 
             )}
 
-            {loading && (
-                <div
-                    style={{
-                        position: "fixed",
-                        inset: 0,
-                        backgroundColor: "rgba(15,23,42,0.45)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 100,
-                    }}
-                >
-                    <Spinner size={40} />
-                    <p
-                        style={{
-                            marginTop: "10px",
-                            fontSize: "13px",
-                            fontWeight: 500,
-                            color: "#e5e7eb",
-                        }}
-                    >
-                        Carregando histórico…
-                    </p>
-                </div>
-            )}
+
 
             <ActionModal
                 open={actionModalOpen}

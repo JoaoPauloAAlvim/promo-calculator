@@ -21,6 +21,7 @@ export async function GET(req: Request) {
     const marca = clean(searchParams.get("marca"));
     const categoria = clean(searchParams.get("categoria"));
     const comprador = clean(searchParams.get("comprador"));
+    const tipoPromocao = clean(searchParams.get("tipoPromocao")).toUpperCase();
 
     const statusPromo = clean(searchParams.get("statusPromo")).toUpperCase();
     const statusAnalise = clean(searchParams.get("statusAnalise")).toUpperCase();
@@ -32,6 +33,10 @@ export async function GET(req: Request) {
     const applyCommonFilters = (q: any) => {
       if (produto) {
         q.where("produto_nome_txt", "ilike", `%${produto}%`);
+      }
+
+      if (tipoPromocao && ["INTERNA", "SCANNTECH"].includes(tipoPromocao)) {
+        q.where("tipo_promocao_txt", tipoPromocao);
       }
 
       if (statusPromo) {

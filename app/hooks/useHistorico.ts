@@ -56,47 +56,45 @@ export function useHistorico({
 
 
   useEffect(() => {
-    let alive = true;
+    const controller = new AbortController();
 
     (async () => {
       try {
         setLoading(true);
         setErro(null);
 
-        const data = await getHistorico({
-          produto: params.produto || undefined,
-          marca: params.marca || undefined,
-          categoria: params.categoria || undefined,
-          comprador: params.comprador || undefined,
-          tipoPromocao: params.tipoPromocao || undefined,
-          statusPromo: params.statusPromo || undefined,
-          statusAnalise: params.statusAnalise || undefined,
-          sort: (params.sort as any) || "RECENTE",
-          page: params.page,
-          pageSize: params.pageSize,
-        });
+                const data = await getHistorico({
+           produto: params.produto || undefined,
+           marca: params.marca || undefined,
+           categoria: params.categoria || undefined,
+           comprador: params.comprador || undefined,
+           tipoPromocao: params.tipoPromocao || undefined,
+           statusPromo: params.statusPromo || undefined,
+           statusAnalise: params.statusAnalise || undefined,
+           sort: (params.sort as any) || "RECENTE",
+           page: params.page,
+           pageSize: params.pageSize,
+        }, controller.signal);
 
-
-        if (!alive) return;
 
         setItens(Array.isArray(data.itens) ? data.itens : []);
         setTotalCount(typeof data.totalCount === "number" ? data.totalCount : 0);
         setHasMore(Boolean(data.hasMore));
       } catch (err: any) {
-        console.error(err);
-        if (!alive) return;
+        if (err?.name === "AbortError") return;
++        console.error(err);
 
         setErro(err?.message || "Erro ao buscar histórico. Verifique a conexão.");
         setItens([]);
         setTotalCount(0);
         setHasMore(false);
       } finally {
-        if (alive) setLoading(false);
+        setLoading(false);
       }
     })();
 
     return () => {
-      alive = false;
+      controller.abort();
     };
   }, [params, reloadToken]);
 

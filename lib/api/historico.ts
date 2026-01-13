@@ -30,7 +30,7 @@ export type HistoricoSort =
   | "ANALISE_PENDENTE";
 
 
-export async function getHistorico(params: HistoricoGetParams) {
+export async function getHistorico(params: HistoricoGetParams, signal?: AbortSignal) {
   const sp = new URLSearchParams();
   if (params.produto) sp.set("produto", params.produto);
   if (params.marca) sp.set("marca", params.marca);
@@ -46,6 +46,7 @@ export async function getHistorico(params: HistoricoGetParams) {
 
   return api<HistoricoGetResponse>(`/api/historico?${sp.toString()}`, {
     method: "GET",
+    signal,
   });
 }
 

@@ -38,8 +38,9 @@ export async function api<T>(url: string, options: ApiOptions = {}): Promise<T> 
     if (!window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
-
-    return new Promise<T>(() => {});
+    
+    throw new ApiException("Sessão expirada. Faça login novamente.", 401);
+    
   }
 
   let payload: any = null;

@@ -35,10 +35,16 @@ export async function GET(
       );
     }
 
-    const resultado =
-      typeof row.resultado === "string"
-        ? JSON.parse(row.resultado)
-        : row.resultado || {};
+    let resultado: any = {};
+    if (typeof row.resultado === "string") {
+      try {
+        resultado = JSON.parse(row.resultado);
+      } catch {
+        resultado = {};
+      }
+    } else {
+      resultado = row.resultado || {};
+    }
 
     return NextResponse.json({
       id: row.id,
