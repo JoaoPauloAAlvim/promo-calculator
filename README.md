@@ -1,4 +1,3 @@
-````md
 # Promo Calculator (promo-calculator)
 
 Aplicação web para **simular promoções** e calcular **metas de venda** com base em:
@@ -91,7 +90,7 @@ O sistema salva automaticamente cada simulação em um **histórico** no Postgre
 ### 2) Instalar dependências
 ```bash
 npm install
-````
+
 
 ### 3) Configurar variáveis de ambiente
 
