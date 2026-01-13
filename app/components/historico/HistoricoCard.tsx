@@ -63,7 +63,6 @@ export function HistoricoCard({
       }}
       className="card-historico flex flex-col gap-2 text-left focus:outline-none"
     >
-      {/* indicador de seleção (canto esquerdo) */}
       {modoSelecao && (
         <div
           style={{
@@ -87,7 +86,6 @@ export function HistoricoCard({
         </div>
       )}
 
-      {/* X de excluir individual: ocultar no modo seleção (pra não confundir) */}
       {!modoSelecao && (
         <button
           type="button"
@@ -126,7 +124,7 @@ export function HistoricoCard({
             <span>
               Lucro/dia:{" "}
               <strong>
-                R{" "}
+                R${" "}
                 {Number(Number(lucroMedio)).toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,

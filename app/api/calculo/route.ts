@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
 import { requireAuth } from "@/lib/authGuard";
+import { toNumberBR } from "@/lib/format";
+import { calcDiasPromoInclusivo, isISODate } from "@/lib/date";
+
 export const runtime = "nodejs";
 
 
@@ -34,6 +37,40 @@ export async function POST(req: Request) {
     marca = typeof marca === "string" ? marca.trim() : "";
     tipoPromocao = typeof tipoPromocao === "string" ? tipoPromocao.trim().toUpperCase() : "";
 
+    const hasInicio = typeof dataInicio === "string" && dataInicio.trim() !== "";
+    const hasFim = typeof dataFim === "string" && dataFim.trim() !== "";
+
+    let diasPromoCalculado: number | null = null;
+
+    if (hasInicio || hasFim) {
+      if (!hasInicio || !hasFim) {
+        return NextResponse.json(
+          { error: "Para calcular o período da promoção, informe dataInicio e dataFim." },
+          { status: 400 }
+        );
+      }
+
+      if (!isISODate(dataInicio) || !isISODate(dataFim)) {
+        return NextResponse.json(
+          { error: "Datas inválidas. Use o formato YYYY-MM-DD para dataInicio e dataFim." },
+          { status: 400 }
+        );
+      }
+
+      const c = calcDiasPromoInclusivo(dataInicio, dataFim);
+      if (c == null) {
+        return NextResponse.json(
+          { error: "Datas inválidas. dataFim deve ser igual ou posterior a dataInicio." },
+          { status: 400 }
+        );
+      }
+
+      diasPromoCalculado = Math.round(c);
+    }
+
+
+
+
     if (!produto) {
       return NextResponse.json(
         { error: "Informe o nome do produto." },
@@ -55,20 +92,24 @@ export async function POST(req: Request) {
       );
     }
 
+    function toNumber(v: unknown, field: string) {
+      const n =
+        typeof v === "number" ? v :
+          typeof v === "string" ? toNumberBR(v) :
+            NaN;
 
-    const toNumber = (v: any) =>
-      typeof v === "number"
-        ? v
-        : typeof v === "string"
-          ? Number(v)
-          : NaN;
+      if (!Number.isFinite(n)) {
+        return NaN;
+      }
+      return n;
+    }
 
-    const periodoHistorico = toNumber(A);
-    const lucroTotalHistorico = toNumber(B);
-    const diasPromo = toNumber(C);
-    const precoPromo = toNumber(D);
-    const custoUnit = toNumber(E);
-    const receitaAdicional = toNumber(F);
+    const periodoHistorico = toNumber(A, "PeriodoHistorico (A)");
+    const lucroTotalHistorico = toNumber(B, "LucroTotalHistorico (B)");
+    const diasPromo = diasPromoCalculado ?? toNumber(C, "DiasPromocao (C)");
+    const precoPromo = toNumber(D, "PrecoPromocional (D)");
+    const custoUnit = toNumber(E, "CustoUnitario (E)");
+    const receitaAdicional = toNumber(F, "ReceitaAdicional (F)");
 
     const camposInvalidos: string[] = [];
     if (!Number.isFinite(periodoHistorico))
@@ -166,6 +207,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!Number.isInteger(diasPromo) || diasPromo <= 0) {
+      return NextResponse.json(
+        { error: "Campo inválido: DiasPromocao (C). Informe um inteiro maior que zero." },
+        { status: 400 }
+      );
+    }
+
     const lucroDiarioHist = lucroTotalHistorico / periodoHistorico;
 
     const lucroUnitarioSemAdicional = precoPromo - custoUnit;
@@ -201,7 +249,7 @@ export async function POST(req: Request) {
       data_fim_promocao: typeof dataFim === "string" ? dataFim : "",
       A,
       B,
-      C,
+      C: String(diasPromo),
       D,
       E,
       F,
@@ -224,7 +272,7 @@ export async function POST(req: Request) {
     const resultado = { entrada, metas };
 
     await db("historico").insert({
-      resultado: JSON.stringify(resultado),
+      resultado,
       produto_nome_txt: produto,
       categoria_txt: categoria || null,
       comprador_txt: comprador || null,

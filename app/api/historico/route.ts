@@ -123,29 +123,36 @@ export async function GET(req: Request) {
         "id",
         "dataHora",
         db.raw(`
-      jsonb_build_object(
-        'entrada', jsonb_build_object(
-  'produto_nome', produto_nome_txt,
-  'produto', produto_nome_txt,
-  'marca', marca_txt,
-  'categoria', categoria_txt,
-  'comprador', comprador_txt,
-  'tipo_promocao', tipo_promocao_txt,
-  'data_inicio_promocao', to_char(data_inicio_promocao, 'YYYY-MM-DD'),
-  'data_fim_promocao', to_char(data_fim_promocao, 'YYYY-MM-DD')
-),
-        'metas', jsonb_build_object(
-          'lucro_med_dia', (resultado->'metas'->>'lucro_med_dia')::numeric,
-          'lucro_medio_diario_promo', (resultado->'metas'->>'lucro_medio_diario_promo')::numeric,
-          'meta_unid_dia', (resultado->'metas'->>'meta_unid_dia')::numeric,
-          'meta_unid_total', (resultado->'metas'->>'meta_unid_total')::numeric,
-          'venda_real', jsonb_build_object(
-            'situacao', resultado->'metas'->'venda_real'->>'situacao'
-          )
-        )
-      ) as resultado
-    `)
-      );
+  jsonb_build_object(
+    'entrada', jsonb_build_object(
+      'produto_nome', produto_nome_txt,
+      'produto', produto_nome_txt,
+      'marca', marca_txt,
+      'categoria', categoria_txt,
+      'comprador', comprador_txt,
+      'tipo_promocao', tipo_promocao_txt,
+      'data_inicio_promocao', to_char(data_inicio_promocao, 'YYYY-MM-DD'),
+      'data_fim_promocao', to_char(data_fim_promocao, 'YYYY-MM-DD')
+    ),
+    'metas', jsonb_build_object(
+      'lucro_med_dia', COALESCE(
+        (resultado->'entrada'->>'lucro_diario_hist')::numeric,
+        (resultado->'metas'->>'lucro_med_dia')::numeric,
+        (resultado->'metas'->>'lucro_medio_diario_promo')::numeric
+      ),
+      'lucro_medio_diario_promo', COALESCE(
+        (resultado->'entrada'->>'lucro_diario_hist')::numeric,
+        (resultado->'metas'->>'lucro_medio_diario_promo')::numeric
+      ),
+      'meta_unid_dia', (resultado->'metas'->>'meta_unid_dia')::numeric,
+      'meta_unid_total', (resultado->'metas'->>'meta_unid_total')::numeric,
+      'venda_real', jsonb_build_object(
+        'situacao', resultado->'metas'->'venda_real'->>'situacao'
+      )
+    )
+  ) as resultado
+`)
+);
 
     if (sort === "ANTIGO") {
       q.orderBy("dataHora", "asc");

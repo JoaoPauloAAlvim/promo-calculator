@@ -287,7 +287,6 @@ export function PromoForm({
                     setCompradorOutro(v);
                     onChange("comprador", v);
 
-                    // Salva como padrão (só se tiver valor)
                     const vv = String(v || "").trim();
                     if (vv) onDefaultBuyerChange({ mode: "OUTRO", value: vv });
                   }}
@@ -309,7 +308,6 @@ export function PromoForm({
                     setModoComprador("LISTA");
                     setCompradorOutro("");
                     onChange("comprador", "");
-                    // Não zera o default salvo aqui; ele será atualizado quando selecionar da lista.
                   }}
                   style={{
                     padding: "8px 12px",
