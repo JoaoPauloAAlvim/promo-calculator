@@ -112,7 +112,7 @@ export async function GET(req: Request) {
 
       const rows = await q
         .clone()
-        .distinct(db.raw(`comprador_txt as v`))
+        .distinct(db.raw(`UPPER(TRIM(comprador_txt)) as v`))
         .whereNotNull("comprador_txt")
         .where("comprador_txt", "<>", "")
         .orderBy("v", "asc");

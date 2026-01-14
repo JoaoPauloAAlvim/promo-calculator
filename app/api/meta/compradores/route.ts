@@ -11,13 +11,13 @@ export async function GET() {
 
   try {
     const rows = await db("historico")
-      .distinct("comprador_txt as v")
+      .select(db.raw("DISTINCT UPPER(TRIM(comprador_txt)) as v"))
       .whereNotNull("comprador_txt")
       .whereRaw("trim(comprador_txt) <> ''")
       .orderBy("v", "asc");
 
     const compradores = rows.map((r: any) => String(r.v)).filter(Boolean);
-
+    
     return NextResponse.json({ compradores });
   } catch (err: any) {
     console.error("ERRO /api/meta/compradores:", err);

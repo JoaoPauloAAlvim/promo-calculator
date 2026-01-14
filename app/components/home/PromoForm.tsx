@@ -69,7 +69,7 @@ export function PromoForm({
     if (formHasBuyer) return;
 
     const savedMode = defaultBuyer?.mode;
-    const savedValue = String(defaultBuyer?.value || "").trim();
+    const savedValue = String(defaultBuyer?.value || "").trim().toUpperCase();
     if (!savedValue) return;
 
     if (savedMode === "OUTRO") {
@@ -252,7 +252,9 @@ export function PromoForm({
                   onChange("comprador", v);
 
                   const vv = String(v || "").trim();
-                  if (vv) onDefaultBuyerChange({ mode: "LISTA", value: vv });
+                  const vNorm = vv.toUpperCase();
+                  if (vNorm) onDefaultBuyerChange({ mode: "LISTA", value: vNorm });
+
                 }}
                 style={{
                   width: "100%",
@@ -284,12 +286,15 @@ export function PromoForm({
                   value={compradorOutro}
                   onChange={(e) => {
                     const v = e.target.value;
-                    setCompradorOutro(v);
-                    onChange("comprador", v);
-
                     const vv = String(v || "").trim();
-                    if (vv) onDefaultBuyerChange({ mode: "OUTRO", value: vv });
+                    const vNorm = vv.toUpperCase();
+
+                    setCompradorOutro(v);
+                    onChange("comprador", vNorm);
+
+                    if (vNorm) onDefaultBuyerChange({ mode: "OUTRO", value: vNorm });
                   }}
+
                   style={{
                     flex: "1 1 0",
                     width: "100%",
@@ -308,7 +313,10 @@ export function PromoForm({
                     setModoComprador("LISTA");
                     setCompradorOutro("");
                     onChange("comprador", "");
+
+                    onDefaultBuyerChange({ mode: "LISTA", value: "" });
                   }}
+
                   style={{
                     padding: "8px 12px",
                     borderRadius: "12px",

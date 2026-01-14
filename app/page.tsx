@@ -258,21 +258,21 @@ export default function Home() {
 
 
   useEffect(() => {
-  const controller = new AbortController();
+    const controller = new AbortController();
 
-  (async () => {
-    try {
-      await ensureAuth();
-      const data = await getCompradores(controller.signal);
-      setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      console.error(e);
-    }
-  })();
+    (async () => {
+      try {
+        await ensureAuth();
+        const data = await getCompradores(controller.signal);
+        setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.error(e);
+      }
+    })();
 
-  return () => controller.abort();
-}, []);
+    return () => controller.abort();
+  }, []);
 
 
   async function ensureAuth() {
@@ -371,6 +371,15 @@ export default function Home() {
       await ensureAuth()
       const { produto, categoria, comprador, marca, dataInicio, dataFim, tipoPromocao } = form;
 
+      const compradorNorm = (comprador || "").trim().toUpperCase();
+
+      if (!compradorNorm) {
+        setResult(null);
+        setError("Informe o comprador.");
+        return;
+      }
+
+
       if (!produto.trim()) {
         setResult(null);
         setError("Informe o nome do produto.");
@@ -448,7 +457,7 @@ export default function Home() {
       const data = await postCalculo({
         produto,
         categoria,
-        comprador,
+        comprador: compradorNorm,
         marca,
         tipoPromocao,
         dataInicio,
@@ -462,6 +471,13 @@ export default function Home() {
       });
 
       setResult(data as Resultado);
+
+      setOpcoesComprador((prev) => {
+        if (!compradorNorm) return prev;
+        if (prev.includes(compradorNorm)) return prev;
+        return [...prev, compradorNorm].sort((a, b) => a.localeCompare(b));
+      });
+
     } catch (e) {
       console.error(e);
       setResult(null);

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
-    comprador = typeof comprador === "string" ? comprador.trim() : "";
+    comprador = typeof comprador === "string" ? comprador.trim().toUpperCase() : "";
     marca = typeof marca === "string" ? marca.trim() : "";
     tipoPromocao = typeof tipoPromocao === "string" ? tipoPromocao.trim().toUpperCase() : "";
 
@@ -84,6 +84,21 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    if (!comprador) {
+      return NextResponse.json(
+        { error: "Informe o comprador." },
+        { status: 400 }
+      );
+    }
+
+    if (comprador.length > 60) {
+      return NextResponse.json(
+        { error: "O nome do comprador é muito longo. Resuma." },
+        { status: 400 }
+      );
+    }
+
 
     if (!["INTERNA", "SCANNTECH"].includes(tipoPromocao)) {
       return NextResponse.json(
