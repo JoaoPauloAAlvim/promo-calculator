@@ -3,7 +3,7 @@
 import type { Resultado, FormState } from "@/lib/types";
 import { entradaLabels } from "@/lib/entradaLabels";
 import { formatBR } from "@/lib/format";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useModalA11y } from "@/app/hooks/useModalA11y";
 
 type Props = {
@@ -14,6 +14,8 @@ type Props = {
 
 export function ResultModal({ result, form, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
 
   useModalA11y({
     open: true,
@@ -30,6 +32,30 @@ export function ResultModal({ result, form, onClose }: Props) {
     (result as any)?.entrada?.produto ??
     form?.produto ??
     "";
+
+  function buildResumo(resultado: any) {
+    const e = resultado?.entrada || {};
+    const m = resultado?.metas || {};
+
+    const linhas = [
+      `PROMOÇÃO — RESUMO`,
+      ``,
+      `Produto: ${e.produto_nome || "—"}`,
+      `Comprador: ${e.comprador || "—"}`,
+      `Tipo: ${e.tipo_promocao || "—"}`,
+      `Período: ${e.data_inicio_promocao || "—"} → ${e.data_fim_promocao || "—"}`,
+      `Dias de Promoção: ${e.C || "—"}`,
+      ``,
+      `Preço promo: R$ ${String(e.D ?? "—")}`,
+      `Custo: R$ ${String(e.E ?? "—")}`,
+      `Reembolso/Receita: R$ ${String(e.F ?? "—")}`,
+      `Lucro unitário: R$ ${m?.lucro_unitario_com_adicional != null ? formatBR(Number(m.lucro_unitario_com_adicional)) : "—"}`,
+      `Meta/dia: ${m?.meta_unid_dia ?? "—"} un`,
+      `Meta total: ${m?.meta_unid_total ?? "—"} un`,
+    ];
+
+    return linhas.join("\n");
+  }
 
   return (
     <div
@@ -89,23 +115,71 @@ export function ResultModal({ result, form, onClose }: Props) {
             boxSizing: "border-box",
           }}
         >
-          <div style={{ marginBottom: "12px" }}>
-            <p
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginBottom: "12px",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
+                Resultado da simulação
+              </p>
+
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
+                {nomeProduto || "Produto não informado"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const texto = buildResumo(result);
+
+                  if (!navigator?.clipboard?.writeText) {
+                    alert("Seu navegador não permite copiar automaticamente. Tente copiar manualmente.");
+                    return;
+                  }
+
+                  await navigator.clipboard.writeText(texto);
+
+                  setCopiado(true);
+                  window.setTimeout(() => setCopiado(false), 1500);
+                } catch (e) {
+                  console.error(e);
+                  alert("Não foi possível copiar o resumo.");
+                }
+              }}
               style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "#6b7280",
-                marginBottom: "4px",
+                borderRadius: "10px",
+                border: "1px solid #e5e7eb",
+                padding: "8px 12px",
+                fontSize: "12px",
+                backgroundColor: "#ffffff",
+                color: "#111827",
+                cursor: "pointer",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                marginTop: "2px",
               }}
             >
-              Resultado da simulação
-            </p>
-            <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
-              {nomeProduto || "Produto não informado"}
-            </p>
+              {copiado ? "Copiado!" : "Copiar resumo"}
+            </button>
           </div>
+
 
           <div
             style={{
@@ -176,8 +250,8 @@ export function ResultModal({ result, form, onClose }: Props) {
                 (metas as any)?.lucro_unitario_com_adicional !== undefined
                   ? Number((metas as any).lucro_unitario_com_adicional)
                   : metas?.lucro_unitario_promo !== undefined
-                  ? Number(metas.lucro_unitario_promo)
-                  : lucroSemAdic + receitaAdic;
+                    ? Number(metas.lucro_unitario_promo)
+                    : lucroSemAdic + receitaAdic;
 
               return (
                 <div
@@ -317,7 +391,7 @@ export function ResultModal({ result, form, onClose }: Props) {
                 </p>
               </div>
 
-             <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
+              <div style={{ borderRadius: "10px", border: "1px solid #e5e7eb", padding: "6px 8px", backgroundColor: "#f9fafb" }}>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "2px" }}>Tipo:</p>
                 <p style={{ fontSize: "13px", color: "#111827", fontWeight: 700 }}>
                   {(entrada as any).tipo_promocao || "—"}
@@ -332,10 +406,10 @@ export function ResultModal({ result, form, onClose }: Props) {
                   raw === undefined || raw === null
                     ? "—"
                     : isNumero
-                    ? key === "A" || key === "C"
-                      ? String(Math.round(raw))
-                      : formatBR(raw)
-                    : String(raw);
+                      ? key === "A" || key === "C"
+                        ? String(Math.round(raw))
+                        : formatBR(raw)
+                      : String(raw);
 
                 return (
                   <div
