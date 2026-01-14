@@ -625,54 +625,72 @@ export default function HistoricoPage() {
 
             </main>
 
-            {!erro && loading && (
+
+
+            {!erro && (
                 <div
-                    className=" bg-white px-4 py-3"
                     style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "10px",
+                        position: "relative",
+                        width: "100%",
+                        minHeight: itens.length > 0 ? 200 : 80, // garante altura para o overlay cobrir algo
                     }}
                 >
-                    <Spinner size={30} />
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#4b5563" }}>
-                        Carregando…
-                    </span>
+                    {!loading && itens.length === 0 && (
+                        <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
+                    )}
+
+                    {itens.length > 0 && (
+                        <>
+                            <HistoricoGrid
+                                itens={itens}
+                                excluindoId={excluindoId}
+                                onOpen={(item) => abrirModal(item)}
+                                onDelete={(id) => pedirConfirmacaoExcluir(id)}
+                                modoSelecao={modoSelecao}
+                                selecionados={selecionados}
+                                onToggleSelect={toggleSelecionado}
+                            />
+
+                            <HistoricoPagination
+                                totalCount={totalCount}
+                                page={page}
+                                pageSize={pageSize}
+                                totalPages={totalPages}
+                                itensNaPagina={itens.length}
+                                onFirst={() => setPage(1)}
+                                onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                                onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                onLast={() => setPage(totalPages)}
+                            />
+                        </>
+                    )}
+
+                    {loading && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                inset: 0,
+                                zIndex: 50,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "rgba(255,255,255,0.70)",
+                                backdropFilter: "blur(2px)",
+                                borderRadius: "12px",
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
+                                <Spinner size={30} />
+                                <span style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>
+                                    Carregando…
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {!erro && !loading && itens.length === 0 && (
-                <p className="text-sm text-slate-600">Nenhuma simulação encontrada.</p>
-            )}
 
-            {!erro && itens.length > 0 && (
-                <>
-                    <HistoricoGrid
-                        itens={itens}
-                        excluindoId={excluindoId}
-                        onOpen={(item) => abrirModal(item)}
-                        onDelete={(id) => pedirConfirmacaoExcluir(id)}
-                        modoSelecao={modoSelecao}
-                        selecionados={selecionados}
-                        onToggleSelect={toggleSelecionado}
-                    />
-
-
-
-                    <HistoricoPagination
-                        totalCount={totalCount}
-                        page={page}
-                        pageSize={pageSize}
-                        totalPages={totalPages}
-                        itensNaPagina={itens.length}
-                        onFirst={() => setPage(1)}
-                        onPrev={() => setPage((p) => Math.max(1, p - 1))}
-                        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        onLast={() => setPage(totalPages)}
-                    />
-                </>
-            )}
 
 
             {selecionado && (
@@ -684,14 +702,7 @@ export default function HistoricoPage() {
                     onReload={handleReload}
                     modoSelecao={modoSelecao}
                 />
-
-
-
-
             )}
-
-
-
             <ActionModal
                 open={actionModalOpen}
                 title={actionModalTitle}

@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { verifyAuthToken } from "@/lib/authToken";
 
 export function requireAuth() {
-  const c = cookies().get("simulador_auth")?.value;
+  const token = cookies().get("simulador_auth")?.value;
 
-  if (c !== "ok") {
+  if (!verifyAuthToken(token)) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 

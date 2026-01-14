@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAuthToken } from "@/lib/authToken";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,16 @@ export async function POST(req: Request) {
 
     const res = NextResponse.json({ ok: true });
 
-    res.cookies.set("simulador_auth", "ok", {
+    const maxAge = lembrar ? 60 * 60 * 24 * 7 : 60 * 60 * 1;
+    const token = createAuthToken(maxAge);
+
+    res.cookies.set("simulador_auth", token, {
       httpOnly: true,
       path: "/",
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: lembrar ? 60 * 60 * 24 * 7 : 60 * 60 * 1,
+      maxAge,
     });
-
 
     return res;
   } catch (error) {
