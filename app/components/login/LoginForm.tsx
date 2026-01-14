@@ -1,6 +1,7 @@
 "use client";
 
 import { Spinner } from "../Spinner";
+import { useState } from "react";
 
 type Props = {
   email: string;
@@ -23,6 +24,71 @@ export function LoginForm({
   loading,
   onSubmit,
 }: Props) {
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  function EyeIcon({ size = 18 }: { size?: number }) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </svg>
+    );
+  }
+
+  function EyeOffIcon({ size = 18 }: { size?: number }) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M3 12s3.5-7 9-7c2.2 0 4.1.8 5.6 2"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M21 12s-3.5 7-9 7c-2.2 0-4.1-.8-5.6-2"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M10.5 10.5a3 3 0 0 0 4.0 4.0"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M3 3l18 18"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+
   return (
     <main className="flex-1 flex items-center justify-center px-4 py-8">
       <section
@@ -86,21 +152,45 @@ export function LoginForm({
             >
               Senha
             </label>
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="Digite sua senha"
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Digite sua senha"
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 44px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  padding: "6px",
+                  borderRadius: "8px",
+                  color: "#6b7280",
+                }}
+              >
+                {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+              </button>
+            </div>
+
           </div>
 
           <div
