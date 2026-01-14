@@ -159,7 +159,7 @@ npm run db:migrate:prod
 * Login: `POST /api/login`
 
   * Body: `{ "email": "...", "senha": "...", "lembrar": true|false }`
-  * Cria cookie `simulador_auth=ok` (httpOnly)
+  * Cria cookie `simulador_auth=<TOKEN_ASSINADO>` (httpOnly) usando `AUTH_SECRET`
   * `lembrar=true` → 7 dias; `false` → 1 hora
 
 * Logout: `POST /api/logout`
@@ -290,6 +290,7 @@ npm run db:migrate:dev
    * `DATABASE_URL`
    * `AUTH_EMAIL`
    * `AUTH_PASSWORD`
+   * `AUTH_SECRET`
 2. Rode migrations:
 
    ```bash
