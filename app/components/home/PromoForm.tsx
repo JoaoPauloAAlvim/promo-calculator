@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import type { FormState } from "@/lib/types";
 import type { DefaultBuyer } from "@/lib/storageKeys";
+import Link from "next/link";
+
 
 type Campo = { id: keyof FormState; label: string; placeholder?: string };
 type Props = {
@@ -197,9 +199,18 @@ export function PromoForm({
           boxSizing: "border-box",
         }}
       >
-        <h2 className="text-xl md:text-2xl font-semibold text-slate-800 mb-2 text-center">
-          Informe os dados da promoção
-        </h2>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+          <div style={{ width: "72px" }} /> {/* espaçador para manter o título central */}
+
+          <h2 className="text-xl md:text-2xl font-semibold text-slate-800 text-center" style={{ flex: 1 }}>
+            Informe os dados da promoção
+          </h2>
+
+        </div>
+
+
+
 
         <div style={{ maxWidth: "260px", margin: "0 auto" }}>
           <div style={{ marginBottom: "16px" }}>
@@ -624,6 +635,31 @@ export function PromoForm({
           >
             Limpar tudo
           </button>
+
+          <Link
+            href="/reversa"
+            style={{
+              marginTop: "20px",
+              padding: "8px 18px",
+              borderRadius: "10px",
+              backgroundColor: "#ffffff",
+              color: "#4b5563",
+              fontWeight: 700,
+              fontSize: "14px",
+              border: "1px solid #d1d5db",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
+            }}
+            title="Abrir Calculadora Reversa"
+          >
+            Reversa
+          </Link>
+
 
           <button
             type="button"
