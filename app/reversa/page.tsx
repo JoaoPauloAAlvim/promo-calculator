@@ -10,6 +10,20 @@ function toBRString(n: number) {
     return Number.isFinite(n) ? n.toFixed(2).replace(".", ",") : "";
 }
 
+function arredondarParaFinal(preco: number, finalCentavos: number) {
+    if (!Number.isFinite(preco)) return preco;
+
+    const base = Math.floor(preco);
+    let candidato = base + finalCentavos / 100;
+
+    if (candidato + 1e-9 < preco) {
+        candidato = (base + 1) + finalCentavos / 100;
+    }
+
+    return candidato;
+}
+
+
 export default function ReversaPage() {
     const router = useRouter();
 
@@ -83,9 +97,14 @@ export default function ReversaPage() {
         const draft = {
             A,
             B,
-            D: modo === "PRECO" ? toBRString(calc.precoSugerido) : D,
+            D: modo === "PRECO"
+  ? (String(D || "").trim() ? D : toBRString(calc.precoSugerido))
+  : D,
             E,
-            F: modo === "REEMBOLSO" ? toBRString(calc.reembolsoMin) : F,
+            F: modo === "REEMBOLSO"
+  ? (String(F || "").trim() ? F : toBRString(calc.reembolsoMin))
+  : F,
+
         };
 
         sessionStorage.setItem("simulador_draft", JSON.stringify(draft));
@@ -133,6 +152,9 @@ export default function ReversaPage() {
         cursor: "pointer",
         whiteSpace: "nowrap",
     };
+
+    const custoUnitAtual = toNumberBR(E);
+
 
     return (
         <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -300,9 +322,80 @@ export default function ReversaPage() {
                     >
                         {saida}
                     </div>
-
-
                 )}
+
+                {modo === "PRECO" && calc.ok && (
+                    <div style={{ maxWidth: "260px", margin: "10px auto 0" }}>
+                        <label style={labelStyle}>Preço promocional que será usado</label>
+                        <input
+                            style={inputStyle}
+                            value={String(D || toBRString(calc.precoSugerido))}
+                            readOnly
+                        />
+                    </div>
+                )}
+
+                {calc.ok && modo === "PRECO" && Number.isFinite(custoUnitAtual) && calc.precoSugerido < custoUnitAtual && (
+                    <div
+                        style={{
+                            marginTop: "8px",
+                            borderRadius: "10px",
+                            border: "1px solid #fecaca",
+                            backgroundColor: "#fef2f2",
+                            padding: "8px 10px",
+                            fontSize: "12px",
+                            color: "#b91c1c",
+                            fontWeight: 800,
+                            lineHeight: 1.4,
+                            textAlign: "center",
+                        }}
+                    >
+                        Atenção: o preço sugerido (D) ficou abaixo do custo (E).
+                        Ajuste a meta/dia ou negocie reembolso.
+                    </div>
+                )}
+
+                {calc.ok && modo === "PRECO" && (
+                    <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
+                        <button
+                            type="button"
+                            onClick={() => setD(toBRString(arredondarParaFinal(calc.precoSugerido, 99)))}
+                            style={btnSecStyle}
+                            title="Arredondar para final ,99"
+                        >
+                            ,99
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setD(toBRString(arredondarParaFinal(calc.precoSugerido, 90)))}
+                            style={btnSecStyle}
+                            title="Arredondar para final ,90"
+                        >
+                            ,90
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setD(toBRString(arredondarParaFinal(calc.precoSugerido, 79)))}
+                            style={btnSecStyle}
+                            title="Arredondar para final ,79"
+                        >
+                            ,79
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setD(toBRString(arredondarParaFinal(calc.precoSugerido, 49)))}
+                            style={btnSecStyle}
+                            title="Arredondar para final ,49"
+                        >
+                            ,49
+                        </button>
+                    </div>
+                )}
+
+
 
                 {calc.ok && (
                     <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "10px" }}>
@@ -312,7 +405,7 @@ export default function ReversaPage() {
                                 onClick={() => setD(toBRString(calc.precoSugerido))}
                                 style={btnSecStyle}
                             >
-                                Aplicar em Reembolso
+                                Aplicar em Preço
                             </button>
                         ) : (
                             <button
@@ -320,7 +413,7 @@ export default function ReversaPage() {
                                 onClick={() => setF(toBRString(calc.reembolsoMin))}
                                 style={btnSecStyle}
                             >
-                                Aplicar em Preço
+                                Aplicar em Reembolso
                             </button>
                         )}
                     </div>
