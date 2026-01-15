@@ -92,6 +92,28 @@ export function PromoForm({
     setCompradorOutro,
   ]);
 
+  function handleClearAll() {
+    onChange("produto", "");
+    onChange("categoria", "");
+    onChange("comprador", "");
+    onChange("marca", "");
+    onChange("tipoPromocao", "");
+    onChange("dataInicio", "");
+    onChange("dataFim", "");
+
+    onChange("A", "");
+    onChange("B", "");
+    onChange("D", "");
+    onChange("E", "");
+    onChange("F", "");
+
+    setModoComprador("LISTA");
+    setCompradorOutro("");
+
+    onDefaultBuyerChange({ mode: "LISTA", value: "" });
+  }
+
+
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <section
@@ -444,7 +466,28 @@ export function PromoForm({
           ))}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            disabled={loading || !canCalculate}
+            style={{
+              marginTop: "20px",
+              padding: "8px 18px",
+              borderRadius: "10px",
+              backgroundColor: "#ffffff",
+              color: "#374151",
+              fontWeight: 700,
+              fontSize: "14px",
+              border: "1px solid #d1d5db",
+              opacity: loading || !canCalculate ? 0.6 : 1,
+              cursor: loading || !canCalculate ? "default" : "pointer",
+            }}
+
+          >
+            Limpar tudo
+          </button>
+
           <button
             type="button"
             onClick={onCalculate}
