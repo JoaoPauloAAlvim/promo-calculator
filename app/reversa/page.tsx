@@ -51,7 +51,7 @@ export default function ReversaPage() {
         if (modo === "PRECO") {
             if (!Number.isFinite(f)) return { ok: false as const, msg: "Para calcular D, informe F (reembolso)." };
             const precoSugerido = lucroUnitMin + e - f;
-            return { ok: true as const, precoSugerido, reembolsoMin: f, lucroUnitMin };
+            return { ok: true as const, precoSugerido, reembolsoMin: f, lucroUnitMin, lucroDiarioHist };
         }
 
         if (!Number.isFinite(d)) return { ok: false as const, msg: "Para calcular F, informe D (preço)." };
@@ -59,7 +59,7 @@ export default function ReversaPage() {
         const reembolsoMin = Math.max(0, reembolsoCalc);
         const precisaReembolso = reembolsoCalc > 0;
 
-        return { ok: true as const, precoSugerido: d, reembolsoMin, lucroUnitMin, precisaReembolso };
+        return { ok: true as const, precoSugerido: d, reembolsoMin, lucroUnitMin, lucroDiarioHist, precisaReembolso };
 
     }, [modo, A, B, D, E, F, metaDia]);
 
@@ -226,6 +226,26 @@ export default function ReversaPage() {
                     )}
                 </div>
 
+                {calc.ok && (
+                    <div
+                        style={{
+                            marginTop: "8px",
+                            borderRadius: "10px",
+                            border: "1px solid #e5e7eb",
+                            backgroundColor: "#f9fafb",
+                            padding: "8px 10px",
+                            fontSize: "12px",
+                            color: "#111827",
+                            fontWeight: 700,
+                            lineHeight: 1.4,
+                            textAlign: "center",
+                        }}
+                    >
+                        Lucro diário histórico: R$ {formatBR(calc.lucroDiarioHist)} •
+                        Lucro unit. mínimo (pela meta): R$ {formatBR(calc.lucroUnitMin)}
+                    </div>
+                )}
+
                 <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
                     <button
                         type="button"
@@ -280,7 +300,32 @@ export default function ReversaPage() {
                     >
                         {saida}
                     </div>
+
+
                 )}
+
+                {calc.ok && (
+                    <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "10px" }}>
+                        {modo === "PRECO" ? (
+                            <button
+                                type="button"
+                                onClick={() => setD(toBRString(calc.precoSugerido))}
+                                style={btnSecStyle}
+                            >
+                                Aplicar em Reembolso
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setF(toBRString(calc.reembolsoMin))}
+                                style={btnSecStyle}
+                            >
+                                Aplicar em Preço
+                            </button>
+                        )}
+                    </div>
+                )}
+
             </section>
         </main>
     );
