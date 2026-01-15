@@ -44,3 +44,17 @@ body {
   transform: translateY(-1px);
 }
 
+.date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 44px;
+  height: 100%;
+  cursor: pointer;
+}
+
+.date-input {
+  position: relative;
+}
+
+

@@ -60,7 +60,76 @@ export function PromoForm({
   onDefaultBuyerChange,
   hydrated,
 }: Props) {
-  const appliedDefaultRef = useRef(false);
+
+  const refIni = useRef<HTMLInputElement | null>(null);
+  const refFim = useRef<HTMLInputElement | null>(null);
+
+  function ClearX({ onClick, right = "10px" }: { onClick: () => void; right?: string }) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          position: "absolute",
+          right,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "22px",
+          height: "22px",
+          borderRadius: "999px",
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#374151",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "16px",
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
+    );
+  }
+
+  function CalendarBtn({ onClick }: { onClick: () => void }) {
+    return (
+      <button
+        type="button"
+        aria-label="Abrir calendário"
+        title="Abrir calendário"
+        onClick={onClick}
+        style={{
+          position: "absolute",
+          right: "8px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "22px",
+          height: "22px",
+          borderRadius: "999px",
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M7 3v2M17 3v2M4 8h16M6 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"
+            stroke="#374151"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    );
+  }
+
+
 
   useEffect(() => {
     if (!hydrated) return;
@@ -137,21 +206,27 @@ export function PromoForm({
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Nome do produto
             </label>
-            <input
-              type="text"
-              placeholder="Ex: CREME DENTAL COLGATE TRIPLA AÇÃO 120G"
-              value={form.produto}
-              onChange={(e) => onChange("produto", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Ex: CREME DENTAL COLGATE TRIPLA AÇÃO 120G"
+                value={form.produto}
+                onChange={(e) => onChange("produto", e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 36px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+              {String(form.produto || "").trim() !== "" && (
+                <ClearX onClick={() => onChange("produto", "")} />
+              )}
+            </div>
 
             {pendingOpen && pendingSugestao && (
               <div
@@ -236,21 +311,54 @@ export function PromoForm({
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Categoria do produto
             </label>
-            <input
-              type="text"
-              placeholder="Ex: HIGIENE ORAL"
-              value={form.categoria}
-              onChange={(e) => onChange("categoria", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Ex: HIGIENE ORAL"
+                value={form.categoria}
+                onChange={(e) => onChange("categoria", e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 36px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+              {String(form.categoria || "").trim() !== "" && (
+                <ClearX onClick={() => onChange("categoria", "")} />
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
+              Marca
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Ex: COLGATE"
+                value={form.marca}
+                onChange={(e) => onChange("marca", e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 36px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+              {String(form.marca || "").trim() !== "" && (
+                <ClearX onClick={() => onChange("marca", "")} />
+              )}
+            </div>
+
           </div>
 
           <div style={{ marginBottom: "16px" }}>
@@ -359,27 +467,6 @@ export function PromoForm({
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
-              Marca
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: COLGATE"
-              value={form.marca}
-              onChange={(e) => onChange("marca", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Tipo da promoção
             </label>
 
@@ -406,40 +493,84 @@ export function PromoForm({
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Data de início da promoção
             </label>
-            <input
-              type="date"
-              value={form.dataInicio}
-              onChange={(e) => onChange("dataInicio", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+
+            <div style={{ position: "relative" }}>
+              <input
+                ref={refIni}
+                className="date-input"
+                type="date"
+                value={form.dataInicio}
+                onChange={(e) => onChange("dataInicio", e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 72px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+
+              {String(form.dataInicio || "").trim() !== "" && (
+                <ClearX right="38px" onClick={() => onChange("dataInicio", "")} />
+              )}
+
+              <CalendarBtn
+                onClick={() => {
+                  const el: any = refIni.current;
+                  if (!el) return;
+                  if (typeof el.showPicker === "function") el.showPicker();
+                  else el.focus();
+                }}
+              />
+            </div>
+
+
+
+
+
           </div>
+
+
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Data de fim da promoção
             </label>
-            <input
-              type="date"
-              value={form.dataFim}
-              onChange={(e) => onChange("dataFim", e.target.value)}
-              style={{
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "12px",
-                padding: "8px 12px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-                backgroundColor: "#f9fafb",
-              }}
-            />
+
+            <div style={{ position: "relative" }}>
+              <input
+                ref={refFim}
+                className="date-input"
+                type="date"
+                value={form.dataFim}
+                onChange={(e) => onChange("dataFim", e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "12px",
+                  padding: "8px 72px 8px 12px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#f9fafb",
+                }}
+              />
+
+              {String(form.dataFim || "").trim() !== "" && (
+                <ClearX right="38px" onClick={() => onChange("dataFim", "")} />
+              )}
+
+              <CalendarBtn
+                onClick={() => {
+                  const el: any = refFim.current;
+                  if (!el) return;
+                  if (typeof el.showPicker === "function") el.showPicker();
+                  else el.focus();
+                }}
+              />
+            </div>
+
           </div>
 
           {campos.map((campo) => (
@@ -447,21 +578,27 @@ export function PromoForm({
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
                 {campo.label}
               </label>
-              <input
-                type="text"
-                placeholder={campo.placeholder}
-                value={form[campo.id] as any}
-                onChange={(e) => onChange(campo.id, e.target.value)}
-                style={{
-                  width: "100%",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "12px",
-                  padding: "8px 12px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "#f9fafb",
-                }}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder={campo.placeholder}
+                  value={form[campo.id] as any}
+                  onChange={(e) => onChange(campo.id, e.target.value)}
+                  style={{
+                    width: "100%",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "12px",
+                    padding: "8px 36px 8px 12px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    backgroundColor: "#f9fafb",
+                  }}
+                />
+                {String(form[campo.id] || "").trim() !== "" && (
+                  <ClearX onClick={() => onChange(campo.id, "")} />
+                )}
+              </div>
+
             </div>
           ))}
         </div>
