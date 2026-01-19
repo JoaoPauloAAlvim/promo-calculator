@@ -3,7 +3,7 @@ import { db } from "@/lib/knex";
 import { MonitoramentoItem } from "@/lib/types";
 import { toNumberBR } from "@/lib/format";
 import { isISODate } from "@/lib/date";
-import { requireAuth } from "@/lib/authGuard";
+import { getAuthUser, requireAuth } from "@/lib/authGuard";
 
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export async function GET(
   try {
     const denied = requireAuth();
     if (denied) return denied;
-
+    
     const id = Number(params.id);
     if (!id || Number.isNaN(id)) {
       return NextResponse.json({ error: "ID inválido." }, { status: 400 });
@@ -67,6 +67,7 @@ export async function PATCH(
   try {
     const denied = requireAuth();
     if (denied) return denied;
+    const user = getAuthUser();
 
     const id = Number(params.id);
     if (!id || Number.isNaN(id)) {
@@ -226,6 +227,8 @@ export async function PATCH(
     if (vendaRealPatch) {
       patchDb.situacao_analise = vendaRealPatch.situacao;
     }
+
+    patchDb.updated_by = user?.uid ?? null;
 
     await db("historico").where({ id }).update(patchDb);
 
