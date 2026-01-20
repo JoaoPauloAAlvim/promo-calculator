@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormState } from "@/lib/types";
 import type { DefaultBuyer } from "@/lib/storageKeys";
 import Link from "next/link";
@@ -43,10 +43,7 @@ export function PromoForm({
   onChange,
   onCalculate,
 
-  opcoesComprador,
-  modoComprador,
   setModoComprador,
-  compradorOutro,
   setCompradorOutro,
 
   hintOpen,
@@ -133,40 +130,9 @@ export function PromoForm({
 
 
 
-  useEffect(() => {
-    if (!hydrated) return;
-
-    const formHasBuyer = String(form.comprador || "").trim().length > 0;
-    if (formHasBuyer) return;
-
-    const savedMode = defaultBuyer?.mode;
-    const savedValue = String(defaultBuyer?.value || "").trim().toUpperCase();
-    if (!savedValue) return;
-
-    if (savedMode === "OUTRO") {
-      setModoComprador("OUTRO");
-      setCompradorOutro(savedValue);
-      onChange("comprador", savedValue);
-      return;
-    }
-
-    setModoComprador("LISTA");
-    setCompradorOutro("");
-    onChange("comprador", savedValue);
-  }, [
-    hydrated,
-    defaultBuyer?.mode,
-    defaultBuyer?.value,
-    form.comprador,
-    onChange,
-    setModoComprador,
-    setCompradorOutro,
-  ]);
-
   function handleClearAll() {
     onChange("produto", "");
     onChange("categoria", "");
-    onChange("comprador", "");
     onChange("marca", "");
     onChange("tipoPromocao", "");
     onChange("dataInicio", "");
@@ -373,108 +339,36 @@ export function PromoForm({
           </div>
 
           <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#374151",
+              }}
+            >
               Comprador
             </label>
 
-            {modoComprador === "LISTA" ? (
-              <select
-                value={form.comprador}
-                onChange={(e) => {
-                  const v = e.target.value;
+            <input
+              type="text"
+              value={String(form.comprador || "").toUpperCase()}
+              readOnly
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "12px",
+                padding: "8px 12px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "#f9fafb",
+              }}
+            />
 
-                  if (v === "__OUTRO__") {
-                    setModoComprador("OUTRO");
-                    setCompradorOutro("");
-                    onChange("comprador", "");
-                    return;
-                  }
-
-                  onChange("comprador", v);
-
-                  const vv = String(v || "").trim();
-                  const vNorm = vv.toUpperCase();
-                  if (vNorm) onDefaultBuyerChange({ mode: "LISTA", value: vNorm });
-
-                }}
-                style={{
-                  width: "100%",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "12px",
-                  padding: "8px 12px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  backgroundColor: "#f9fafb",
-                }}
-              >
-                <option value="">Selecione</option>
-
-                {form.comprador && !opcoesComprador.includes(form.comprador) && (
-                  <option value={form.comprador}>{form.comprador}</option>
-                )}
-
-                {opcoesComprador.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-                <option value="__OUTRO__">Outro…</option>
-              </select>
-
-            ) : (
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <input
-                  type="text"
-                  placeholder="Digite o nome do comprador"
-                  value={compradorOutro}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const vv = String(v || "").trim();
-                    const vNorm = vv.toUpperCase();
-
-                    setCompradorOutro(v);
-                    onChange("comprador", vNorm);
-
-                    if (vNorm) onDefaultBuyerChange({ mode: "OUTRO", value: vNorm });
-                  }}
-
-                  style={{
-                    flex: "1 1 0",
-                    width: "100%",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "12px",
-                    padding: "8px 12px",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                    backgroundColor: "#f9fafb",
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModoComprador("LISTA");
-                    setCompradorOutro("");
-                    onChange("comprador", "");
-
-                    onDefaultBuyerChange({ mode: "LISTA", value: "" });
-                  }}
-
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: "12px",
-                    border: "1px solid #d1d5db",
-                    backgroundColor: "#ffffff",
-                    color: "#4b5563",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Voltar
-                </button>
-              </div>
-            )}
           </div>
+
+
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>

@@ -18,6 +18,8 @@ import { logout } from "@/lib/api/auth";
 import { deleteHistorico, deleteHistoricoMany, getHistoricoOptions } from "@/lib/api/historico";
 import { api } from "@/lib/api/client";
 import { Spinner } from "../Spinner";
+import { LS_KEYS } from "@/lib/storageKeys";
+
 
 export default function HistoricoPage() {
     const router = useRouter();
@@ -383,6 +385,9 @@ export default function HistoricoPage() {
                 localStorage.removeItem("simulador_had_session");
                 sessionStorage.removeItem("simulador_expired_shown");
                 sessionStorage.removeItem("simulador_session_expired");
+                localStorage.removeItem("simulador_autodraft");
+                localStorage.removeItem(LS_KEYS.DEFAULT_BUYER);
+                sessionStorage.removeItem("simulador_draft");
             } catch { }
             router.replace("/login");
         }

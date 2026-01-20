@@ -46,6 +46,19 @@ export async function POST(req: Request) {
 
     if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
+    const dbUser = await db("users")
+      .select("nome", "email")
+      .where({ id: user.uid })
+      .first();
+
+    const compradorAuto = String(dbUser?.nome || dbUser?.email || "")
+      .trim()
+      .toUpperCase();
+
+    if (!compradorAuto) {
+      return NextResponse.json({ error: "Usuário sem nome/email cadastrado." }, { status: 500 });
+    }
+
     if (hasInicio || hasFim) {
       if (!hasInicio || !hasFim) {
         return NextResponse.json(
@@ -71,9 +84,6 @@ export async function POST(req: Request) {
 
       diasPromoCalculado = Math.round(c);
     }
-
-
-
 
     if (!produto) {
       return NextResponse.json(
@@ -261,7 +271,7 @@ export async function POST(req: Request) {
     const entrada = {
       produto_nome: produto,
       categoria: categoria || "",
-      comprador: comprador || "",
+      comprador: compradorAuto,
       marca: marca || "",
       tipo_promocao: tipoPromocao,
       data_inicio_promocao: typeof dataInicio === "string" ? dataInicio : "",
@@ -294,7 +304,7 @@ export async function POST(req: Request) {
       resultado,
       produto_nome_txt: produto,
       categoria_txt: categoria || null,
-      comprador_txt: comprador || null,
+      comprador_txt: compradorAuto,
       marca_txt: marca || null,
       data_inicio_promocao: dataInicio || null,
       data_fim_promocao: dataFim || null,
