@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/knex";
-import { getAuthUser, requireAuth } from "@/lib/authGuard";
+import { requireAuth } from "@/lib/authGuard";
 import { toNumberBR } from "@/lib/format";
 import { calcDiasPromoInclusivo, isISODate } from "@/lib/date";
 
@@ -31,8 +31,6 @@ export async function POST(req: Request) {
       F,
     } = body;
 
-    const user = getAuthUser();
-
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     comprador = typeof comprador === "string" ? comprador.trim().toUpperCase() : "";
@@ -43,8 +41,6 @@ export async function POST(req: Request) {
     const hasFim = typeof dataFim === "string" && dataFim.trim() !== "";
 
     let diasPromoCalculado: number | null = null;
-
-    if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
     if (hasInicio || hasFim) {
       if (!hasInicio || !hasFim) {
@@ -299,7 +295,6 @@ export async function POST(req: Request) {
       data_inicio_promocao: dataInicio || null,
       data_fim_promocao: dataFim || null,
       tipo_promocao_txt: tipoPromocao,
-      created_by: user.uid,
     });
 
 
