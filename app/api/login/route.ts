@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAuthToken } from "@/lib/authToken";
+import { db } from "@/lib/knex";
+import { verifyPassword, hashPassword } from "@/lib/password";
+
 
 export const dynamic = "force-dynamic";
 
@@ -43,45 +46,30 @@ export async function POST(req: Request) {
     const senha = (body.senha || "").trim();
     const lembrar = Boolean(body.lembrar);
 
-    const allowedEmail = process.env.AUTH_EMAIL?.trim();
-    const allowedPassword = process.env.AUTH_PASSWORD?.trim();
+    const emailNorm = email.toLowerCase();
 
-    const key = getClientKey(req, email);
+    const user = await db("users")
+      .select("id", "email", "role", "password_salt", "password_hash", "is_active")
+      .where({ email: emailNorm })
+      .first();
 
-    const rl = checkRateLimit(key, 10, 10 * 60 * 1000);
-
-    if (!rl.allowed) {
-      return NextResponse.json(
-        { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." },
-        {
-          status: 429,
-          headers: { "Retry-After": String(rl.retryAfterSec) },
-        }
-      );
+    if (!user) {
+      return NextResponse.json({ error: "Usuário ou senha inválidos." }, { status: 401 });
     }
 
-
-    if (!allowedEmail || !allowedPassword) {
-      return NextResponse.json(
-        {
-          error:
-            "Configuração de login não encontrada no servidor. Defina AUTH_EMAIL e AUTH_PASSWORD nas variáveis de ambiente.",
-        },
-        { status: 500 }
-      );
+    if (!user.is_active) {
+      return NextResponse.json({ error: "Usuário desativado." }, { status: 403 });
     }
 
-    if (email !== allowedEmail || senha !== allowedPassword) {
-      return NextResponse.json(
-        { error: "Usuário ou senha inválidos." },
-        { status: 401 }
-      );
+    const ok = verifyPassword(senha, user.password_salt, user.password_hash);
+    if (!ok) {
+      return NextResponse.json({ error: "Usuário ou senha inválidos." }, { status: 401 });
     }
-
-    const res = NextResponse.json({ ok: true });
 
     const maxAge = lembrar ? 60 * 60 * 24 * 7 : 60 * 60 * 1;
-    const token = createAuthToken(maxAge);
+    const token = createAuthToken({ uid: Number(user.id), role: user.role, maxAgeSeconds: maxAge });
+
+    const res = NextResponse.json({ ok: true });
 
     res.cookies.set("simulador_auth", token, {
       httpOnly: true,
@@ -92,6 +80,7 @@ export async function POST(req: Request) {
     });
 
     return res;
+
   } catch (error) {
     console.error("ERRO /api/login:", error);
     return NextResponse.json(
