@@ -3,9 +3,8 @@ import { api } from "./client";
 export type CalculoPayload = {
   produto: string;
   categoria: string;
-  comprador: string;
   marca: string;
-  tipoPromocao:string;
+  tipoPromocao: string;
   dataInicio: string;
   dataFim: string;
   A: number;
@@ -15,6 +14,7 @@ export type CalculoPayload = {
   E: number;
   F: number;
 };
+
 
 export type CalculoResponse = {
   entrada: Record<string, any>;

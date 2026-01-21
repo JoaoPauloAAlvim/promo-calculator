@@ -14,7 +14,7 @@ O sistema salva automaticamente cada simulação em um **histórico** no Postgre
 ## ✅ Funcionalidades
 
 - **Simulador de promoção**
-  - Campos do cenário (A/B/C/D/E/F) + metadados (produto, marca, categoria, comprador, tipo).
+  - Campos do cenário (A/B/C/D/E/F) + metadados (produto, marca, categoria, tipo).
   - Validações de datas e números.
   - Resultado com metas arredondadas para cima.
 
@@ -226,7 +226,6 @@ A primeira aba deve conter cabeçalhos exatamente assim:
 
 * `Produto`
 * `Categoria`
-* `Comprador`
 * `Marca`
 * `TipoPromocao` (`INTERNA` ou `SCANNTECH`)
 * `PeriodoHistorico`

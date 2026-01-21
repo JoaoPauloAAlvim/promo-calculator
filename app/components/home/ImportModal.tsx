@@ -105,7 +105,7 @@ export function ImportModal({
           <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>
             Formato esperado: primeira aba com colunas{" "}
             <strong>
-              Produto, Categoria, Comprador, Marca, PeriodoHistorico, LucroTotalHistorico, DataInicioPromocao,
+              Produto, Categoria, Marca, PeriodoHistorico, LucroTotalHistorico, DataInicioPromocao,
               DataFimPromocao, PrecoPromocional, CustoUnitario, ReceitaAdicional
             </strong>
             . Use datas como <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>.

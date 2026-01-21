@@ -55,7 +55,6 @@ export type FormState = {
 export type ImportRow = {
   Produto?: string;
   Categoria?: string;
-  Comprador?: string;
   Marca?: string;
   TipoPromocao?: string;
 

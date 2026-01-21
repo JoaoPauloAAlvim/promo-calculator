@@ -30,24 +30,23 @@ export function usePromoImport() {
 
   function gerarModelo() {
     const header = [
-      "Produto",
-      "Categoria",
-      "Comprador",
-      "Marca",
-      "TipoPromocao",
-      "PeriodoHistorico",
-      "LucroTotalHistorico",
-      "DataInicioPromocao",
-      "DataFimPromocao",
-      "PrecoPromocional",
-      "CustoUnitario",
-      "ReceitaAdicional",
-    ];
+  "Produto",
+  "Categoria",
+  "Marca",
+  "TipoPromocao",
+  "PeriodoHistorico",
+  "LucroTotalHistorico",
+  "DataInicioPromocao",
+  "DataFimPromocao",
+  "PrecoPromocional",
+  "CustoUnitario",
+  "ReceitaAdicional",
+];
+
 
     const exemplo = [
       "CREME DENTAL COLGATE 120G",
       "HIGIENE ORAL",
-      "FLÁVIA",
       "COLGATE",
       "INTERNA",
       30,
@@ -123,7 +122,6 @@ export function usePromoImport() {
 
         const produto = String(row.Produto || "").trim();
         const categoria = String(row.Categoria || "").trim();
-        const comprador = String(row.Comprador || "").trim();
         const marca = String(row.Marca || "").trim();
 
         const tipoRaw = String(row.TipoPromocao || "").trim().toUpperCase();
@@ -192,7 +190,6 @@ export function usePromoImport() {
           const payload = await postCalculo({
             produto,
             categoria,
-            comprador,
             marca,
             tipoPromocao,
             dataInicio,

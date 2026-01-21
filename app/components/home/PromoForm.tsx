@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {useRef } from "react";
 import type { FormState } from "@/lib/types";
-import type { DefaultBuyer } from "@/lib/storageKeys";
 import Link from "next/link";
 
 
@@ -13,16 +12,6 @@ type Props = {
   loading: boolean;
   onChange: (id: keyof FormState, value: string) => void;
   onCalculate: () => void;
-
-  defaultBuyer: DefaultBuyer;
-  onDefaultBuyerChange: (next: DefaultBuyer) => void;
-  hydrated: boolean;
-
-  opcoesComprador: string[];
-  modoComprador: "LISTA" | "OUTRO";
-  setModoComprador: (v: "LISTA" | "OUTRO") => void;
-  compradorOutro: string;
-  setCompradorOutro: (v: string) => void;
 
   hintOpen: boolean;
   hintText: string;
@@ -36,6 +25,7 @@ type Props = {
   validationMessage: string;
 };
 
+
 export function PromoForm({
   form,
   campos,
@@ -43,8 +33,7 @@ export function PromoForm({
   onChange,
   onCalculate,
 
-  setModoComprador,
-  setCompradorOutro,
+
 
   hintOpen,
   hintText,
@@ -55,9 +44,7 @@ export function PromoForm({
   canCalculate,
   validationMessage,
 
-  defaultBuyer,
-  onDefaultBuyerChange,
-  hydrated,
+
 }: Props) {
 
   const refIni = useRef<HTMLInputElement | null>(null);
@@ -144,10 +131,6 @@ export function PromoForm({
     onChange("E", "");
     onChange("F", "");
 
-    setModoComprador("LISTA");
-    setCompradorOutro("");
-
-    onDefaultBuyerChange({ mode: "LISTA", value: "" });
   }
 
 
@@ -167,16 +150,13 @@ export function PromoForm({
       >
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-          <div style={{ width: "72px" }} /> {/* espaçador para manter o título central */}
+          <div style={{ width: "72px" }} />
 
           <h2 className="text-xl md:text-2xl font-semibold text-slate-800 text-center" style={{ flex: 1 }}>
             Informe os dados da promoção
           </h2>
 
         </div>
-
-
-
 
         <div style={{ maxWidth: "260px", margin: "0 auto" }}>
           <div style={{ marginBottom: "16px" }}>
@@ -430,15 +410,7 @@ export function PromoForm({
                 }}
               />
             </div>
-
-
-
-
-
           </div>
-
-
-
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
               Data de fim da promoção

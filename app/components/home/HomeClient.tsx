@@ -18,13 +18,9 @@ import { HomeHeaderActions } from "./HomeHeaderActions";
 import { api } from "@/lib/api/client";
 import { ActionModal } from "../ui/ActionModal";
 import { usePromoImport } from "../../hooks/usePromoImport";
-import { getCompradores } from "@/lib/api/meta";
 import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { getProdutoSugestao } from "@/lib/api/meta";
-import { LS_KEYS, type DefaultBuyer } from "../../../lib/storageKeys";
-import { useLocalStorageState } from "../../hooks/useLocalStorage";
 
-const DEFAULT: DefaultBuyer = { mode: "LISTA", value: "" };
 
 
 const initialForm: FormState = {
@@ -56,9 +52,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [draftModalOpen, setDraftModalOpen] = useState(false);
-  const [opcoesComprador, setOpcoesComprador] = useState<string[]>([]);
-  const [modoComprador, setModoComprador] = useState<"LISTA" | "OUTRO">("LISTA");
-  const [compradorOutro, setCompradorOutro] = useState("");
   const [marcaTouched, setMarcaTouched] = useState(false);
   const [categoriaTouched, setCategoriaTouched] = useState(false);
   const [lastSugestao, setLastSugestao] = useState<{ marca: string; categoria: string } | null>(null);
@@ -73,8 +66,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
 
   const didHydrateDraftRef = useRef(false);
   const debouncedForm = useDebouncedValue(form, 700);
-  const { value: defaultBuyer, setValue: setDefaultBuyer, hydrated } =
-    useLocalStorageState<DefaultBuyer>(LS_KEYS.DEFAULT_BUYER, DEFAULT);
 
   const campos: { id: keyof FormState; label: string; placeholder?: string }[] = [
     { id: "A", label: "Período histórico (dias)", placeholder: "Ex: 30" },
@@ -102,7 +93,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
     const invalid: string[] = [];
 
     const produto = (form.produto || "").trim();
-    const comprador = (form.comprador || "").trim();
     const tipo = (form.tipoPromocao || "").trim();
     const di = (form.dataInicio || "").trim();
     const df = (form.dataFim || "").trim();
@@ -110,7 +100,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
     const categoria = (form.categoria || "").trim();
 
     if (!produto) missing.push("Produto");
-    if (!comprador) missing.push("Comprador");
     if (!tipo) missing.push("Tipo da promoção");
     if (!di) missing.push("Data início");
     if (!df) missing.push("Data fim");
@@ -190,9 +179,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           F: draft.F ?? prev.F,
         }));
 
-        setModoComprador("LISTA");
-        setCompradorOutro("");
-
+        
         sessionStorage.removeItem("simulador_draft");
         setDraftModalOpen(true);
 
@@ -227,10 +214,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         F: draft.F ?? prev.F,
       }));
 
-
-      setModoComprador("LISTA");
-      setCompradorOutro("");
-
       didHydrateDraftRef.current = true;
     } catch {
       try { localStorage.removeItem(AUTO_DRAFT_KEY); } catch { }
@@ -258,26 +241,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
       console.error(e);
     }
   }, [debouncedForm]);
-
-
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        await ensureAuth();
-        const data = await getCompradores(controller.signal);
-        setOpcoesComprador(Array.isArray(data?.compradores) ? data.compradores : []);
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        console.error(e);
-      }
-    })();
-
-    return () => controller.abort();
-  }, []);
-
 
   async function ensureAuth() {
     await api<{ ok: true }>("/api/auth/check", { method: "GET" });
@@ -361,7 +324,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         localStorage.removeItem(AUTO_DRAFT_KEY);
         sessionStorage.removeItem("simulador_expired_shown");
         sessionStorage.removeItem("simulador_session_expired");
-        localStorage.removeItem(LS_KEYS.DEFAULT_BUYER);
       } catch { }
       router.replace("/login");
     }
@@ -375,16 +337,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
 
     try {
       await ensureAuth()
-      const { produto, categoria, comprador, marca, dataInicio, dataFim, tipoPromocao } = form;
-
-      const compradorNorm = (comprador || "").trim().toUpperCase();
-
-      if (!compradorNorm) {
-        setResult(null);
-        setError("Informe o comprador.");
-        return;
-      }
-
+      const { produto, categoria, marca, dataInicio, dataFim, tipoPromocao } = form;
 
       if (!produto.trim()) {
         setResult(null);
@@ -463,27 +416,15 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
       const data = await postCalculo({
         produto,
         categoria,
-        comprador: compradorNorm,
         marca,
         tipoPromocao,
         dataInicio,
         dataFim,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
+        A, B, C, D, E, F,
       });
 
       setResult(data as Resultado);
-
-      setOpcoesComprador((prev) => {
-        if (!compradorNorm) return prev;
-        if (prev.includes(compradorNorm)) return prev;
-        return [...prev, compradorNorm].sort((a, b) => a.localeCompare(b));
-      });
-
+      
     } catch (e) {
       console.error(e);
       setResult(null);
@@ -597,31 +538,24 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         }
       />
       <PromoForm
-        form={form}
-        campos={campos}
-        loading={loading}
-        onChange={setField}
-        onCalculate={calcular}
-        opcoesComprador={opcoesComprador}
-        modoComprador={modoComprador}
-        setModoComprador={setModoComprador}
-        compradorOutro={compradorOutro}
-        setCompradorOutro={setCompradorOutro}
-        hintOpen={hintOpen}
-        hintText={hintText}
-        pendingOpen={pendingOpen}
-        pendingSugestao={pendingSugestao}
-        onApplySugestao={aplicarSugestaoManual}
-        onIgnoreSugestao={() => {
-          setPendingSugestao(null);
-          setPendingOpen(false);
-        }}
-        canCalculate={formCheck.canCalculate}
-        validationMessage={formCheck.message}
-        defaultBuyer={defaultBuyer}
-        onDefaultBuyerChange={setDefaultBuyer}
-        hydrated={hydrated}
-      />
+  form={form}
+  campos={campos}
+  loading={loading}
+  onChange={setField}
+  onCalculate={calcular}
+  hintOpen={hintOpen}
+  hintText={hintText}
+  pendingOpen={pendingOpen}
+  pendingSugestao={pendingSugestao}
+  onApplySugestao={aplicarSugestaoManual}
+  onIgnoreSugestao={() => {
+    setPendingSugestao(null);
+    setPendingOpen(false);
+  }}
+  canCalculate={formCheck.canCalculate}
+  validationMessage={formCheck.message}
+/>
+
 
       {result && (
         <ResultModal
