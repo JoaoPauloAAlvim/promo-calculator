@@ -254,7 +254,7 @@ export async function POST(req: Request) {
     const entrada = {
       produto_nome: produto,
       categoria: categoria || "",
-      compradorAuto,
+      comprador: compradorAuto,
       marca: marca || "",
       tipo_promocao: tipoPromocao,
       data_inicio_promocao: typeof dataInicio === "string" ? dataInicio : "",
