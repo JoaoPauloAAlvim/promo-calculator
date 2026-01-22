@@ -30,18 +30,19 @@ export function usePromoImport() {
 
   function gerarModelo() {
     const header = [
-  "Produto",
-  "Categoria",
-  "Marca",
-  "TipoPromocao",
-  "PeriodoHistorico",
-  "LucroTotalHistorico",
-  "DataInicioPromocao",
-  "DataFimPromocao",
-  "PrecoPromocional",
-  "CustoUnitario",
-  "ReceitaAdicional",
-];
+      "Produto",
+      "Categoria",
+      "Marca",
+      "TipoPromocao",
+      "PeriodoHistorico",
+      "LucroTotalHistorico",
+      "DataInicioPromocao",
+      "DataFimPromocao",
+      "DataBaseHistorico",
+      "PrecoPromocional",
+      "CustoUnitario",
+      "ReceitaAdicional",
+    ];
 
 
     const exemplo = [
@@ -53,6 +54,7 @@ export function usePromoImport() {
       12450,
       "10/01/2026",
       "20/01/2026",
+      "07/2022 ou vazio",
       4.79,
       4.45,
       0.42,
@@ -87,6 +89,65 @@ export function usePromoImport() {
 
     return null;
   };
+
+  function parseMonthStart(v: any): string {
+    if (v == null || v === "") return "";
+
+    if (v instanceof Date && !Number.isNaN(v.getTime())) {
+      const y = v.getFullYear();
+      const m = String(v.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}-01`;
+    }
+
+    if (typeof v === "number") {
+      const dc = (XLSX as any)?.SSF?.parse_date_code?.(v);
+      if (dc?.y && dc?.m) {
+        const y = dc.y;
+        const m = String(dc.m).padStart(2, "0");
+        return `${y}-${m}-01`;
+      }
+      return "";
+    }
+
+    const s0 = String(v).trim();
+    if (!s0) return "";
+
+    let m: RegExpMatchArray | null = s0.match(/^(\d{4})-(\d{1,2})$/);
+    if (m) {
+      const yyyy = m[1];
+      const mm = String(Number(m[2])).padStart(2, "0");
+      if (Number(mm) >= 1 && Number(mm) <= 12) return `${yyyy}-${mm}-01`;
+      return "";
+    }
+
+    m = s0.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      const yyyy = m[1];
+      const mm = m[2];
+      if (Number(mm) >= 1 && Number(mm) <= 12) return `${yyyy}-${mm}-01`;
+      return "";
+    }
+
+    m = s0.match(/^(\d{1,2})\/(\d{4})$/);
+    if (m) {
+      const mm = String(Number(m[1])).padStart(2, "0");
+      const yyyy = m[2];
+      if (Number(mm) >= 1 && Number(mm) <= 12) return `${yyyy}-${mm}-01`;
+      return "";
+    }
+
+    m = s0.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) {
+      const mm = m[2];
+      const yyyy = m[3];
+      if (Number(mm) >= 1 && Number(mm) <= 12) return `${yyyy}-${mm}-01`;
+      return "";
+    }
+
+    return "";
+  }
+
+
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -142,6 +203,7 @@ export function usePromoImport() {
 
         const dataInicio = parseDateFromCell(row.DataInicioPromocao);
         const dataFim = parseDateFromCell(row.DataFimPromocao);
+        const dataBaseHistorico = parseMonthStart(row.DataBaseHistorico);
 
         if (!dataInicio || !dataFim) {
           resultadosTemp.push({
@@ -194,6 +256,7 @@ export function usePromoImport() {
             tipoPromocao,
             dataInicio,
             dataFim,
+            ...(dataBaseHistorico ? { dataBaseHistorico } : {}),
             A: A ?? 0,
             B: B ?? 0,
             C: Number(C),

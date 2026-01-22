@@ -1,6 +1,6 @@
 "use client";
 
-import {useRef } from "react";
+import { useRef } from "react";
 import type { FormState } from "@/lib/types";
 import Link from "next/link";
 
@@ -124,6 +124,7 @@ export function PromoForm({
     onChange("tipoPromocao", "");
     onChange("dataInicio", "");
     onChange("dataFim", "");
+    onChange("dataBaseHistorico", "");
 
     onChange("A", "");
     onChange("B", "");
@@ -373,6 +374,35 @@ export function PromoForm({
               <option value="SCANNTECH">SCANNTECH</option>
             </select>
           </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>
+              Mês base do histórico (IPCA)
+            </label>
+
+            <input
+              type="month"
+              value={form.dataBaseHistorico ? form.dataBaseHistorico.slice(0, 7) : ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                onChange("dataBaseHistorico", v ? `${v}-01` : "");
+              }}
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "12px",
+                padding: "8px 12px",
+                fontSize: "14px",
+                boxSizing: "border-box",
+                backgroundColor: "#f9fafb",
+              }}
+            />
+
+            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "6px", fontWeight: 600 }}>
+              Opcional. Se preenchido, corrige o lucro histórico (B) por IPCA até o mês do início da promoção.
+            </div>
+          </div>
+
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 500, color: "#374151" }}>

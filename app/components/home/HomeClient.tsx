@@ -31,6 +31,7 @@ const initialForm: FormState = {
   tipoPromocao: "",
   dataInicio: "",
   dataFim: "",
+  dataBaseHistorico: "",
   A: "",
   B: "",
   D: "",
@@ -179,7 +180,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           F: draft.F ?? prev.F,
         }));
 
-        
+
         sessionStorage.removeItem("simulador_draft");
         setDraftModalOpen(true);
 
@@ -421,10 +422,12 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         dataInicio,
         dataFim,
         A, B, C, D, E, F,
+        ...(form.dataBaseHistorico ? { dataBaseHistorico: form.dataBaseHistorico } : {}),
       });
 
+
       setResult(data as Resultado);
-      
+
     } catch (e) {
       console.error(e);
       setResult(null);
@@ -538,23 +541,23 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         }
       />
       <PromoForm
-  form={form}
-  campos={campos}
-  loading={loading}
-  onChange={setField}
-  onCalculate={calcular}
-  hintOpen={hintOpen}
-  hintText={hintText}
-  pendingOpen={pendingOpen}
-  pendingSugestao={pendingSugestao}
-  onApplySugestao={aplicarSugestaoManual}
-  onIgnoreSugestao={() => {
-    setPendingSugestao(null);
-    setPendingOpen(false);
-  }}
-  canCalculate={formCheck.canCalculate}
-  validationMessage={formCheck.message}
-/>
+        form={form}
+        campos={campos}
+        loading={loading}
+        onChange={setField}
+        onCalculate={calcular}
+        hintOpen={hintOpen}
+        hintText={hintText}
+        pendingOpen={pendingOpen}
+        pendingSugestao={pendingSugestao}
+        onApplySugestao={aplicarSugestaoManual}
+        onIgnoreSugestao={() => {
+          setPendingSugestao(null);
+          setPendingOpen(false);
+        }}
+        canCalculate={formCheck.canCalculate}
+        validationMessage={formCheck.message}
+      />
 
 
       {result && (

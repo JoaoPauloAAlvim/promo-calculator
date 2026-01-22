@@ -7,6 +7,7 @@ export type CalculoPayload = {
   tipoPromocao: string;
   dataInicio: string;
   dataFim: string;
+  dataBaseHistorico?: string;
   A: number;
   B: number;
   C: number;

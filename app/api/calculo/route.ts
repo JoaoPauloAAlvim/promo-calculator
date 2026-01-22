@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       tipoPromocao,
       dataInicio,
       dataFim,
+      dataBaseHistorico,
       A,
       B,
       C,
@@ -30,12 +31,14 @@ export async function POST(req: Request) {
       F,
     } = body;
 
+
     const user = getAuthUser();
 
     produto = typeof produto === "string" ? produto.trim() : "";
     categoria = typeof categoria === "string" ? categoria.trim() : "";
     marca = typeof marca === "string" ? marca.trim() : "";
     tipoPromocao = typeof tipoPromocao === "string" ? tipoPromocao.trim().toUpperCase() : "";
+    dataBaseHistorico = typeof dataBaseHistorico === "string" ? dataBaseHistorico.trim() : "";
 
     const hasInicio = typeof dataInicio === "string" && dataInicio.trim() !== "";
     const hasFim = typeof dataFim === "string" && dataFim.trim() !== "";
@@ -115,6 +118,29 @@ export async function POST(req: Request) {
       }
       return n;
     }
+
+    function normalizeMonthStart(raw: unknown): string | null {
+      const s = String(raw ?? "").trim();
+      if (!s) return null;
+
+      if (/^\d{4}-\d{2}$/.test(s)) return `${s}-01`;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return `${s.slice(0, 7)}-01`;
+
+      if (/^\d{2}\/\d{4}$/.test(s)) {
+        const [mm, yyyy] = s.split("/");
+        return `${yyyy}-${mm}-01`;
+      }
+
+      return null;
+    }
+
+    function monthFromISODate(raw: unknown): string | null {
+      const s = String(raw ?? "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+      return `${s.slice(0, 7)}-01`;
+    }
+
 
     const periodoHistorico = toNumber(A, "PeriodoHistorico (A)");
     const lucroTotalHistorico = toNumber(B, "LucroTotalHistorico (B)");
@@ -251,6 +277,70 @@ export async function POST(req: Request) {
     const metaUnidDia = lucroDiarioHist / lucroUnitarioComAdicional;
     const metaUnidTotal = metaUnidDia * diasPromo;
 
+    const mesRef = monthFromISODate(dataInicio);
+    const mesBase = normalizeMonthStart(dataBaseHistorico);
+
+    let ipca_aplicado = false;
+    let ipca_msg = "Sem IPCA: mês base do histórico não informado.";
+    let ipca_mes_base: string | null = mesBase;
+    let ipca_mes_ref: string | null = mesRef;
+
+    let ipca_indice_base: number | null = null;
+    let ipca_indice_ref: number | null = null;
+    let ipca_fator: number | null = null;
+
+    let lucro_diario_hist_ipca: number | null = null;
+    let meta_unid_dia_ipca: number | null = null;
+    let meta_unid_total_ipca: number | null = null;
+
+    if (dataBaseHistorico && !mesBase) {
+      ipca_msg = "Sem IPCA: mês base do histórico inválido. Use YYYY-MM (ex: 2022-07).";
+    } else if (mesBase && !mesRef) {
+      ipca_msg = "Sem IPCA: dataInicio não informada/ inválida para referência do IPCA.";
+    } else if (mesBase && mesRef) {
+      try {
+        const [rowBase, rowRef] = await Promise.all([
+          db("ipca_mensal").select("indice").where({ mes: mesBase }).first(),
+          db("ipca_mensal").select("indice").where({ mes: mesRef }).first(),
+        ]);
+
+        const baseN = rowBase?.indice != null ? Number(rowBase.indice) : NaN;
+        const refN = rowRef?.indice != null ? Number(rowRef.indice) : NaN;
+
+        ipca_indice_base = Number.isFinite(baseN) && baseN > 0 ? baseN : null;
+        ipca_indice_ref = Number.isFinite(refN) && refN > 0 ? refN : null;
+
+        if (!ipca_indice_base || !ipca_indice_ref) {
+          const faltando: string[] = [];
+          if (!ipca_indice_base) faltando.push(`base ${mesBase.slice(0, 7)}`);
+          if (!ipca_indice_ref) faltando.push(`ref ${mesRef.slice(0, 7)}`);
+          ipca_msg = `IPCA não aplicado: índice não cadastrado (${faltando.join(", ")}).`;
+        } else {
+          const fator = ipca_indice_ref / ipca_indice_base;
+
+          if (!Number.isFinite(fator) || fator <= 0) {
+            ipca_msg = "IPCA não aplicado: fator inválido.";
+          } else {
+            ipca_aplicado = true;
+            ipca_fator = fator;
+
+            lucro_diario_hist_ipca = lucroDiarioHist * fator;
+
+            const metaDiaIpca = lucro_diario_hist_ipca / lucroUnitarioComAdicional;
+            const metaTotIpca = metaDiaIpca * diasPromo;
+
+            meta_unid_dia_ipca = Math.ceil(metaDiaIpca);
+            meta_unid_total_ipca = Math.ceil(metaTotIpca);
+
+            ipca_msg = `IPCA aplicado (${mesBase.slice(0, 7)} → ${mesRef.slice(0, 7)}).`;
+          }
+        }
+      } catch {
+        ipca_msg = "IPCA não aplicado: erro ao consultar índices (ipca_mensal).";
+      }
+    }
+
+
     const entrada = {
       produto_nome: produto,
       categoria: categoria || "",
@@ -259,6 +349,16 @@ export async function POST(req: Request) {
       tipo_promocao: tipoPromocao,
       data_inicio_promocao: typeof dataInicio === "string" ? dataInicio : "",
       data_fim_promocao: typeof dataFim === "string" ? dataFim : "",
+      data_base_historico: mesBase || "",
+      ipca_aplicado,
+      ipca_msg,
+      ipca_mes_base,
+      ipca_mes_ref,
+      ipca_indice_base,
+      ipca_indice_ref,
+      ipca_fator,
+      lucro_diario_hist_ipca,
+
       A,
       B,
       C: String(diasPromo),
@@ -278,6 +378,8 @@ export async function POST(req: Request) {
       lucro_unitario_promo: lucroUnitarioComAdicional,
 
       markup_com_adicional: markupComAdicional,
+      meta_unid_dia_ipca,
+      meta_unid_total_ipca,
     };
 
 

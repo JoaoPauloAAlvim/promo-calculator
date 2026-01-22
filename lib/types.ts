@@ -44,6 +44,7 @@ export type FormState = {
   tipoPromocao: "INTERNA" | "SCANNTECH" | "";
   dataInicio: string;
   dataFim: string;
+  dataBaseHistorico: string;
   A: string;
   B: string;
   D: string;

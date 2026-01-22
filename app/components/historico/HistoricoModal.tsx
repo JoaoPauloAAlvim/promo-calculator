@@ -74,9 +74,8 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
     open: openMainModal,
     focusRef: dialogRef,
     onEscape: closeAll,
-
-    onEnter: () => { },
   });
+
 
 
 
@@ -120,6 +119,25 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
   const entrada = item?.resultado?.entrada ?? {};
   const metas = item?.resultado?.metas ?? {};
 
+  const vendaRealSalva = (metas as any)?.venda_real;
+
+  const analiseSalva: AnalisePromo | null = (() => {
+    if (!vendaRealSalva || typeof vendaRealSalva !== "object") return null;
+
+    const lucroHistPeriodo = Number(vendaRealSalva.lucro_hist_periodo);
+    const lucroRealPromo = Number(vendaRealSalva.lucro_real_promo);
+    const diff = Number(vendaRealSalva.diff);
+    const situacao = String(vendaRealSalva.situacao || "").toUpperCase();
+
+    if (!Number.isFinite(lucroHistPeriodo) || !Number.isFinite(lucroRealPromo) || !Number.isFinite(diff)) return null;
+    if (!["ACIMA", "ABAIXO", "IGUAL"].includes(situacao)) return null;
+
+    return { lucroHistPeriodo, lucroRealPromo, diff, situacao: situacao as any };
+  })();
+
+  const analiseFinal = analisePromo ?? analiseSalva;
+
+
   const nomeProdutoSelecionado =
     (entrada as any)?.produto_nome ?? (entrada as any)?.produto ?? "";
   const tipoPromo = (entrada as any)?.tipo_promocao ?? "";
@@ -136,11 +154,12 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
     diasPromoCalc ?? (Number.isFinite(diasPromoFallback) ? diasPromoFallback : null);
 
   const podeAvaliar =
-    !analisePromo &&
+    !analiseFinal &&
     promoStatus === "ENCERRADA" &&
     Boolean(inicioPromo) &&
     Boolean(fimPromo) &&
     calcDiasPromoInclusivo(inicioPromo, fimPromo) !== null;
+
 
 
   const entradaEntries = useMemo(() => {
@@ -181,13 +200,32 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
       return;
     }
 
-    const lucroDiarioHist = Number((e as any).lucro_diario_hist);
+    const lucroDiarioHist = Number(
+      (e as any).lucro_diario_hist ??
+      (m as any).lucro_med_dia ??
+      (m as any).lucro_medio_diario_promo
+    );
+
+    let lucroUnitPromo = Number(
+      (m as any).lucro_unitario_promo ??
+      (m as any).lucro_unitario_com_adicional
+    );
+
+    if (!Number.isFinite(lucroUnitPromo)) {
+      const D = Number((e as any).D ?? (e as any).d);
+      const E = Number((e as any).E ?? (e as any).e);
+      const F = Number((e as any).F ?? (e as any).f ?? 0);
+      if (Number.isFinite(D) && Number.isFinite(E) && Number.isFinite(F)) {
+        lucroUnitPromo = (D - E) + F;
+      }
+    }
+
 
     const dataInicio = (e as any).data_inicio_promocao as string | undefined;
     const dataFim = (e as any).data_fim_promocao as string | undefined;
     const diasPromo = calcDiasPromoInclusivo(dataInicio, dataFim) ?? Number((e as any).C ?? (e as any).c);
 
-    const lucroUnitPromo = Number((m as any).lucro_unitario_promo);
+
 
     if (!Number.isFinite(lucroDiarioHist) || !Number.isFinite(diasPromo) || !Number.isFinite(lucroUnitPromo)) {
       showFeedback({
@@ -735,10 +773,44 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                           Quantidade TOTAL vendida na promoção
                         </label>
 
+                        {analiseFinal && (
+                          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const vr = (metas as any)?.venda_real;
+                                if (vr?.qtd_vendida != null) setQtdVendida(String(vr.qtd_vendida));
+                                setAnalisePromo(null);
+                              }}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: "10px",
+                                border: "1px solid #d1d5db",
+                                backgroundColor: "#ffffff",
+                                color: "#4b5563",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Reavaliar
+                            </button>
+                          </div>
+                        )}
+
+
                         <input
                           type="text"
                           value={qtdVendida}
                           onChange={(ev) => setQtdVendida(ev.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              avaliarResultado();
+                            }
+                          }}
+
                           placeholder="Ex: 620"
                           style={{
                             width: "100%",
@@ -774,7 +846,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                     </>
                   )}
 
-                  {analisePromo && (
+                  {analiseFinal && (
                     <div
                       style={{
                         display: "grid",
@@ -788,7 +860,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                           Lucro histórico no período
                         </p>
                         <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
-                          {`R$ ${formatBR(analisePromo.lucroHistPeriodo)}`}
+                          {`R$ ${formatBR(analiseFinal.lucroHistPeriodo)}`}
                         </p>
                       </div>
 
@@ -797,7 +869,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                           Lucro REAL na promoção
                         </p>
                         <p style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>
-                          {`R$ ${formatBR(analisePromo.lucroRealPromo)}`}
+                          {`R$ ${formatBR(analiseFinal.lucroRealPromo)}`}
                         </p>
                       </div>
 
@@ -809,10 +881,10 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                           style={{
                             fontSize: "15px",
                             fontWeight: 700,
-                            color: analisePromo.diff > 0 ? "#047857" : analisePromo.diff < 0 ? "#b91c1c" : "#111827",
+                            color: analiseFinal.diff > 0 ? "#047857" : analiseFinal.diff < 0 ? "#b91c1c" : "#111827",
                           }}
                         >
-                          {`${analisePromo.diff >= 0 ? "+" : ""}R$ ${formatBR(analisePromo.diff)}`}
+                          {`${analiseFinal.diff >= 0 ? "+" : ""}R$ ${formatBR(analiseFinal.diff)}`}
                         </p>
                       </div>
 
@@ -822,9 +894,9 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                           borderRadius: "12px",
                           border: "1px solid #e5e7eb",
                           backgroundColor:
-                            analisePromo.situacao === "ACIMA"
+                            analiseFinal.situacao === "ACIMA"
                               ? "#ecfdf3"
-                              : analisePromo.situacao === "ABAIXO"
+                              : analiseFinal.situacao === "ABAIXO"
                                 ? "#fef2f2"
                                 : "#fffbeb",
                           padding: "8px 10px",
@@ -836,16 +908,16 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                             fontSize: "12px",
                             fontWeight: 600,
                             color:
-                              analisePromo.situacao === "ACIMA"
+                              analiseFinal.situacao === "ACIMA"
                                 ? "#047857"
-                                : analisePromo.situacao === "ABAIXO"
+                                : analiseFinal.situacao === "ABAIXO"
                                   ? "#b91c1c"
                                   : "#92400e",
                           }}
                         >
-                          {analisePromo.situacao === "ACIMA" && "📈 Promoção ACIMA do histórico de lucro."}
-                          {analisePromo.situacao === "ABAIXO" && "📉 Promoção ABAIXO do histórico de lucro."}
-                          {analisePromo.situacao === "IGUAL" && "⚖ Promoção IGUAL ao histórico de lucro."}
+                          {analiseFinal.situacao === "ACIMA" && " Promoção ACIMA do histórico de lucro."}
+                          {analiseFinal.situacao === "ABAIXO" && " Promoção ABAIXO do histórico de lucro."}
+                          {analiseFinal.situacao === "IGUAL" && " Promoção IGUAL ao histórico de lucro."}
                         </p>
                       </div>
                     </div>

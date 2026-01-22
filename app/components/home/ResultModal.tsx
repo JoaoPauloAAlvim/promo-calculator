@@ -27,6 +27,25 @@ export function ResultModal({ result, form, onClose }: Props) {
   const entrada = result?.entrada ?? {};
   const metas = result?.metas ?? {};
 
+  const ipcaAplicado = Boolean((entrada as any)?.ipca_aplicado);
+  const ipcaMsg = String((entrada as any)?.ipca_msg || "");
+
+  const ipcaFatorNum = Number((entrada as any)?.ipca_fator);
+  const ipcaFatorTxt =
+    Number.isFinite(ipcaFatorNum)
+      ? ipcaFatorNum.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 6 })
+      : "—";
+
+  const ipcaVarPctTxt =
+    Number.isFinite(ipcaFatorNum)
+      ? ((ipcaFatorNum - 1) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%"
+      : "—";
+
+  const lucroHistIpcaNum = Number((entrada as any)?.lucro_diario_hist_ipca);
+
+  const metaDiaIpca = (metas as any)?.meta_unid_dia_ipca;
+  const metaTotIpca = (metas as any)?.meta_unid_total_ipca;
+
   const nomeProduto =
     (result as any)?.entrada?.produto_nome ??
     (result as any)?.entrada?.produto ??
@@ -52,6 +71,15 @@ export function ResultModal({ result, form, onClose }: Props) {
       `Lucro unitário: R$ ${m?.lucro_unitario_com_adicional != null ? formatBR(Number(m.lucro_unitario_com_adicional)) : "—"}`,
       `Meta/dia: ${m?.meta_unid_dia ?? "—"} un`,
       `Meta total: ${m?.meta_unid_total ?? "—"} un`,
+      ``,
+      `IPCA: ${e.ipca_msg || "Sem IPCA"}`,
+      ...(e.ipca_aplicado
+        ? [
+          `Fator IPCA: ${e.ipca_fator ?? "—"}`,
+          `Meta/dia (IPCA): ${m?.meta_unid_dia_ipca ?? "—"} un`,
+          `Meta total (IPCA): ${m?.meta_unid_total_ipca ?? "—"} un`,
+        ]
+        : []),
     ];
 
     return linhas.join("\n");
@@ -180,6 +208,29 @@ export function ResultModal({ result, form, onClose }: Props) {
             </button>
           </div>
 
+          {ipcaMsg && (
+            <div
+              style={{
+                borderRadius: "10px",
+                border: "1px solid #e5e7eb",
+                backgroundColor: ipcaAplicado ? "#eff6ff" : "#f9fafb",
+                padding: "8px 10px",
+                fontSize: "12px",
+                color: "#111827",
+                fontWeight: 700,
+                marginBottom: "10px",
+              }}
+            >
+              {ipcaMsg}
+              {ipcaAplicado && Number.isFinite(ipcaFatorNum) ? (
+                <span style={{ marginLeft: 6, fontWeight: 600, color: "#374151" }}>
+                  (fator {ipcaFatorTxt} | {ipcaVarPctTxt})
+                </span>
+              ) : null}
+            </div>
+          )}
+
+
 
           <div
             style={{
@@ -222,6 +273,43 @@ export function ResultModal({ result, form, onClose }: Props) {
                   : "—"}
               </p>
             </div>
+
+            {ipcaAplicado && (
+              <>
+                <div
+                  style={{
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#eff6ff",
+                    padding: "8px 10px",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                    Lucro diário histórico (IPCA)
+                  </p>
+                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                    {Number.isFinite(lucroHistIpcaNum) ? `R$ ${formatBR(lucroHistIpcaNum)}` : "—"}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    borderRadius: "12px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor: "#eff6ff",
+                    padding: "8px 10px",
+                  }}
+                >
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                    Fator IPCA
+                  </p>
+                  <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                    {ipcaFatorTxt} <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280" }}>({ipcaVarPctTxt})</span>
+                  </p>
+                </div>
+              </>
+            )}
+
           </div>
 
           <div
@@ -353,6 +441,43 @@ export function ResultModal({ result, form, onClose }: Props) {
                 <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
               </p>
             </div>
+
+            {ipcaAplicado && (
+              <div style={{ marginTop: "10px" }}>
+                <p style={{ fontSize: "12px", fontWeight: 800, color: "#111827", marginBottom: "6px" }}>
+                  Metas com IPCA
+                </p>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+                    gap: "8px",
+                  }}
+                >
+                  <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px", backgroundColor: "#eff6ff" }}>
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Meta de unidades por dia (IPCA)
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {metaDiaIpca ?? "—"}{" "}
+                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
+                    </p>
+                  </div>
+
+                  <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px", backgroundColor: "#eff6ff" }}>
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
+                      Meta de unidades no período (IPCA)
+                    </p>
+                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                      {metaTotIpca ?? "—"}{" "}
+                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
 
           <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
