@@ -173,6 +173,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           tipoPromocao: draft.tipoPromocao ?? prev.tipoPromocao,
           dataInicio: draft.dataInicio ?? prev.dataInicio,
           dataFim: draft.dataFim ?? prev.dataFim,
+          dataBaseHistorico: draft.dataBaseHistorico ?? prev.dataBaseHistorico,
           A: draft.A ?? prev.A,
           B: draft.B ?? prev.B,
           D: draft.D ?? prev.D,
@@ -208,6 +209,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         tipoPromocao: draft.tipoPromocao ?? prev.tipoPromocao,
         dataInicio: draft.dataInicio ?? prev.dataInicio,
         dataFim: draft.dataFim ?? prev.dataFim,
+        dataBaseHistorico: draft.dataBaseHistorico ?? prev.dataBaseHistorico,
         A: draft.A ?? prev.A,
         B: draft.B ?? prev.B,
         D: draft.D ?? prev.D,
@@ -525,12 +527,9 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
     return () => controller.abort();
   }, [debouncedProdutoForm, marcaTouched, categoriaTouched, lastSugestao]);
 
-
-
-
-
   return (
     <div className="min-h-screen bg-slate-100">
+
       <AppHeader
         title="Simulador de Promoções"
         rightSlot={
@@ -540,6 +539,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           />
         }
       />
+
       <PromoForm
         form={form}
         campos={campos}
@@ -558,7 +558,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         canCalculate={formCheck.canCalculate}
         validationMessage={formCheck.message}
       />
-
 
       {result && (
         <ResultModal
@@ -584,7 +583,6 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
         importError={promoImport.error}
         importResults={promoImport.results}
       />
-
 
       {loading && (
         <div
@@ -612,6 +610,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           </p>
         </div>
       )}
+
       <ActionModal
         open={draftModalOpen}
         title="Simulação carregada"
@@ -638,6 +637,7 @@ export default function HomeClient({ initialComprador }: { initialComprador: str
           setConfirmLogoutOpen(false);
         }}
       />
+      
     </div>
   );
 }

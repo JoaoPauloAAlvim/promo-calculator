@@ -33,6 +33,10 @@ export function HistoricoCard({
   const lucroMedio = metas?.lucro_med_dia ?? metas?.lucro_medio_diario_promo;
   const metaDia = metas?.meta_unid_dia;
 
+  const ipcaAplicado = Boolean((entrada as any)?.ipca_aplicado);
+const metaDiaIpca = (metas as any)?.meta_unid_dia_ipca;
+
+
   const vendaReal = metas?.venda_real as { situacao?: string } | undefined;
   const sit = vendaReal?.situacao ?? null;
 
@@ -141,6 +145,15 @@ export function HistoricoCard({
             </span>
           </span>
         )}
+
+        {ipcaAplicado && Number.isFinite(Number(metaDiaIpca)) && Number(metaDiaIpca) > 0 && (
+  <span className="inline-flex items-center gap-1">
+    <span>
+      Meta/dia (IPCA): <strong>{Number(metaDiaIpca)}</strong>
+    </span>
+  </span>
+)}
+
 
         <span
           style={{

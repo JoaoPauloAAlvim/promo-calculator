@@ -42,9 +42,26 @@ export default function AdminIpcaPage() {
       const lines = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
       const items = lines.map((l) => {
-        const parts = l.split(/[;\t,]/).map(p => p.trim());
-        return { mes: parts[0], indice: parts[1] };
+        let mes = "";
+        let indice = "";
+
+        if (l.includes(";")) {
+          const [m, ...rest] = l.split(";");
+          mes = (m || "").trim();
+          indice = rest.join(";").trim();
+        } else if (l.includes("\t")) {
+          const [m, ...rest] = l.split("\t");
+          mes = (m || "").trim();
+          indice = rest.join("\t").trim();
+        } else {
+          const [m, ...rest] = l.split(",");
+          mes = (m || "").trim();
+          indice = rest.join(",").trim();
+        }
+
+        return { mes, indice };
       });
+
 
       const r = await fetch("/api/admin/ipca", {
         method: "POST",

@@ -443,7 +443,7 @@ export function ResultModal({ result, form, onClose }: Props) {
             </div>
 
             {ipcaAplicado && (
-              <div style={{ marginTop: "10px" }}>
+              <div style={{ marginTop: "10px", gridColumn: "1 / -1" }}>
                 <p style={{ fontSize: "12px", fontWeight: 800, color: "#111827", marginBottom: "6px" }}>
                   Metas com IPCA
                 </p>
@@ -455,28 +455,10 @@ export function ResultModal({ result, form, onClose }: Props) {
                     gap: "8px",
                   }}
                 >
-                  <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px", backgroundColor: "#eff6ff" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                      Meta de unidades por dia (IPCA)
-                    </p>
-                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                      {metaDiaIpca ?? "—"}{" "}
-                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
-                    </p>
-                  </div>
-
-                  <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", padding: "8px 10px", backgroundColor: "#eff6ff" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>
-                      Meta de unidades no período (IPCA)
-                    </p>
-                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
-                      {metaTotIpca ?? "—"}{" "}
-                      <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
+
 
           </div>
 

@@ -282,6 +282,7 @@ export async function POST(req: Request) {
 
     let ipca_aplicado = false;
     let ipca_msg = "Sem IPCA: mês base do histórico não informado.";
+    const fmtMesBR = (mesISO: string) => `${mesISO.slice(5, 7)}/${mesISO.slice(0, 4)}`;
     let ipca_mes_base: string | null = mesBase;
     let ipca_mes_ref: string | null = mesRef;
 
@@ -312,9 +313,10 @@ export async function POST(req: Request) {
 
         if (!ipca_indice_base || !ipca_indice_ref) {
           const faltando: string[] = [];
-          if (!ipca_indice_base) faltando.push(`base ${mesBase.slice(0, 7)}`);
-          if (!ipca_indice_ref) faltando.push(`ref ${mesRef.slice(0, 7)}`);
-          ipca_msg = `IPCA não aplicado: índice não cadastrado (${faltando.join(", ")}).`;
+          if (!ipca_indice_base) faltando.push(`base ${fmtMesBR(mesBase)}`);
+          if (!ipca_indice_ref) faltando.push(`ref ${fmtMesBR(mesRef)}`);
+
+          ipca_msg = `Não aplicado: índice não cadastrado (${faltando.join(", ")}).`;
         } else {
           const fator = ipca_indice_ref / ipca_indice_base;
 
@@ -332,7 +334,7 @@ export async function POST(req: Request) {
             meta_unid_dia_ipca = Math.ceil(metaDiaIpca);
             meta_unid_total_ipca = Math.ceil(metaTotIpca);
 
-            ipca_msg = `IPCA aplicado (${mesBase.slice(0, 7)} → ${mesRef.slice(0, 7)}).`;
+            ipca_msg = `Aplicado (${fmtMesBR(mesBase)} → ${fmtMesBR(mesRef)}).`;
           }
         }
       } catch {

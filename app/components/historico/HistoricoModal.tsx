@@ -119,6 +119,28 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
   const entrada = item?.resultado?.entrada ?? {};
   const metas = item?.resultado?.metas ?? {};
 
+  const ipcaAplicado = Boolean((entrada as any)?.ipca_aplicado);
+  const ipcaMsg = String((entrada as any)?.ipca_msg || "");
+  const ipcaMsgBR = ipcaMsg
+    .replace(/\b(\d{4})-(\d{2})\b/g, (_m, yyyy, mm) => `${mm}/${yyyy}`)
+    .replace(/^IPCA aplicado/i, "Aplicado")
+    .replace(/^IPCA não aplicado/i, "Não aplicado")
+    .replace(/^Sem IPCA:/i, "Sem IPCA:");
+
+  const ipcaFatorNum = Number((entrada as any)?.ipca_fator);
+  const ipcaFatorTxt = Number.isFinite(ipcaFatorNum)
+    ? ipcaFatorNum.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 6 })
+    : "—";
+  const ipcaVarPctTxt = Number.isFinite(ipcaFatorNum)
+    ? ((ipcaFatorNum - 1) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%"
+    : "—";
+
+  const lucroHistIpcaNum = Number((entrada as any)?.lucro_diario_hist_ipca);
+  const metaDiaIpca = (metas as any)?.meta_unid_dia_ipca;
+  const metaTotIpca = (metas as any)?.meta_unid_total_ipca;
+
+
+
   const vendaRealSalva = (metas as any)?.venda_real;
 
   const analiseSalva: AnalisePromo | null = (() => {
@@ -386,6 +408,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                         tipoPromocao: String(entrada.tipo_promocao ?? ""),
                         dataInicio: String(entrada.data_inicio_promocao ?? ""),
                         dataFim: String(entrada.data_fim_promocao ?? ""),
+                        dataBaseHistorico: String(entrada.data_base_historico ?? ""),
                         A: String(entrada.A ?? ""),
                         B: String(entrada.B ?? ""),
                         D: String(entrada.D ?? ""),
@@ -440,6 +463,29 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
 
             {!loadingDetalhes && (
               <>
+
+                {ipcaMsg && (
+                  <div
+                    style={{
+                      borderRadius: "10px",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: ipcaAplicado ? "#eff6ff" : "#f9fafb",
+                      padding: "8px 10px",
+                      fontSize: "12px",
+                      color: "#111827",
+                      fontWeight: 700,
+                      marginBottom: "10px",
+                    }}
+                  >
+                    IPCA aplicado: <strong>{ipcaAplicado ? "Sim" : "Não"}</strong> — {ipcaMsgBR}
+                    {ipcaAplicado && Number.isFinite(ipcaFatorNum) ? (
+                      <span style={{ marginLeft: 6, fontWeight: 600, color: "#374151" }}>
+                        (fator {ipcaFatorTxt} | {ipcaVarPctTxt})
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: "grid",
@@ -448,6 +494,8 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                     marginBottom: "14px",
                   }}
                 >
+
+
                   <div
                     style={{
                       borderRadius: "12px",
@@ -539,6 +587,7 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                       <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
                     </p>
                   </div>
+
                 </div>
 
                 <div
@@ -648,6 +697,52 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                   </div>
                 </div>
 
+                {ipcaAplicado && (
+                  <div style={{ marginBottom: "14px" }}>
+                    <p style={{ fontSize: "12px", fontWeight: 800, color: "#111827", marginBottom: "6px" }}>
+                      Metas com IPCA
+                    </p>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: "8px",
+                      }}
+                    >
+                      {/* 4 cards IPCA */}
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#eff6ff", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>Lucro diário histórico (IPCA)</p>
+                        <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                          {Number.isFinite(lucroHistIpcaNum) ? `R$ ${formatBR(lucroHistIpcaNum)}` : "—"}
+                        </p>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#eff6ff", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>Meta de unidades por dia (IPCA)</p>
+                        <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                          {metaDiaIpca ?? "—"} <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid/dia</span>
+                        </p>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#eff6ff", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>Meta de unidades no período (IPCA)</p>
+                        <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                          {metaTotIpca ?? "—"} <span style={{ fontSize: "11px", fontWeight: 400, color: "#6b7280" }}>unid</span>
+                        </p>
+                      </div>
+
+                      <div style={{ borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#eff6ff", padding: "8px 10px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", marginBottom: "4px" }}>Fator IPCA</p>
+                        <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>
+                          {ipcaFatorTxt} <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280" }}>({ipcaVarPctTxt})</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+
                 <div style={{ marginTop: "6px", paddingTop: "10px", borderTop: "1px solid #e5e7eb" }}>
                   <p style={{ fontSize: "12px", fontWeight: 600, color: "#111827", marginBottom: "6px" }}>
                     Dados informados na simulação
@@ -707,17 +802,44 @@ export function HistoricoModal({ open, item, onClose, onUpdateItem, onReload, mo
                       </p>
                     </div>
                     {entradaEntries.map(([chave, valor]) => {
-                      const label = (entradaLabels as any)[chave] ?? chave.replace(/_/g, " ");
+                      const fallback = String(chave)
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (m) => m.toUpperCase());
+
+                      const label = (entradaLabels as any)[chave] ?? fallback;
+
 
                       const isNumero = typeof valor === "number";
-                      const valorFormatado =
-                        valor === undefined || valor === null
-                          ? "—"
-                          : isNumero
-                            ? chave === "A"
+                      const isBool = typeof valor === "boolean";
+                      const isISODate = typeof valor === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
+
+                      const formatMonthBR = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+                      let valorFormatado = "—";
+                      if (chave === "ipca_aplicado") {
+                        valorFormatado = ipcaAplicado ? "Sim" : "Não";
+                      } else if (chave === "ipca_msg") {
+                        valorFormatado = ipcaMsgBR || "—";
+                      }
+
+
+                      if (valor !== undefined && valor !== null) {
+                        if (isBool) {
+                          valorFormatado = valor ? "Sim" : "Não";
+                        } else if (isNumero) {
+                          valorFormatado =
+                            chave === "A"
                               ? String(Math.round(valor as number))
-                              : formatBR(Number(valor))
-                            : String(valor);
+                              : formatBR(Number(valor));
+                        } else if (isISODate) {
+                          if (["ipca_mes_base", "ipca_mes_ref", "data_base_historico"].includes(chave)) {
+                            valorFormatado = formatMonthBR(valor as string);
+                          } else {
+                            valorFormatado = formatDateBR(valor as string);
+                          }
+                        }
+
+                      }
 
                       return (
                         <div
